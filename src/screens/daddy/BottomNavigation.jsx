@@ -1,0 +1,193 @@
+import React from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {NavigationContainer} from '@react-navigation/native';
+import {View, Text, Image, Pressable, Platform, StyleSheet} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {tab1} from './tabassets';
+import {
+  responsiveHeight,
+  responsiveWidth,
+} from 'react-native-responsive-dimensions';
+import User from './User';
+import HomeSvg from './HomeSvg';
+import Reorder from './Reorder';
+import Categoreis from './Categories';
+import Cart from './Cart';
+import UserHome from './UserHome';
+import CartScreen from './CartScreen';
+import HomeInactive from './tabassets/HomeInactive';
+import ReorderInactive from './tabassets/ReorderInactive';
+import CategoryInactive from './tabassets/CategoryInactive';
+import CartInactive from './tabassets/CartInactive';
+import UserActive from './tabassets/UserActive';
+import ReorderScreen from './ReorderScreen';
+import ProfileScreen from './ProfileScreen';
+import CategoriesScreen from './CategoriesScreen';
+import { useSelector } from 'react-redux';
+
+// Dummy Screens
+const HomeScreen = () => (
+  <View>
+    <Text>Home</Text>
+  </View>
+);
+// const ReorderScreen = () => (
+//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+//     <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
+//   </View>
+// );
+// const CategoriesScreen = () => (
+//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+//   <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
+// </View>
+// );
+// const ProfileScreen = () => (
+//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+//   <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
+// </View>
+// );
+
+const Tab = createBottomTabNavigator();
+
+export default function BottomNavigation() {
+  const { cartItems } = useSelector((state) => state.Dashboard);
+
+  return (
+    // <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({route}) => ({
+          headerShown: false,
+          tabBarButton: props => (
+            <Pressable
+              {...props}
+              android_ripple={null} 
+              style={({pressed}) => [
+                props.style,
+                {opacity: pressed ? 1 : 1},
+              ]}
+            />
+          ),
+          tabBarIcon: ({focused, color, size}) => {
+            let iconName;
+            if (route.name === 'Home') {
+              iconName = focused ? <HomeSvg color={'#065E2C'} /> : <HomeInactive />;
+            } else if (route.name === 'Reorder') {
+              iconName = focused ? <ReorderInactive color={'#065E2C'}/> : <Reorder />;
+            } else if (route.name === 'Categories') {
+              iconName = focused ? (
+                <CategoryInactive color={'#065E2C'}/>
+              ) : (
+                <Categoreis/>
+              );
+            } else if (route.name === 'Cart') {
+              iconName = (
+                <View>
+                  {focused ? <CartInactive color={'#065E2C'}/> : <Cart />}
+                  {cartItems.length > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>
+                        {cartItems.length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            } else if (route.name === 'Profile') {
+              iconName = focused ? <UserActive /> : <User />;
+            }
+            return iconName;
+          },
+          tabBarActiveTintColor: 'green',
+          tabBarInactiveTintColor: 'gray',
+          tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
+          tabBarStyle: {
+            height: Platform.OS === 'ios' ? 85 : 60,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 5,
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            elevation: 0,
+            backgroundColor: '#fff',
+            borderTopWidth: 1,
+            borderTopColor: '#E5E5E5',
+          },
+          tabBarHideOnKeyboard: true,
+          contentStyle: {
+            paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+          },
+        })}>
+        <Tab.Screen 
+          name="Home" 
+          component={UserHome}
+          options={{
+            tabBarLabel: 'Home',
+            contentStyle: {
+              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+        <Tab.Screen 
+          name="Reorder" 
+          component={ReorderScreen}
+          options={{
+            tabBarLabel: 'Reorder',
+            contentStyle: {
+              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+        <Tab.Screen 
+          name="Categories" 
+          component={CategoriesScreen}
+          options={{
+            tabBarLabel: 'Categories',
+            contentStyle: {
+              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+        <Tab.Screen 
+          name="Cart" 
+          component={CartScreen}
+          options={{
+            tabBarLabel: 'Cart',
+            contentStyle: {
+              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+        <Tab.Screen 
+          name="Profile" 
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: 'Profile',
+            contentStyle: {
+              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+      </Tab.Navigator>
+    // </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#065E2C',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});
