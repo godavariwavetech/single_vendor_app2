@@ -10,7 +10,7 @@ import {
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import AuthBackground from './tabassets/AuthBackground';
 import {
   responsiveHeight,
@@ -19,7 +19,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 // import GoogleIcon from '../user/svgs/GoogleIcon';
-import { actionLogin, verifyCustomerMobile } from '../../redux/reducers/auth';
+import { actionLogin, setInitial, verifyCustomerMobile } from '../../redux/reducers/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomModal from '../../components/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -36,7 +36,7 @@ export default function Register({navigation,route}) {
   const dispatch = useDispatch();
   const loading = useSelector(state => state.Auth.loading);
 
-  console.log("++++++++++++++++?>>>LOCATION",route.params)
+  console.log("++++++++++++++++?>>>LOCATION",route.params,loading)
 
   const showErrorModal = (title, message) => {
     setModalContent({title, message});
@@ -73,6 +73,10 @@ export default function Register({navigation,route}) {
       }
     }
   };
+
+  useEffect(()=>{
+    dispatch(setInitial())
+  },[])
 
   return (
     <Pressable style={{flex:1}} onPress={()=>Keyboard.dismiss()} >

@@ -38,9 +38,21 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     }
   }
 
+  const fetchOrderItems = async () => {
+    if(!orderDetails?.id) return;
+    const response = await dispatch(getOrderDetails({ orderId: orderDetails.id }));
+    if(response.payload?.data) {
+      setSubOrderData(response.payload.data);
+    }
+  }
+
   useEffect(() => {
     getOrderData();  
-  }, []);
+  }, [route.params?.orderDetails?.id]);
+
+  useEffect(() => {
+    fetchOrderItems();
+  }, [orderDetails]);
 
   
   const orderData = {
@@ -152,16 +164,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     return () => backHandler.remove(); // Cleanup the event listener
   }, []);
 
-  const fetchOrderItems = async () => {
-    // console.log("+++++++++++++>>>>",orderDetails)
-    if(!orderDetails?.id) return;
-    const response = await dispatch(getOrderDetails({ orderId: orderDetails.id }));
 
-    console.log("+++++++++++++>>>>",response.payload)
-    if(response.payload?.data) {
-      setSubOrderData(response.payload.data);
-    }
-  }
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -170,9 +173,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    fetchOrderItems();
-  }, []);
+
 
   return (
     <View style={styles.container}>

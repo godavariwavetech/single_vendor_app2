@@ -26,7 +26,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   addToCart,
   removeFromCart,
-  removeCoupon,
+  // removeCoupon,
   placeOrder,
 } from '../../redux/reducers/daddy';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -34,6 +34,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import RazorpayCheckout from 'react-native-razorpay';
 import {getChargesList} from '../../redux/reducers/addressSlice';
 import {haversineDistance} from './distanceCalculator';
+import { removeCoupon } from '../../redux/reducers/coupons';
 
 const CheckoutScreen = ({navigation, route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -41,7 +42,13 @@ const CheckoutScreen = ({navigation, route}) => {
   const {userDetails, chargesList, selectedAddress} = useSelector(
     state => state.address,
   );
-  const {customerId,reaturantDetails} = useSelector(state => state.Auth);
+  const {
+    customerId,
+    reaturantDetails,
+    orderOfferAmount,
+    locationId,
+    locationName,
+  } = useSelector(state => state.Auth);
   const dispatch = useDispatch();
 
   const [paymentMenuVisible, setPaymentMenuVisible] = useState(false);
@@ -54,12 +61,15 @@ const CheckoutScreen = ({navigation, route}) => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [distance, setDistance] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
+  const [delivery, setDelivery] = useState({
+    baseCharge: 0,
+    gstAmount: 0,
+    totalCharge: 0,
+  });
 
   const paymentMethods = ['Pay Online', 'COD'];
 
-  const buttonRef = useRef(null); 
-
-  // const totalPrice = cartItems.reduce((sum, item) => sum + (item.selling_price * item.quantity), 0);
+  const buttonRef = useRef(null);
 
   const addItem = item => {
     dispatch(addToCart(item));
@@ -77,7 +87,6 @@ const CheckoutScreen = ({navigation, route}) => {
       });
     }
   }, [cartItems.length]);
-
 
   const caliculateTotalPrice = () => {
     const totals = cartItems.reduce(
@@ -97,25 +106,36 @@ const CheckoutScreen = ({navigation, route}) => {
     setTotalSellingPrice(totals.totalSellingPrice);
     setTotalSavings(totals.totalSavings);
 
+    // Check coupon validity when prices change
     if (appliedCoupon) {
-      let discountAmount = 0;
+      // Remove coupon if current total is below coupon's minimum requirement
+      if (totals.totalSellingPrice < appliedCoupon.coupon_upto_price) {
+        dispatch(removeCoupon());
+        setCouponDiscount(0);
+        // dispatch(removeCoupon())
 
-      // Check if total selling price exceeds coupon_upto_price
-      if (totals.totalSellingPrice > appliedCoupon.coupon_upto_price) {
-        // Calculate discount based on coupon_percentage
-        discountAmount = (totals.totalSellingPrice * appliedCoupon.coupon_percentage) / 100;
-
-        // Ensure discount does not exceed coupon_upto_price
-        discountAmount = Math.min(discountAmount, appliedCoupon.coupon_upto_price);
+        setItemsTotalPrice(totals.totalSellingPrice);
+        return;
       }
 
-      // Update the total price after applying the discount
+      let discountAmount = 0;
+      if (totals.totalSellingPrice >= appliedCoupon.coupon_upto_price) {
+        discountAmount =
+          (totals.totalSellingPrice * appliedCoupon.coupon_percentage) / 100;
+        discountAmount = Math.min(
+          discountAmount,
+          appliedCoupon.coupon_upto_price,
+        );
+      }
+      
       setCouponDiscount(discountAmount);
       setItemsTotalPrice(totals.totalSellingPrice - discountAmount);
     } else {
       setItemsTotalPrice(totals.totalSellingPrice);
     }
   };
+
+  console.log(appliedCoupon,"+++++++++++>>>>>APPLIED COUPON")
 
   const renderCartItem = ({item}) => {
     const eachPrice = Number(item.selling_price) * Number(item.quantity);
@@ -156,102 +176,109 @@ const CheckoutScreen = ({navigation, route}) => {
     );
   };
 
-  function calculateDeliveryCharge(distance, cartPrice, minOrderPrice, gstRate = 18) {
+  function calculateDeliveryCharge(
+    distance,
+    cartPrice,
+    minOrderPrice,
+    gstRate = 18,
+  ) {
     let deliveryCharge = 0;
 
     if (distance >= 3) {
-        deliveryCharge = 10 + (distance - 3) * 9;
+      deliveryCharge = 10 + (distance - 3) * 9;
     }
 
     if (cartPrice < minOrderPrice) {
-        deliveryCharge += 10;
+      deliveryCharge += 10;
     }
 
-    let gstAmount = (deliveryCharge * gstRate) / 100;
+    let gstAmount =
+      (deliveryCharge * chargesList ? chargesList[0].gst_percentage : 18) / 100;
     let totalDeliveryCharge = deliveryCharge + gstAmount;
-    console.log({
+
+    setDelivery({
       baseCharge: deliveryCharge,
       gstAmount: gstAmount,
-      totalCharge: totalDeliveryCharge.toFixed(2)
-  })
+      totalCharge: totalDeliveryCharge.toFixed(2),
+    });
 
     return {
-        baseCharge: deliveryCharge,
-        gstAmount: gstAmount,
-        totalCharge: totalDeliveryCharge.toFixed(2)
+      baseCharge: deliveryCharge,
+      gstAmount: gstAmount,
+      totalCharge: totalDeliveryCharge.toFixed(2),
     };
-}
+  }
 
   const handlePlaceOrder = async () => {
     // if (!userDetails?.name || !userDetails?.contact) {
     //   setModalVisible(true);
     //   return;
     // }
+console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
+
+    let payload = {
+      actual_total_amount: itemsTotalPrice,
+      customer_id: customerId,
+      customer_name: userDetails?.name,
+      customer_mobile_number: userDetails?.contact,
+      category_id: cartItems[0]?.category_id,
+      sub_category_id: cartItems[0]?.sub_category_id,
+      admin_percentage: 10,
+      item_count: cartItems.length,
+      total_amount: totalSellingPrice,
+      total_saving_amount: totalSavings,
+      coupon_amount: couponDiscount,
+      delivery_charges:delivery.totalCharge,
+      grand_total: grandTotal,
+      location_id: locationId,
+      location_name: locationName,
+      payment_type: selectedPaymentMethod,
+      payment_id: selectedPaymentMethod,
+      razorpay_order_id: null, 
+      order_instructions: 'test are',
+      coupon_type: appliedCoupon?.coupon_type||"0",
+      coupon_id: appliedCoupon?.id||"0",
+      delivery_address: selectedAddress
+        ? selectedAddress.full_address
+        : 'No address selected',
+      order_latitude: selectedAddress
+        ? selectedAddress.customer_latitude
+        : '0',
+      order_longitude: selectedAddress
+        ? selectedAddress.customer_longitude
+        : '0',
+      slot_timings: 'Fast Delivery',
+      order_distance: distance,
+      ext_del_charge: '0',
+      shop_id: cartItems[0]?.shop_id,
+      user_player_id: null,
+      order_type: 0,
+      delivery_charges_gst: delivery.gstAmount,
+      handling_charges: chargesList[0].handling_charges,
+      packing_charges: 0,
+      packing_charges_gst:0,
+      donation_charges: chargesList[0].donation_charges,
+      sub_order_array: cartItems.map(item => ({
+        item_name: item.item_name,
+        item_image: item.item_image,
+        item_id: item.id,
+        category_id: item.category_id,
+        sub_category_id: item.sub_category_id,
+        category_name: item.category_name,
+        sub_category_name: item.sub_category_name,
+        actualitem_price: item.actual_price,
+        item_price: item.selling_price,
+        sub_item_count: item.quantity,
+        item_total_amount: item.selling_price * item.quantity,
+        filter_name: item.filter_one,
+        item_description: item.item_description,
+        saving_price: item.discount_amount,
+        shop_id: item.shop_id,
+        filter_one: item.filter_one,
+      })),
+    };
 
     if (selectedPaymentMethod === 'COD') {
-      const payload = {
-        actual_total_amount: itemsTotalPrice,
-        customer_id: customerId,
-        customer_name: userDetails?.name,
-        customer_mobile_number: userDetails?.contact,
-        category_id: cartItems[0]?.category_id,
-        sub_category_id: cartItems[0]?.sub_category_id,
-        admin_percentage: 10,
-        item_count: cartItems.length,
-        total_amount: totalSellingPrice,
-        total_saving_amount: totalSavings,
-        coupon_amount: couponDiscount,
-        delivery_charges: 0,
-        grand_total: itemsTotalPrice + (18 / 100) * itemsTotalPrice + 20,
-        location_id: '1',
-        location_name: 'Rajahmundry',
-        payment_type: selectedPaymentMethod,
-        payment_id: 'COD',
-        razorpay_order_id: null, // No Razorpay order ID for COD
-        order_instructions: 'test are',
-        coupon_type: '1',
-        coupon_id: 0,
-        delivery_address: selectedAddress
-          ? selectedAddress.full_address
-          : 'No address selected',
-        order_latitude: selectedAddress
-          ? selectedAddress.customer_latitude
-          : '0',
-        order_longitude: selectedAddress
-          ? selectedAddress.customer_longitude
-          : '0',
-        slot_timings: 'Fast Delivery',
-        order_distance: 10,
-        ext_del_charge: '0',
-        shop_id: cartItems[0]?.shop_id,
-        user_player_id: null,
-        order_type: 0,
-        delivery_charges_gst: 17.7,
-        handling_charges: chargesList[0].handling_charges,
-        packing_charges: 10,
-        packing_charges_gst: 1.8,
-        donation_charges: chargesList[0].donation_charges,
-        sub_order_array: cartItems.map(item => ({
-          item_name: item.item_name,
-          item_image: item.item_image,
-          item_id: item.id,
-          category_id: item.category_id,
-          sub_category_id: item.sub_category_id,
-          category_name: item.category_name,
-          sub_category_name: item.sub_category_name,
-          actualitem_price: item.actual_price,
-          item_price: item.selling_price,
-          sub_item_count: item.quantity,
-          item_total_amount: item.selling_price * item.quantity,
-          filter_name: item.filter_one,
-          item_description: item.item_description,
-          saving_price: item.discount_amount,
-          shop_id: item.shop_id,
-          filter_one: item.filter_one,
-        })),
-      };
-
-      // Dispatch the order placement
       dispatch(placeOrder({orderDetails: payload}));
       navigation.replace('OrderSuccess', {orderDetails: payload});
       return;
@@ -263,7 +290,7 @@ const CheckoutScreen = ({navigation, route}) => {
       image: '',
       currency: 'INR',
       key: 'rzp_test_QNQ6xyfpco3YGe',
-      amount: (itemsTotalPrice + (18 / 100) * itemsTotalPrice + 20) * 100, 
+      amount: grandTotal * 100,
       name: 'Local Daddy',
       prefill: {
         email: userDetails?.email,
@@ -275,74 +302,14 @@ const CheckoutScreen = ({navigation, route}) => {
 
     RazorpayCheckout.open(options)
       .then(data => {
-        const payload = {
-          actual_total_amount: itemsTotalPrice,
-          customer_id: customerId,
-          customer_name: userDetails?.name,
-          customer_mobile_number: userDetails?.contact,
-          category_id: cartItems[0]?.category_id,
-          sub_category_id: cartItems[0]?.sub_category_id,
-          admin_percentage: 10,
-          item_count: cartItems.length,
-          total_amount: totalSellingPrice,
-          total_saving_amount: totalSavings,
-          coupon_amount: couponDiscount,
-          delivery_charges: 0,
-          grand_total: itemsTotalPrice + (18 / 100) * itemsTotalPrice + 20,
-          location_id: '',
-          location_name: '',
-          payment_type: selectedPaymentMethod,
-          payment_id: data.razorpay_payment_id,
-          razorpay_order_id: data.razorpay_order_id,
-          order_instructions: 'test are',
-          coupon_type: '1',
-          coupon_id: 0,
-          delivery_address: selectedAddress
-            ? selectedAddress.full_address
-            : 'No address selected',
-          order_latitude: selectedAddress
-            ? selectedAddress.customer_latitude
-            : '0',
-          order_longitude: selectedAddress
-            ? selectedAddress.customer_longitude
-            : '0',
-          slot_timings: 'Fast Delivery',
-          order_distance: 10,
-          ext_del_charge: '0',
-          shop_id: cartItems[0]?.shop_id,
-          user_player_id: null,
-          order_type: 0,
-          delivery_charges_gst: 17.7,
-          handling_charges: chargesList[0].handling_charges,
-          packing_charges: 10,
-          packing_charges_gst: 1.8,
-          donation_charges: chargesList[0].donation_charges,
-          sub_order_array: cartItems.map(item => ({
-            item_name: item.item_name,
-            item_image: item.item_image,
-            item_id: item.id,
-            category_id: item.category_id,
-            sub_category_id: item.sub_category_id,
-            category_name: item.category_name,
-            sub_category_name: item.sub_category_name,
-            actualitem_price: item.actual_price,
-            item_price: item.selling_price,
-            sub_item_count: item.quantity,
-            item_total_amount: item.selling_price * item.quantity,
-            filter_name: item.filter_one,
-            item_description: item.item_description,
-            saving_price: item.discount_amount,
-            shop_id: item.shop_id,
-            filter_one: item.filter_one,
-          })),
-        };
+        payload.payment_id=data.razorpay_payment_id;
+        payload.razorpay_order_id=data.razorpay_payment_id
 
         dispatch(placeOrder({orderDetails: payload}));
         navigation.replace('OrderSuccess', {orderDetails: payload});
       })
       .catch(error => {
         console.error('Payment error:', error);
-        // Show an alert or modal to inform the user about the payment failure
       });
   };
 
@@ -363,14 +330,31 @@ const CheckoutScreen = ({navigation, route}) => {
   }, [cartItems, appliedCoupon]);
 
   useEffect(() => {
-    if(!selectedAddress && !reaturantDetails) return 
-    const value = haversineDistance(selectedAddress.customer_latitude, selectedAddress.customer_longitude, reaturantDetails.shop_latitude, reaturantDetails.shop_longitude)
-    setDistance(value)
-    const charges = calculateDeliveryCharge(distance, itemsTotalPrice, 100)
+    if (!selectedAddress && !reaturantDetails) return;
+    const value = haversineDistance(
+      selectedAddress.customer_latitude,
+      selectedAddress.customer_longitude,
+      reaturantDetails.shop_latitude,
+      reaturantDetails.shop_longitude,
+    );
+    setDistance(value);
+    const charges = calculateDeliveryCharge(
+      distance,
+      itemsTotalPrice,
+      orderOfferAmount,
+    );
 
-    setGrandTotal(totalSellingPrice - couponDiscount + Number(charges.totalCharge))
-    console.log(itemsTotalPrice + charges.totalCharge,"++++++++",totalSellingPrice - couponDiscount,charges.totalCharge,totalSellingPrice)
-  }, [selectedAddress,reaturantDetails,appliedCoupon,cartItems,totalSellingPrice,couponDiscount])
+    setGrandTotal(
+      totalSellingPrice - couponDiscount + Number(charges.totalCharge),
+    );
+  }, [
+    selectedAddress,
+    reaturantDetails,
+    appliedCoupon,
+    cartItems,
+    totalSellingPrice,
+    couponDiscount,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -399,7 +383,9 @@ const CheckoutScreen = ({navigation, route}) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Cart</Text>
         </View>
-        <TouchableOpacity  onPress={() => navigation.navigate('Support')} style={styles.supportButton}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Support')}
+          style={styles.supportButton}>
           <Icon name="support-agent" size={30} color="grey" />
         </TouchableOpacity>
       </View>
@@ -430,7 +416,9 @@ const CheckoutScreen = ({navigation, route}) => {
         />
 
         <View style={styles.totalContainer}>
-          <TouchableOpacity onPress={()=>navigation.navigate("Reorder")} style={{}}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Reorder')}
+            style={{}}>
             <Text style={styles.addMoreText}>+ Add more items</Text>
           </TouchableOpacity>
           <Text style={styles.totalPrice}>₹ {totalPrice}</Text>
@@ -439,8 +427,7 @@ const CheckoutScreen = ({navigation, route}) => {
         {/* Delivery Details */}
         <View style={[styles.detailsCard]}>
           <Text style={styles.cardTitle}>Delivery Details</Text>
-          <View
-            style={styles.address}>
+          <View style={styles.address}>
             <View style={styles.addressSection}>
               <MaterialIcons name="home" size={24} color="#666" />
               <View style={styles.addressDetails}>
@@ -451,14 +438,26 @@ const CheckoutScreen = ({navigation, route}) => {
                   {selectedAddress?.full_address || 'No address selected'}
                 </Text>
               </View>
-              <Entypo name="chevron-right" size={24} color="#666" onPress={() => navigation.navigate('AddressList',{isFromCart:true})} />
+              <Entypo
+                name="chevron-right"
+                size={24}
+                color="#666"
+                onPress={() =>
+                  navigation.navigate('AddressList', {isFromCart: true})
+                }
+              />
             </View>
 
             <View
               style={[
                 styles.dottedLineContainer,
                 styles.dottedLineContainerFull,
-                {width: responsiveWidth(80),overflow: 'hidden', alignSelf: 'center',marginBottom:10 },
+                {
+                  width: responsiveWidth(80),
+                  overflow: 'hidden',
+                  alignSelf: 'center',
+                  marginBottom: 10,
+                },
               ]}>
               {Array(20)
                 .fill(0)
@@ -477,7 +476,14 @@ const CheckoutScreen = ({navigation, route}) => {
                   {selectedAddress?.customer_mobile_number || 'No contact'}
                 </Text>
               </View>
-              <Entypo name="chevron-right" size={24} color="#666" onPress={() => navigation.navigate('AddressList',{isFromCart:true})} />
+              <Entypo
+                name="chevron-right"
+                size={24}
+                color="#666"
+                onPress={() =>
+                  navigation.navigate('AddressList', {isFromCart: true})
+                }
+              />
             </View>
           </View>
         </View>
@@ -533,7 +539,8 @@ const CheckoutScreen = ({navigation, route}) => {
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>GST</Text>
             <Text style={styles.gstValue}>
-              ₹ {calculateDeliveryCharge(distance, itemsTotalPrice, 100).gstAmount.toFixed(2)}
+              ₹{' '}
+              {delivery.gstAmount.toFixed(2)}
             </Text>
           </View>
           <View
@@ -554,7 +561,10 @@ const CheckoutScreen = ({navigation, route}) => {
           </View>
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>Delivery Charge</Text>
-            <Text style={styles.billValue}>₹ {calculateDeliveryCharge(distance, itemsTotalPrice, 100).totalCharge}</Text>
+            <Text style={styles.billValue}>
+              ₹{' '}
+              {delivery.totalCharge}
+            </Text>
           </View>
           {/* <Text style={styles.gstNote}>(GST Included)</Text> */}
           <View
@@ -575,9 +585,7 @@ const CheckoutScreen = ({navigation, route}) => {
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalValue}>
-              ₹ {grandTotal}
-            </Text>
+            <Text style={styles.totalValue}>₹ {grandTotal}</Text>
           </View>
         </View>
       </ScrollView>
@@ -587,8 +595,7 @@ const CheckoutScreen = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.paymentMethod}
           ref={buttonRef}
-          onPress={() => setPaymentMenuVisible(!paymentMenuVisible)}
-        >
+          onPress={() => setPaymentMenuVisible(!paymentMenuVisible)}>
           <Text style={styles.paymentMethodText}>{selectedPaymentMethod}</Text>
           <MaterialIcons name="arrow-drop-up" size={24} color="#000" />
         </TouchableOpacity>
@@ -614,9 +621,7 @@ const CheckoutScreen = ({navigation, route}) => {
           onPress={handlePlaceOrder}>
           <View style={styles.placeOrderContent}>
             <View style={styles.orderTotal}>
-              <Text style={styles.orderTotalValue}>
-                ₹{grandTotal}
-              </Text>
+              <Text style={styles.orderTotalValue}>₹{grandTotal}</Text>
               <Text style={styles.orderTotalLabel}>Total</Text>
             </View>
             <View style={styles.placeOrderTextContainer}>
@@ -1055,7 +1060,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 5,
     padding: 10,
-    zIndex: 1, 
+    zIndex: 1,
   },
   paymentMethodItem: {
     padding: 10,
@@ -1110,7 +1115,7 @@ const styles = StyleSheet.create({
     borderColor: '#065E2C',
     borderRadius: 8,
   },
-  address:{
+  address: {
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,

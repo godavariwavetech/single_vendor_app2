@@ -52,7 +52,6 @@ const RestaurantScreen = ({navigation,route}) => {
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
-  console.log(">>>>>>>>>>>>>>>>>ROUTE.PARAMS",route.params)
 
   const getItems = async() =>{
     try {
@@ -181,13 +180,6 @@ const RestaurantScreen = ({navigation,route}) => {
     });
   }
 
-  const checkCartRestaurant = () =>{
-    if(cartItems.length>0){
-
-      console.log("+++++++++++++>>>>>>",cartItems)
-      // if(cartItems)
-    }
-  }
 
 
   const addItem = (item) =>{
@@ -465,9 +457,6 @@ const RestaurantScreen = ({navigation,route}) => {
       >
         <TouchableOpacity onPress={() => navigation.navigate("CartScreen",{isFromRestaurant:true})}>          
           <Text style={styles.cartSummaryText}>{Object.keys(cartItems).length} Items added to cart <AntDesign name="right" color="green" size={17} /> </Text>
-          <Text style={styles.cartSummarySubText}>
-            Add items worth ₹199 more to get free delivery
-          </Text>
         </TouchableOpacity>
       </Animated.View>}
 

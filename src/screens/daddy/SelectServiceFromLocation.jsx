@@ -219,7 +219,6 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     };
   }, []);
 
-  console.log(">>>>>>>>>>>>>>>>>>>>MMKKMKMKMMK",region)
 
   const handleConfirmLocation = async() => {
     try {

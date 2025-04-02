@@ -39,9 +39,9 @@ import {
   checkServiceAvailability,
   checkAddressExistence,
 } from '../../redux/reducers/daddy';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
-import { setLocation, setLocationId, setLocationName } from '../../redux/reducers/auth';
+import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import ServiceUnavailableScreen from './ServiceUnavailableScreen';
 // import {GOOGLE_MAPS_API_KEY} from '@env';
@@ -49,7 +49,7 @@ import ServiceUnavailableScreen from './ServiceUnavailableScreen';
 export default function UserHome({navigation}) {
   const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, serviceAvailable} =
     useSelector(state => state.Dashboard);
-    const {customerId,locationName} =
+    const {customerId,locationName,orderOfferAmount} =
     useSelector(state => state.Auth);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -60,6 +60,8 @@ export default function UserHome({navigation}) {
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const isFocused = useIsFocused();
 
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
@@ -206,28 +208,28 @@ export default function UserHome({navigation}) {
   //   checkAvailability();
   // }, [selectedAddress, dispatch, navigation]);
 
-  const handleSubCategories = categoryId => {
-    dispatch(setActiveCategoryIndex(categoryId));
-    dispatch(getSubCategories({categoryId: categoryId}));
-    dispatch(getRestaurants({categoryId: categoryId}));
+  const handleSubCategories = category => {
+    dispatch(setActiveCategoryIndex(category.id));
+    dispatch(getSubCategories({categoryId: category.id}));
+    dispatch(getRestaurants({categoryId: category.id}));
+    dispatch(setOrderOfferAmount(category.order_offer_amount));
   };
 
-  useEffect(() => {
-    if (!banners || !flatListRef.current) return;
-    const intervalId = setInterval(() => {
-      if (currentIndex < banners?.length - 1) {
-        flatListRef.current?.scrollToIndex({
-          index: currentIndex + 1,
-          animated: true,
-        });
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        flatListRef.current?.scrollToIndex({index: 0, animated: true});
-        setCurrentIndex(0);
+  useFocusEffect(
+    useCallback(() => {
+      let intervalId;
+      if (isFocused && banners?.length > 0) {
+        intervalId = setInterval(() => {
+          const newIndex = currentIndex < banners.length - 1 ? currentIndex + 1 : 0;
+          flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
+          setCurrentIndex(newIndex);
+        }, 3000);
       }
-    }, 3000);
-    return () => clearInterval(intervalId);
-  }, [currentIndex, banners]);
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, [currentIndex, banners, isFocused])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -246,26 +248,43 @@ export default function UserHome({navigation}) {
   }, [restaurants, searchQuery]);
 
   const checkServiceAvailability = async () => {
-    try {
-      const response = await dispatch(checkAddressExistence({
-        latitude: authLocation.latitude,
-        longitude: authLocation.longitude
-      })).unwrap();
-       await dispatch(setLocationName(response.data[0].location_name))
-      await dispatch(setLocationId(response.data[0].id))
-      if (response.data.length > 0) {
-        // Load essential data after service check
-         dispatch(getCategories());
-         dispatch(getBanners());
-         console.log(">>>>>>>>>>>>>>>>>>>>CALCLACL")
-         if (!restaurants || restaurants.length === 0) {
-           dispatch(getRestaurants({categoryId: activeCategoryIndex}));
-         }
-         dispatch(getSubCategories({categoryId: activeCategoryIndex}));
+    const abortController = new AbortController();
+    
+    const checkAvailability = async () => {
+      if (!authLocation || !mounted) return;
+      
+      try {
+        const response = await dispatch(checkAddressExistence({
+          latitude: authLocation.latitude,
+          longitude: authLocation.longitude
+        })).unwrap();
+
+        if (mounted) {
+          await dispatch(setLocationName(response.data[0].location_name));
+          await dispatch(setLocationId(response.data[0].id));
+          if (response.data.length > 0) {
+            // Load essential data after service check
+            const result = await dispatch(getCategories());
+            dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
+            dispatch(getBanners());
+            if (!restaurants || restaurants.length === 0) {
+              dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+            }
+            dispatch(getSubCategories({categoryId: activeCategoryIndex}));
+          }
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError' && mounted) {
+          console.error('Service check failed:', error);
+        }
       }
-    } catch (error) {
-      console.error('Service check failed:', error);
-    }
+    };
+
+    checkAvailability();
+    return () => {
+      abortController.abort();
+      setMounted(false);
+    };
   };
 
   useEffect(() => {
@@ -306,6 +325,10 @@ export default function UserHome({navigation}) {
       updateRestaurantsData();
     }, [activeCategoryIndex])
   );
+
+  const updateOrderOfferAmount =  (amount) => {
+    dispatch(setOrderOfferAmount(amount));
+  };
 
   return (
     <View style={styles.mainContainer}>
@@ -477,7 +500,7 @@ export default function UserHome({navigation}) {
                           ]}>
                           <TouchableOpacity
                             style={styles.activeItemTab}
-                            onPress={() => handleSubCategories(item.id)}>
+                            onPress={() => handleSubCategories(item)}>
                             <Image
                               source={{uri: item.category_image}}
                               resizeMode="contain"
@@ -489,7 +512,7 @@ export default function UserHome({navigation}) {
                           </TouchableOpacity>
                         </LinearGradient>
                       ) : (
-                        <TouchableOpacity onPress={() => handleSubCategories(item.id)}>
+                        <TouchableOpacity onPress={() => handleSubCategories(item)}>
                           <View style={styles.activeItemTab}>
                             <Image
                               source={{uri: item.category_image}}

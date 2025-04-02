@@ -15,7 +15,8 @@ const initialState = {
   locationName:null,
   locationId:null,
 shouldNavigate: false,
-reaturantDetails:null
+reaturantDetails:null,
+orderOfferAmount:0
 };
 
 export const verifyMobile = createAsyncThunk(
@@ -135,7 +136,6 @@ export const AuthSlice = createSlice({
       state.customerId=null;
     },
     actionLogin: state => {
-    console.log(">>>>>>>>>>>>>>>>>>HHHHHH")
       state.token = 'sample token';
     },
     setMobile:(state,action)=>{
@@ -146,7 +146,6 @@ export const AuthSlice = createSlice({
       state.message=null
     },
     setLocation: (state, action) => {
-      console.log(">>>>>>>>>>>>>>>LOCAPYALLOADTION",action.payload)
       state.location = action.payload;
     },
     setLocationName: (state, action) => {
@@ -160,6 +159,9 @@ export const AuthSlice = createSlice({
     },
     setRestaurnatDetails: (state, action) => {
       state.reaturantDetails = action.payload;
+    },
+    setOrderOfferAmount: (state, action) => {
+      state.orderOfferAmount = action.payload;
     }
   },
   extraReducers: builder => {
@@ -186,7 +188,6 @@ export const AuthSlice = createSlice({
       state.message = null;
     });
     builder.addCase(verifyMobile.fulfilled, (state, action) => {
-      console.log(">>>>>>>>>>>>>>ACTION",action.payload)
       state.loading = false;
       state.message = null;
       console.log(">>>>>>>OTP",action.payload?.data[0]?.otp)
@@ -255,6 +256,6 @@ export const AuthSlice = createSlice({
   },
 });
 
-export const {actionLogout, actionLogin, setMobile, setInitial,setLocation,setLocationName,setLocationId, clearNavigationFlag,setRestaurnatDetails} = AuthSlice.actions;
+export const {actionLogout, actionLogin, setMobile, setInitial,setLocation,setLocationName,setLocationId, clearNavigationFlag,setRestaurnatDetails,setOrderOfferAmount} = AuthSlice.actions;
 
 export default AuthSlice.reducer;

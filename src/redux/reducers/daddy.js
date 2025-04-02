@@ -172,7 +172,6 @@ export const getRestaurants = createAsyncThunk(
         {getState, rejectWithValue, fulfillWithValue}
     ) =>{
 
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>RESTURANTS")
       const {location,locationId} = getState().Auth;
         const response = await api.post(endpoints.GET_SHOPS,{
             "shop_latitude": location.latitude,
@@ -458,6 +457,7 @@ export const Dashboard = createSlice({
       state.appliedCoupon = action.payload;
     },
     removeCoupon: (state) => {
+      console.log(">>>>>>>>>>>>>>>>>>>>>><MM<M<<M<")
       state.appliedCoupon = null;
     },
   },
@@ -561,7 +561,6 @@ export const Dashboard = createSlice({
     builder.addCase(getOrders.fulfilled, (state, action) => {
       state.loading.itemsList = false;
       state.message = null;
-      // console.log("+++++++++++++>>>>>>>>>>>>>>ACTOIN",action.payload)
       state.orders = action.payload.data;
     });
     builder.addCase(getOrders.rejected, (state, action) => {
@@ -577,8 +576,7 @@ export const Dashboard = createSlice({
     builder.addCase(getOrderDetails.fulfilled, (state, action) => {
       state.loading.itemsList = false;
       state.message = null;
-      // console.log("+++++++++++++>>>>>>>>>>>>>>ACTOIN",action.payload)
-      // state.order = action.payload.data;
+
     });
     builder.addCase(getOrderDetails.rejected, (state, action) => {
       state.loading.itemsList = false;

@@ -15,6 +15,7 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../redux/reducers/daddy';
+import { removeCoupon } from '../../redux/reducers/coupons';
 
 const OrderSuccessScreen = ({ navigation, route }) => {
   const {selectedAddress} = useSelector(state => state.address);
@@ -30,6 +31,7 @@ const OrderSuccessScreen = ({ navigation, route }) => {
     setTimeout(()=>{
       handleBackPress()
       dispatch(clearCart())
+      dispatch(removeCoupon())
     },500)
   },[])
 

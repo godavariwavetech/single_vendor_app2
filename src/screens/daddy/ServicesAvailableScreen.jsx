@@ -39,7 +39,6 @@ const ServicesAvailableScreen = ({ navigation }) => {
   }, [searchQuery, availableAreas]);
 
   const handleAreaSelect = (area) => {
-    // console.log(">>>>>>>>>>>ITEm",area)
     dispatch(setLocation({latitude:area.location_latitude,longitude:area.location_longitude}))
     dispatch(setLocationName(area.location_name))
     dispatch(setLocationId(area.id))

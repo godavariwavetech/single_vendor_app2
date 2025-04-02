@@ -44,31 +44,32 @@ const AddressListScreen = ({ navigation, route }) => {
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
-  const handleSelectAddress = async(address) => {
-    // console.log(address,"++++++++++++++++++AAAAAAAA")
-    try{
+  const handleSelectAddress = async (address) => {
+    try {
       const response = await dispatch(checkAddressExistence({
         latitude: parseFloat(address.customer_latitude),
         longitude: parseFloat(address.customer_longitude)
       }));
-      console.log("++++++++++++++>Response",response)
-    }catch(error){
-      console.log("++++++++++++++>Error",error)
+
+      // Check if response is valid
+      if (response.payload?.status === 300) {
+        // Handle case where address is not available
+        setShowAddressModal(true);
+        return;
+      }
+
+      if (response.payload?.data?.length > 0) {
+        dispatch(setSelectedAddressAction(address));
+        if (isFromCart) {
+          navigation.navigate('Checkout');
+        }
+      } else {
+        setShowAddressModal(true);
+      }
+    } catch (error) {
+      console.log("Error checking address:", error);
+      setShowAddressModal(true);
     }
-
-    // if(response.payload.data.length>0){
-    //   if(response.payload.data[0]?.id == address.location_id){
-    //     dispatch(setSelectedAddressAction(address));
-    //     if (isFromCart) {
-    //       navigation.navigate('Checkout'); 
-    //     }
-    //   }
-    // }else{
-    //   // setShowAddressModal(!showAddressModal)
-    // }
-      // return
-
-    
   };
 
   useFocusEffect(useCallback(() => {
@@ -152,9 +153,6 @@ const AddressListScreen = ({ navigation, route }) => {
     </View>
   );
 
-  console.log(">>>>>>>>>>>>>>>>MMAMMANMNMANDA",showAddressModal)
-
-
   const onRefresh = async () => {
     setRefreshing(true);
     await loadAddresses();
@@ -190,6 +188,14 @@ const AddressListScreen = ({ navigation, route }) => {
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
             ListEmptyComponent={renderEmptyList}
+            onScrollToIndexFailed={({ index, highestMeasuredFrameIndex }) => {
+              console.warn(`Failed to scroll to index ${index}`);
+            }}
+            getItemLayout={(data, index) => ({
+              length: 120,
+              offset: 120 * index,
+              index,
+            })}
           />
         )}
 
@@ -235,15 +241,15 @@ const AddressListScreen = ({ navigation, route }) => {
           </View>
         </View>
       )}
-        {/* <CustomModal
-          visible={showAddressModal}
-          title="Address Not Available"
-          message="The selected address is not available for delivery. Please select another address."
-          onConfirm={() => setShowAddressModal(false)}
-          onCancel={() => setShowAddressModal(false)}
-          confirmText="OK"
-          cancelText=''
-        /> */}
+      <CustomModal
+        visible={showAddressModal}
+        title="Address Not Available"
+        message="The selected address is not available for delivery. Please select another address."
+        onConfirm={() => setShowAddressModal(false)}
+        confirmText="OK"
+        cancelText=""
+        // showCancel={false}
+      />
     </View>
   );
 };

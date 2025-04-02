@@ -25,39 +25,9 @@ const CouponsScreen = ({ navigation, route }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const {coupons} = useSelector(state=>state.coupons)
   const dispatch = useDispatch();
-  
-  // Sample data - replace with your actual data
-  // const coupons = [
-  //   {
-  //     id: 6,
-  //     location_id: 1,
-  //     shop_id: 0,
-  //     coupon_name: "OFFER50",
-  //     coupon_description: "Get ₹100 off on your first order! Use code WELCOME100 at checkout. Hurry, limited time offer",
-  //     coupon_percentage: 50,
-  //     coupon_upto_price: "500",
-  //     coupon_type: 0,
-  //     coupon_user_permission: 0,
-  //     coupon_category_id: "0",
-  //     coupon_max_price_limit: "1200"
-  //   },
-  //   {
-  //     id: 7,
-  //     location_id: 1,
-  //     shop_id: 0,
-  //     coupon_name: "SUMMER20",
-  //     coupon_description: "Get 20% off on orders above ₹500. Maximum discount of ₹200",
-  //     coupon_percentage: 20,
-  //     coupon_upto_price: "200",
-  //     coupon_type: 0,
-  //     coupon_user_permission: 0,
-  //     coupon_category_id: "0",
-  //     coupon_max_price_limit: "1000"
-  //   }
-  // ];
 
   const handleApplyCoupon = (coupon) => {
-    if (totalPrice > coupon.coupon_upto_price) {
+    if (totalPrice >= coupon.coupon_upto_price) {
       setSelectedCoupon(coupon);
     } else {
       setErrorMessage(`This coupon requires a minimum order value of ₹${coupon.coupon_upto_price}.`);
@@ -65,7 +35,6 @@ const CouponsScreen = ({ navigation, route }) => {
     }
   };
 
-  console.log("selectedCoupon>>>>>>>>>>>>>>MMMM",appliedCoupon)
 
 
   const handleConfirmApply = () => {
@@ -91,7 +60,6 @@ const CouponsScreen = ({ navigation, route }) => {
     dispatch(fetchCoupons())
   },[])
 
-  console.log(coupons,"coupons")
 
   return (
     <View style={styles.container}>
@@ -361,6 +329,7 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 14,
     marginBottom: 20,
+    textAlign:"center"
   },
   closeButton: {
     backgroundColor: '#065E2C',

@@ -39,7 +39,6 @@ const ProfileScreen = () => {
   const [orders, setOrders] = useState([]);
   const getOrdersData = async () => {
     const response = await dispatch(getOrders({orderId:0}));
-    console.log(response.payload.data[0],'++++++++++++++++++++>>>RESPONSE')
     response?.payload?.data[0] && setOrders([response.payload.data[0]]);
   }
 
@@ -68,13 +67,12 @@ const ProfileScreen = () => {
 
   const handleLogout = () => {
     setLogoutModalVisible(true);
-    dispatch(actionLogout());
-    dispatch(clearCart());
   };
 
   const handleConfirmLogout = () => {
     setLogoutModalVisible(false);
-    // dispatch(logout());
+    dispatch(actionLogout());
+    dispatch(clearCart());
     navigation.reset({
       index: 0,
       routes: [{ name: 'Login' }],

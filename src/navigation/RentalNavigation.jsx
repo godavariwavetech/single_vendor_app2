@@ -26,7 +26,6 @@ import LocationSelectionScreen from '../screens/daddy/LocationSelectionScreen';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
-  console.log("CALLING RENTAL NAVIGATION");
   return (
     <Stack.Navigator  screenOptions={{headerShown: false}} initialRouteName='BottomNavigation'>
     <Stack.Screen name='BottomNavigation' component={BottomNavigation} />

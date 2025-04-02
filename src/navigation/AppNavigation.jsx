@@ -40,7 +40,6 @@ const AuthNavigation = () => {
 };
 
 const MainNavigation = ({userRole}) => {
-  console.log('CALLING MAIN NAVIGATION');
   {
     switch (userRole) {
       case 2:
