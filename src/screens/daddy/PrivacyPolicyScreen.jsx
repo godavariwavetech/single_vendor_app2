@@ -15,29 +15,73 @@ const PrivacyPolicyScreen = () => {
         </TouchableOpacity>
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
-      <ScrollView style={{padding:20}}>
+      <ScrollView style={{padding: 20}}>
+        <Text style={styles.effectiveDate}>Effective Date: [Date]</Text>
         <Text style={styles.content}>
-          Your privacy is important to us. This privacy policy explains how we collect, use, and share information about you when you use our app.
+          Welcome to Local Daddy! Your privacy is important to us. This Privacy Policy explains how Local Daddy ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
-        <Text style={styles.subtitle}>Information We Collect</Text>
+
+        <Text style={styles.subtitle}>1. Information We Collect</Text>
+        <Text style={styles.subsectionTitle}>a. Information You Provide</Text>
         <Text style={styles.content}>
-          We collect information about you when you use our app, including your location and address for delivery purposes, and payment information when you make a purchase.
+          • Personal details like name, email, phone number, and address{"\n"}
+          • Payment details (handled securely by third-party processors){"\n"}
+          • Communications and support requests
         </Text>
-        <Text style={styles.subtitle}>How We Use Your Information</Text>
+
+        <Text style={styles.subsectionTitle}>b. Information Collected Automatically</Text>
         <Text style={styles.content}>
-          We use your information to provide and improve our services, process payments, and communicate with you about your orders.
+          • Location data for restaurant options and delivery{"\n"}
+          • Device information (IP address, OS version, usage data){"\n"}
+          • Cookies and similar technologies for analytics
         </Text>
-        <Text style={styles.subtitle}>Sharing Your Information</Text>
+
+        <Text style={styles.subtitle}>2. How We Use Your Information</Text>
         <Text style={styles.content}>
-          We do not share your personal information with third parties except as necessary to provide our services or as required by law.
+          • Provide and personalize services{"\n"}
+          • Process orders and payments{"\n"}
+          • Improve user experience and support{"\n"}
+          • Prevent fraud and enhance security{"\n"}
+          • Send promotions (with consent)
         </Text>
-        <Text style={styles.subtitle}>Changes to This Privacy Policy</Text>
+
+        <Text style={styles.subtitle}>3. Sharing Your Information</Text>
         <Text style={styles.content}>
-          We may update this privacy policy from time to time. We will notify you of any changes by posting the new privacy policy in the app.
+          • Partner restaurants and delivery personnel{"\n"}
+          • Payment processors for transactions{"\n"}
+          • Service providers for analytics and security{"\n"}
+          • Authorities when legally required{"\n\n"}
+          <Text style={styles.bold}>We do not sell your personal information.</Text>
         </Text>
-        <Text style={styles.subtitle}>Contact Us</Text>
+
+        <Text style={styles.subtitle}>4. Your Choices and Rights</Text>
         <Text style={styles.content}>
-          If you have any questions about this privacy policy, please contact us at support@example.com.
+          • Update account information anytime{"\n"}
+          • Opt-out of marketing communications{"\n"}
+          • Request data access or deletion
+        </Text>
+
+        <Text style={styles.subtitle}>5. Data Security</Text>
+        <Text style={styles.content}>
+          We implement strict security measures, though no method is 100% secure. We recommend users take precautions to protect their information.
+        </Text>
+
+        <Text style={styles.subtitle}>6. Third-Party Links</Text>
+        <Text style={styles.content}>
+          Our app may contain third-party links. We are not responsible for their privacy practices.
+        </Text>
+
+        <Text style={styles.subtitle}>7. Policy Changes</Text>
+        <Text style={styles.content}>
+          We may update this policy periodically. Changes will be communicated through our app or website.
+        </Text>
+
+        <Text style={styles.subtitle}>8. Contact Us</Text>
+        <Text style={styles.content}>
+          For questions about this policy:{"\n"}
+          Email: support@localdaddy.com{"\n"}
+          Address: [Your Physical Address]{"\n"}
+          Phone: [Your Contact Number]
         </Text>
       </ScrollView>
     </View>
@@ -66,16 +110,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 10,
   },
+  effectiveDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+    fontStyle: 'italic'
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
+    color: '#065E2C'
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
+    color: '#333'
   },
   content: {
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 5,
     lineHeight: 24,
+    color: '#666'
   },
+  bold: {
+    fontWeight: '700',
+    color: '#000'
+  }
 });
 
 export default PrivacyPolicyScreen;

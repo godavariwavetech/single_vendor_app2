@@ -169,9 +169,9 @@ const ProfileScreen = () => {
     },
     {
       id: '4',
-      title: 'App Updates',
-      icon:   <Octicons name="sync" size={24} color="#065E2C" />,
-      onPress: handleUpdate,
+      title: 'About Us',
+      icon: <MaterialCommunityIcons name="information-outline" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('AboutUs'),
     },
     {
       id: '5',
@@ -187,6 +187,12 @@ const ProfileScreen = () => {
     },
     {
       id: '7',
+      title: 'Refund Policy',
+      icon:  <MaterialCommunityIcons name="credit-card-refund-outline" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('RefundPolicy'),
+    },
+    {
+      id: '8',
       title: 'Logout',
       icon:  <Feather name="log-out" size={24} color="#065E2C"  />,
       onPress: handleLogout,

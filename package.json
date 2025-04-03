@@ -10,8 +10,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-native-community/geolocation": "^3.4.0",
+    "@react-native-firebase/app": "^21.13.0",
+    "@react-native-firebase/messaging": "^21.13.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native/gradle-plugin": "^0.78.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
@@ -41,6 +44,7 @@
     "react-native-splash-screen": "^3.3.0",
     "react-native-svg": "^15.11.1",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-version-check": "^3.4.7",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
     "redux-thunk": "^3.1.0"

@@ -23,6 +23,8 @@ import ServiceUnavailableScreen from '../screens/daddy/ServiceUnavailableScreen'
 import Register from '../screens/daddy/Register';
 import OTPVerification from '../screens/daddy/OTPVerification';
 import LocationSelectionScreen from '../screens/daddy/LocationSelectionScreen';
+import RefundPolicyScreen from '../screens/daddy/RefundPolicyScreen';
+import AboutUsScreen from '../screens/daddy/AboutUsScreen';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
@@ -49,6 +51,12 @@ export default function RentalNavigation() {
     <Stack.Screen name='ServiceUnavailable' component={ServiceUnavailableScreen} />
     <Stack.Screen  name='Register1' component={Register} />
     <Stack.Screen  name='OTPVerification1' component={OTPVerification} />
+    <Stack.Screen name='RefundPolicy' component={RefundPolicyScreen} />
+    <Stack.Screen 
+        name="AboutUs" 
+        component={AboutUsScreen} 
+        options={{ headerShown: false }}
+      />
     <Stack.Screen
       name="LocationSelection"
       component={LocationSelectionScreen}
