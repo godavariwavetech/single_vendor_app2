@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const TermsConditionsScreen = () => {
@@ -16,29 +15,119 @@ const TermsConditionsScreen = () => {
         </TouchableOpacity>
         <Text style={styles.title}>Terms and Conditions</Text>
       </View>
-      <ScrollView style={{padding:20}}>
+      <ScrollView style={{padding: 20}}>
+        <Text style={styles.effectiveDate}>Last Updated: [Date]</Text>
         <Text style={styles.content}>
-          These terms and conditions outline the rules and regulations for the use of our app.
+          Welcome to Local Daddy! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Local Daddy, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
-        <Text style={styles.subtitle}>Acceptance of Terms</Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>1. Definitions</Text>
         <Text style={styles.content}>
-          By using our app, you accept these terms and conditions in full. If you disagree with any part of these terms, you must not use our app.
+          <Text style={styles.subsectionTitle}>• "Local Daddy"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
+          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Local Daddy.{"\n"}
+          <Text style={styles.subsectionTitle}>• "Restaurant Partner"</Text> refers to the restaurants listed on our platform.{"\n"}
+          <Text style={styles.subsectionTitle}>• "Delivery Partner"</Text> refers to the individuals responsible for delivering orders.
         </Text>
-        <Text style={styles.subtitle}>User Responsibilities</Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>2. Eligibility</Text>
         <Text style={styles.content}>
-          You are responsible for maintaining the confidentiality of your account and password and for restricting access to your device.
+          You must be at least 18 years old to use Local Daddy. By accessing our platform, you represent that you meet this requirement.
         </Text>
-        <Text style={styles.subtitle}>Payment Terms</Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>3. Use of Services</Text>
         <Text style={styles.content}>
-          All payments made through the app are processed securely via Razorpay. We do not store your payment information.
+          • You agree to use Local Daddy for lawful purposes only.{"\n"}
+          • You shall not engage in fraudulent activities, abuse promotions, or interfere with the platform's functionality.{"\n"}
+          • We reserve the right to suspend or terminate your account if we detect suspicious activity.
         </Text>
-        <Text style={styles.subtitle}>Changes to Terms</Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>4. Orders and Payments</Text>
         <Text style={styles.content}>
-          We may update these terms and conditions from time to time. We will notify you of any changes by posting the new terms in the app.
+          • Orders placed through Local Daddy are subject to restaurant availability.{"\n"}
+          • Prices listed on the platform may change at any time.{"\n"}
+          • Payments must be made through the available payment methods. Local Daddy is not responsible for payment failures due to banking issues.{"\n"}
+          • Orders cannot be canceled once confirmed, unless explicitly allowed by the restaurant.
         </Text>
-        <Text style={styles.subtitle}>Contact Us</Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>5. Delivery Policy</Text>
         <Text style={styles.content}>
-          If you have any questions about these terms and conditions, please contact us at support@example.com.
+          • Estimated delivery times are approximate and may vary due to factors such as traffic, weather, or restaurant preparation time.{"\n"}
+          • If an order cannot be delivered due to incorrect address details, the user may still be charged.{"\n"}
+          • Local Daddy is not liable for delays caused by third-party service providers.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>6. Refund and Cancellation Policy</Text>
+        <Text style={styles.content}>
+          • Refunds will be processed only in cases where an order is undelivered, incomplete, or incorrect.{"\n"}
+          • Any refund request must be made within 24 hours of order delivery.{"\n"}
+          • The final decision on refunds rests with Local Daddy.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>7. User Conduct</Text>
+        <Text style={styles.content}>
+          • Users must not misuse, hack, or attempt to exploit vulnerabilities in the platform.{"\n"}
+          • Abusive language, harassment, or inappropriate behavior towards restaurant or delivery partners will not be tolerated.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
+        <Text style={styles.content}>
+          • All content on Local Daddy, including logos, trademarks, and text, is the property of Local Daddy and protected by copyright laws.{"\n"}
+          • You may not use our content without prior written consent.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>9. Limitation of Liability</Text>
+        <Text style={styles.content}>
+          • Local Daddy is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
+          • We are not liable for any direct, indirect, or incidental damages arising from the use of our services.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>10. Privacy Policy</Text>
+        <Text style={styles.content}>
+          Your use of Local Daddy is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>11. Modifications to Terms</Text>
+        <Text style={styles.content}>
+          We reserve the right to update these Terms at any time. Continued use of Local Daddy after modifications constitutes acceptance of the updated Terms.
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>12. Governing Law</Text>
+        <Text style={styles.content}>
+          These Terms shall be governed by and interpreted in accordance with the laws of [Your Country/State].
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>13. Contact Us</Text>
+        <Text style={styles.content}>
+          For any queries or concerns regarding these Terms:{"\n"}
+          Email: support@localdaddy.com{"\n"}
+          Address: [Your Physical Address]{"\n"}
+          Phone: [Your Contact Number]
         </Text>
       </ScrollView>
     </View>
@@ -67,16 +156,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: "left" 
   },
-  subtitle: {
+  effectiveDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+    fontStyle: 'italic'
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
+    color: '#065E2C'
+  },
+  subsectionTitle: {
+    fontWeight: '600',
+    color: '#333'
   },
   content: {
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 5,
     lineHeight: 24,
+    color: '#666'
   },
+  separator: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 15
+  }
 });
 
 export default TermsConditionsScreen;

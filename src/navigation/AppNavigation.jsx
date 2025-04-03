@@ -10,6 +10,7 @@ import OnboardingScreen from '../screens/daddy/OnboardingScreen';
 import ServicesAvailableScreen from '../screens/daddy/ServicesAvailableScreen';
 import ServiceUnavailableScreen from '../screens/daddy/ServiceUnavailableScreen';
 import SplashScreen from '../screens/user/SplashScreen';
+import AboutUsScreen from '../screens/daddy/AboutUsScreen';
 const Stack = createStackNavigator();
 
 const AuthNavigation = () => {
@@ -35,6 +36,7 @@ const AuthNavigation = () => {
         name="ServiceUnavailable"
         component={ServiceUnavailableScreen}
       />
+
     </Stack.Navigator>
   );
 };
