@@ -41,6 +41,26 @@ export const getChargesList = createAsyncThunk(
 )
 
 
+export const globalSearch = createAsyncThunk(
+  "globalSearch",
+  async(
+      {searchText},
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+      const response = await api.post(endpoints.GLOBAL_SEARCH,{
+          searchterm: searchText
+      })
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+  }
+)
+
+
 
 const addressSlice = createSlice({
   name: 'address',
@@ -48,6 +68,7 @@ const addressSlice = createSlice({
     selectedAddress: null,
     userDetails: null,
     chargesList: null,
+    globalSearchResults: null,
   },
   reducers: {
     setSelectedAddress: (state, action) => {
@@ -90,6 +111,20 @@ const addressSlice = createSlice({
       state.message = 'Please try again!';
     });
 
+
+    builder.addCase(globalSearch.pending, (state, action) => {
+      state.loading = true;
+      state.message = null;
+    });
+    builder.addCase(globalSearch.fulfilled, (state, action) => {
+      state.loading = false;
+      state.message = null;
+      state.globalSearchResults = action.payload.data;
+    });
+    builder.addCase(globalSearch.rejected, (state, action) => {
+      state.loading= false;
+      state.message = 'Please try again!';
+    });
     
   },
 });

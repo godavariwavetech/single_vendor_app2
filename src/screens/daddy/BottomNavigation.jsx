@@ -25,28 +25,6 @@ import ProfileScreen from './ProfileScreen';
 import CategoriesScreen from './CategoriesScreen';
 import { useSelector } from 'react-redux';
 
-// Dummy Screens
-const HomeScreen = () => (
-  <View>
-    <Text>Home</Text>
-  </View>
-);
-// const ReorderScreen = () => (
-//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
-//     <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
-//   </View>
-// );
-// const CategoriesScreen = () => (
-//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
-//   <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
-// </View>
-// );
-// const ProfileScreen = () => (
-//   <View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
-//   <Text style={{fontSize:16,color:"#000",fontWeight:"700",width:responsiveWidth(75),textAlign:"center",lineHeight:25}}>Feature coming soon! </Text>
-// </View>
-// );
-
 const Tab = createBottomTabNavigator();
 
 export default function BottomNavigation() {
@@ -102,7 +80,7 @@ export default function BottomNavigation() {
           tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
           tabBarStyle: {
             height: Platform.OS === 'ios' ? 85 : 60,
-            paddingBottom: Platform.OS === 'ios' ? 20 : 5,
+            // paddingBottom: Platform.OS === 'ios' ? 20 : 5,
             position: 'absolute',
             bottom: 0,
             left: 0,
@@ -114,7 +92,7 @@ export default function BottomNavigation() {
           },
           tabBarHideOnKeyboard: true,
           contentStyle: {
-            paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
           },
         })}>
         <Tab.Screen 
@@ -123,7 +101,7 @@ export default function BottomNavigation() {
           options={{
             tabBarLabel: 'Home',
             contentStyle: {
-              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
           }}
         />
@@ -131,9 +109,9 @@ export default function BottomNavigation() {
           name="Reorder" 
           component={ReorderScreen}
           options={{
-            tabBarLabel: 'Reorder',
+            tabBarLabel: 'Orders',
             contentStyle: {
-              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
           }}
         />
@@ -143,7 +121,7 @@ export default function BottomNavigation() {
           options={{
             tabBarLabel: 'Categories',
             contentStyle: {
-              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
           }}
         />
@@ -153,7 +131,7 @@ export default function BottomNavigation() {
           options={{
             tabBarLabel: 'Cart',
             contentStyle: {
-              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
           }}
         />
@@ -163,7 +141,7 @@ export default function BottomNavigation() {
           options={{
             tabBarLabel: 'Profile',
             contentStyle: {
-              paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
           }}
         />

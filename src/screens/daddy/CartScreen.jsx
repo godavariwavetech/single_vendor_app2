@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -25,27 +26,47 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import CategoryInactive from './tabassets/CategoryInactive';
 import CartInactive from './tabassets/CartInactive';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { globalSearch } from '../../redux/reducers/addressSlice';
 
 const CartScreen = ({navigation,route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
   const {customerId} = useSelector(state => state.Auth);
   const dispatch = useDispatch();
+  const timeoutRef = useRef();
+  const { globalSearchResults } = useSelector(state => state.address);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    clearTimeout(timeoutRef.current);
+    
+    if (query.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        dispatch(globalSearch({ searchText: query }));
+      }, 500);
+    }
   };
 
   const filteredCartItems = cartItems.filter(item =>
+    globalSearchResults?.some(result => result.item_name === item.item_name) ||
     item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const addItem = item => {
+  const handleCheckout = () => {
+    if (!customerId) {
+      setShowLoginModal(true);
+      return;
+    }
+    navigation.navigate('Checkout');
+  };
+
+  const handleAddToCart = (item) => {
     dispatch(addToCart(item));
   };
 
-  const decreaseItem = item => {
+  const handleRemoveFromCart = (item) => {
     dispatch(removeFromCart(item));
   };
 
@@ -101,7 +122,7 @@ const CartScreen = ({navigation,route}) => {
           <View>
             <View style={styles.quantityContainer}>
               <TouchableOpacity
-                onPress={() => decreaseItem(item)}
+                onPress={() => handleRemoveFromCart(item)}
                 style={styles.quantityButton}>
                 <AntDesign name="minus" size={16} color="#065E2C" />
               </TouchableOpacity>
@@ -109,7 +130,7 @@ const CartScreen = ({navigation,route}) => {
                 {item.quantity}
               </Text>
               <TouchableOpacity
-                onPress={() => addItem(item)}
+                onPress={() => handleAddToCart(item)}
                 style={styles.quantityButton}>
                 <AntDesign name="plus" size={16} color="#065E2C" />
               </TouchableOpacity>
@@ -132,8 +153,8 @@ const CartScreen = ({navigation,route}) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle={'light-content'} backgroundColor={'#065E2C'} />
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" />
       {route.params?.isFromRestaurant ? (
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -155,14 +176,23 @@ const CartScreen = ({navigation,route}) => {
             <Text style={styles.headerTitle}>Your Cart</Text>
           </View>
           <View style={styles.searchContainer}>
-            <AntDesign name="search1" size={20} color="#666" />
-            <TextInput
-              placeholderTextColor="#666666"
-              placeholder="Search for your favorites"
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                placeholder="Search items in cart..."
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={handleSearch}
+              />
+              <Icon name="search" size={24} color="#A3A3A3" style={styles.searchIcon} />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={() => setSearchQuery('')}
+                >
+                  <MaterialIcons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </LinearGradient>
       )}
@@ -224,31 +254,31 @@ const CartScreen = ({navigation,route}) => {
       )}
 
       {showLoginModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Sign In Required</Text>
-            <Text style={styles.modalText}>
-              You need to sign in to continue checkout
-            </Text>
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowLoginModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={() => {
-                  setShowLoginModal(false);
-                  navigation.navigate('Register1',{isFromCart:true});
-                }}
-              >
-                <Text style={styles.confirmButtonText}>Sign In</Text>
-              </TouchableOpacity>
+        <Modal visible={showLoginModal} transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Login Required</Text>
+              <Text style={styles.modalText}>
+                You need to be logged in to proceed to checkout
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setShowLoginModal(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={() => {
+                    setShowLoginModal(false);
+                    navigation.navigate('Login');
+                  }}>
+                  <Text style={styles.confirmButtonText}>Login</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </Modal>
       )}
     </KeyboardAvoidingView>
   );
@@ -369,21 +399,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   searchContainer: {
-    marginTop: 15,
+    marginHorizontal: responsiveWidth(5),
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(1),
     backgroundColor: '#fff',
     borderRadius: 15,
+    padding: 5,
+    height: 48,
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    paddingHorizontal: 10,
-    marginHorizontal: responsiveWidth(3),
-    marginVertical: responsiveHeight(3),
+    position: 'relative',
+    flex: 1,
   },
   searchInput: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
     flex: 1,
+    paddingVertical: 8,
+    paddingLeft: 45,
+    paddingRight: 40,
+    fontSize: 16,
+    color: '#000',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
   },
   cartItem: {
     flexDirection: 'row',
@@ -486,20 +536,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContainer: {
-    backgroundColor: 'white',
+  modalContent: {
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    width: '80%',
+    width: '90%',
+    maxWidth: 400,
   },
   modalTitle: {
     fontSize: 18,
@@ -515,7 +562,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
-  modalButtonContainer: {
+  modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,

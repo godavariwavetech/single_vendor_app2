@@ -35,6 +35,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import {getChargesList} from '../../redux/reducers/addressSlice';
 import {haversineDistance} from './distanceCalculator';
 import { removeCoupon } from '../../redux/reducers/coupons';
+import RestaurantScreen from './RestaurantScreen';
 
 const CheckoutScreen = ({navigation, route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -182,19 +183,21 @@ const CheckoutScreen = ({navigation, route}) => {
     minOrderPrice,
     gstRate = 18,
   ) {
-    let deliveryCharge = 0;
+    let deliveryCharge = reaturantDetails?.minimum_del_charge;
 
-    if (distance >= 3) {
-      deliveryCharge = 10 + (distance - 3) * 9;
+    if (distance >= (reaturantDetails?.minimum_km||3)) {
+      deliveryCharge = 10 + (distance - 3) * (reaturantDetails?.per_km_chargers||10);
     }
 
     if (cartPrice < minOrderPrice) {
       deliveryCharge += 10;
     }
-
-    let gstAmount =
-      (deliveryCharge * chargesList ? chargesList[0].gst_percentage : 18) / 100;
+console.log("+?????????????",distance,cartPrice,minOrderPrice)
+    // let gstAmount =
+    //   (Number(deliveryCharge) * Number(chargesList ? chargesList[0].gst_percentage : 18)) / 100;
+    let gstAmount = 0;
     let totalDeliveryCharge = deliveryCharge + gstAmount;
+
 
     setDelivery({
       baseCharge: deliveryCharge,
@@ -209,14 +212,12 @@ const CheckoutScreen = ({navigation, route}) => {
     };
   }
 
+  console.log("selectedAddress",reaturantDetails)
+
   const handlePlaceOrder = async () => {
-    // if (!userDetails?.name || !userDetails?.contact) {
-    //   setModalVisible(true);
-    //   return;
-    // }
-console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
 
     let payload = {
+      order_status:0,
       actual_total_amount: itemsTotalPrice,
       customer_id: customerId,
       customer_name: userDetails?.name,
@@ -279,12 +280,15 @@ console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
     };
 
     if (selectedPaymentMethod === 'COD') {
-      dispatch(placeOrder({orderDetails: payload}));
-      navigation.replace('OrderSuccess', {orderDetails: payload});
+     const responseCod = await dispatch(placeOrder({orderDetails: payload}));
+      console.log(responseCod.payload,"+++++++++++>>>>>RESPONSE COD")
+      navigation.replace('OrderSuccess', {response: responseCod.payload});
       return;
     }
 
-    // Proceed with Razorpay for other payment methods
+    payload.order_status=7;
+    dispatch(placeOrder({orderDetails: payload}));
+
     const options = {
       description: 'Order Payment',
       image: '',
@@ -293,20 +297,21 @@ console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
       amount: grandTotal * 100,
       name: 'Local Daddy',
       prefill: {
-        email: userDetails?.email,
-        contact: userDetails?.contact,
-        name: userDetails?.name,
+        email: "test@gmail.com",
+        contact: "7997753587",
+        name: "Alex",
       },
       theme: {color: '#065E2C'},
     };
 
     RazorpayCheckout.open(options)
-      .then(data => {
+      .then(async data => {
         payload.payment_id=data.razorpay_payment_id;
-        payload.razorpay_order_id=data.razorpay_payment_id
+        payload.razorpay_order_id=data.razorpay_payment_id;
+        payload.order_status=0;
 
-        dispatch(placeOrder({orderDetails: payload}));
-        navigation.replace('OrderSuccess', {orderDetails: payload});
+        const responseRaz = await dispatch(placeOrder({orderDetails: payload}));
+        navigation.replace('OrderSuccess', {response: responseRaz.payload});
       })
       .catch(error => {
         console.error('Payment error:', error);
@@ -417,7 +422,7 @@ console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
 
         <View style={styles.totalContainer}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Reorder')}
+            onPress={() => navigation.navigate('BottomNavigation')}
             style={{}}>
             <Text style={styles.addMoreText}>+ Add more items</Text>
           </TouchableOpacity>
@@ -519,7 +524,7 @@ console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
               ₹ {itemsTotalPrice || totalSellingPrice - couponDiscount}
             </Text>
           </View>
-          <View
+          {/* <View
             style={[
               styles.dottedLineContainer,
               {
@@ -534,15 +539,15 @@ console.log(delivery,"+++++++++++++++++++DELIVERY>>>>>>>>")
               .map((_, index) => (
                 <View key={index} style={styles.dot} />
               ))}
-          </View>
+          </View> */}
 
-          <View style={styles.billRow}>
+          {/* <View style={styles.billRow}>
             <Text style={styles.billLabel}>GST</Text>
             <Text style={styles.gstValue}>
               ₹{' '}
               {delivery.gstAmount.toFixed(2)}
             </Text>
-          </View>
+          </View> */}
           <View
             style={[
               styles.dottedLineContainer,

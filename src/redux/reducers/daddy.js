@@ -38,9 +38,10 @@ const initialState = {
   appliedCoupon: null,
   services:null,
   serviceAvailable: null,
-  products: [],        // Holds product data from API
-  total: 0,            // Calculated cart total
-  checkoutStatus: null // Tracks checkout process state
+  products: [],        
+  total: 0,           
+  checkoutStatus: null,
+  homeRestaurnats : null
 };
 
 export const checkAddressExistence = createAsyncThunk(
@@ -191,6 +192,32 @@ export const getRestaurants = createAsyncThunk(
     }
 )
 
+export const getRestaurantsHome = createAsyncThunk(
+  "getRestaurantsHome",
+  async(
+      {categoryId,subCatergoryId},
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+
+    const {location,locationId} = getState().Auth;
+      const response = await api.post(endpoints.GET_SHOPS,{
+          "shop_latitude": location.latitude,
+          "shop_longitude": location.longitude,
+          "location_id": locationId,
+          "category_id": categoryId,
+          "sub_category_id":subCatergoryId||0,
+          "shop_id": 0
+      })
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+  }
+)
+
 export const getItemsList = createAsyncThunk(
   "getItemsList",
   async(
@@ -198,7 +225,7 @@ export const getItemsList = createAsyncThunk(
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
       const response = await api.post(endpoints.GET_ITEMS_LIST,{
-        "shop_id": shopId,
+       "shop_id": shopId,
        "shop_items_tb_nm":shopItem
       })
       if (response) {
@@ -673,6 +700,17 @@ export const Dashboard = createSlice({
       state.availableAreas = action.payload.data;
     });   
     builder.addCase(getServices.rejected, (state) => {
+      state.loading = false;
+    });
+
+    builder.addCase(getRestaurantsHome.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getRestaurantsHome.fulfilled, (state, action) => {
+      state.loading = false;
+      state.homeRestaurnats = action.payload.data[0];
+    });   
+    builder.addCase(getRestaurantsHome.rejected, (state) => {
       state.loading = false;
     });
   },

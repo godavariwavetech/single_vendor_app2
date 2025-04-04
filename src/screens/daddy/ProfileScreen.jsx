@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -28,15 +29,20 @@ import { useDispatch, useSelector } from 'react-redux';
 import CustomModal from '../../components/CustomModal';
 import { actionLogout } from '../../redux/reducers/auth';
 import { clearCart, getOrders } from '../../redux/reducers/daddy';
+import VersionCheck from 'react-native-version-check';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const { customerId } = useSelector(state => state.Auth);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const {userDetails} = useSelector(state => state.address);
   const [orders, setOrders] = useState([]);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
+
   const getOrdersData = async () => {
     const response = await dispatch(getOrders({orderId:0}));
     response?.payload?.data[0] && setOrders([response.payload.data[0]]);
@@ -46,8 +52,18 @@ const ProfileScreen = () => {
     getOrdersData();
   }, []);
 
-    console.log(orders,'++++++++++++++++++++>>>ORDERS')
-
+  useEffect(() => {
+    const getVersion = async () => {
+      try {
+        const version = await VersionCheck.getCurrentVersion();
+        console.log(">>>>>>>>>>>>>>>>MNMNMNMMNMNM",version)
+        setAppVersion(version);
+      } catch (error) {
+        console.log("Error getting app version:", error);
+      }
+    };
+    getVersion();
+  }, []);
 
   const getOrderStatus = (status) => {
     switch(status) {
@@ -61,8 +77,14 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleUpdate = () => {
-    setUpdateModalVisible(true);
+  const handleUpdate = async () => {
+    try {
+      await Linking.openURL("https://play.google.com/store/apps/details?id=com.localdaddy");
+    } catch (error) {
+      console.log("Play Store error:", error);
+    } finally {
+      setShowUpdateModal(false);
+    }
   };
 
   const handleLogout = () => {
@@ -77,6 +99,22 @@ const ProfileScreen = () => {
       index: 0,
       routes: [{ name: 'Login' }],
     });
+  };
+
+  const handleCheckForUpdate = async () => {
+    try {
+      const res = await VersionCheck.needUpdate();
+      if (res.isNeeded) {
+        setShowUpdateModal(true);
+      } else {
+        setUpdateModalVisible(true); // Show "latest version" modal
+        setShowUpdateModal(false); // Ensure update modal is hidden
+      }
+    } catch (error) {
+      console.log("Update check failed:", error);
+      setUpdateModalVisible(true); // Show error message
+      setShowUpdateModal(false);
+    }
   };
 
   const renderOrder = ({item}) => (
@@ -151,15 +189,15 @@ const ProfileScreen = () => {
   const menuItems = [
     {
       id: '1',
-      title: 'Address List',
-      icon:  <Ionicons name="clipboard-outline" size={24} color="#065E2C" />,
-      onPress: () => navigation.navigate('AddressList'),
+      title: 'About Us',
+      icon: <MaterialCommunityIcons name="information-outline" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('AboutUs'),
     },
     {
       id: '2',
-      title: 'Give Feedback',
-      icon:  <MaterialCommunityIcons name="card-bulleted-outline" size={24} color="#065E2C" />,
-      onPress: () => navigation.navigate('Feedback'),
+      title: 'Address List',
+      icon:  <Ionicons name="clipboard-outline" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('AddressList'),
     },
     {
       id: '3',
@@ -169,9 +207,9 @@ const ProfileScreen = () => {
     },
     {
       id: '4',
-      title: 'About Us',
-      icon: <MaterialCommunityIcons name="information-outline" size={24} color="#065E2C" />,
-      onPress: () => navigation.navigate('AboutUs'),
+      title: 'Give Feedback',
+      icon:  <MaterialCommunityIcons name="card-bulleted-outline" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('Feedback'),
     },
     {
       id: '5',
@@ -193,11 +231,24 @@ const ProfileScreen = () => {
     },
     {
       id: '8',
+      title: 'Check for Updates',
+      icon: <MaterialCommunityIcons name="update" size={24} color="#065E2C" />,
+      onPress: handleCheckForUpdate,
+    },
+    customerId ? 
+    {
+      id: '9',
       title: 'Logout',
       icon:  <Feather name="log-out" size={24} color="#065E2C"  />,
-      onPress: handleLogout,
-      // color: '#FF4B4B',
-    },
+      onPress: () => setLogoutModalVisible(true),
+    }
+    :
+    {
+      id: '9',
+      title: 'Login',
+      icon: <MaterialCommunityIcons name="login" size={24} color="#065E2C" />,
+      onPress: () => navigation.navigate('Register1',{isFromCart:true}),
+    }
   ];
 
   return (
@@ -277,17 +328,28 @@ const ProfileScreen = () => {
               <Icon name="chevron-right" size={24} color="#666" />
             </TouchableOpacity>
           ))}
+           <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>
+          App Version: {appVersion || '1.0.0'}
+        </Text>
+      </View>
         </View>
       </ScrollView>
 
+     
+
       <CustomModal
         visible={updateModalVisible}
-        title="App Update"
-        message="You are using the latest version of Local Daddy"
-        onConfirm={() => setUpdateModalVisible(false)}
-        onCancel={() => setUpdateModalVisible(false)}
+        title={showUpdateModal ? "Update Available" : "App Updated"}
+        message={
+          showUpdateModal 
+            ? "A new version is available. Please update now!"
+            : "You're using the latest version of Local Daddy"
+        }
         confirmText="OK"
-        cancelText={null}
+        onConfirm={() => setUpdateModalVisible(false)}
+        showCancel={false}
+        cancelText=''
       />
 
       <CustomModal
@@ -298,6 +360,16 @@ const ProfileScreen = () => {
         onCancel={() => setLogoutModalVisible(false)}
         confirmText="Logout"
         cancelText="Cancel"
+      />
+
+      <CustomModal
+        visible={showUpdateModal}
+        title="Update Available"
+        message="A new version of Local Daddy is available. Please update to continue using all features."
+        confirmText="Update Now"
+        onConfirm={handleUpdate}
+        onCancel={() => setShowUpdateModal(false)}
+        cancelText="Later"
       />
     </View>
   );
@@ -428,6 +500,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A3A3A3',
     textAlign: 'center',
+  },
+  versionContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 40 : 20,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 7,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    left:10
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#065E2C',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  loginContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loginPrompt: {
+    fontSize: 18,
+    color: '#333',
+    marginBottom: 20,
+  },
+  loginButton: {
+    backgroundColor: '#065E2C',
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

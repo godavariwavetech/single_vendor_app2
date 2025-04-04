@@ -16,7 +16,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.title}>Terms and Conditions</Text>
       </View>
       <ScrollView style={{padding: 20}}>
-        <Text style={styles.effectiveDate}>Last Updated: [Date]</Text>
+        <Text style={styles.effectiveDate}>Last Updated: 4/3/2025</Text>
         <Text style={styles.content}>
           Welcome to Local Daddy! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Local Daddy, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
@@ -123,11 +123,10 @@ const TermsConditionsScreen = () => {
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>13. Contact Us</Text>
-        <Text style={styles.content}>
+        <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For any queries or concerns regarding these Terms:{"\n"}
-          Email: support@localdaddy.com{"\n"}
-          Address: [Your Physical Address]{"\n"}
-          Phone: [Your Contact Number]
+          Email: localdaddyweb@gmail.com{"\n"}
+          Phone: 80747 09926
         </Text>
       </ScrollView>
     </View>
@@ -138,6 +137,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingBottom:20
   },
   header: { 
     backgroundColor: '#065E2C',

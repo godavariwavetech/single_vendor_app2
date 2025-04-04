@@ -16,7 +16,7 @@ const RefundPolicyScreen = () => {
         <Text style={styles.title}>Refund Policy</Text>
       </View>
       <ScrollView style={{padding: 20}}>
-        <Text style={styles.effectiveDate}>Effective Date: [Date]</Text>
+        <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
         
         <Text style={styles.sectionTitle}>1. Order Cancellation</Text>
         <Text style={styles.content}>
@@ -57,10 +57,10 @@ const RefundPolicyScreen = () => {
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>5. Contact Us</Text>
-        <Text style={styles.content}>
+        <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For refund-related queries:{"\n"}
-          Email: support@localdaddy.com{"\n"}
-          In-app Support: Profile → Help Center
+          Email: localdaddyweb@gmail.com{"\n"}
+          Phone: 80747 09926
         </Text>
       </ScrollView>
     </View>
@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingBottom:20
   },
   header: { 
     backgroundColor: '#065E2C',

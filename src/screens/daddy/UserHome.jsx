@@ -38,6 +38,7 @@ import {
   updateUserAddress,
   checkServiceAvailability,
   checkAddressExistence,
+  getRestaurantsHome,
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
@@ -47,8 +48,8 @@ import ServiceUnavailableScreen from './ServiceUnavailableScreen';
 // import {GOOGLE_MAPS_API_KEY} from '@env';
 
 export default function UserHome({navigation}) {
-  const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, serviceAvailable} =
-    useSelector(state => state.Dashboard);
+  const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
+    serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
     const {customerId,locationName,orderOfferAmount} =
     useSelector(state => state.Auth);
   const flatListRef = useRef(null);
@@ -66,7 +67,7 @@ export default function UserHome({navigation}) {
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${"YOUR_GOOGLE_MAPS_API_KEY"}`,
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${"AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c"}`,
       );
       const data = await response.json();
       if (data.results && data.results.length > 0) {
@@ -149,7 +150,8 @@ export default function UserHome({navigation}) {
      dispatch(getSubCategories({categoryId: activeCategoryIndex}));
     dispatch(getBanners());
     if (!restaurants || restaurants.length === 0) {
-      dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+      dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
+      // dispatch(getRestaurants({categoryId: activeCategoryIndex}));
     }
   };
 
@@ -211,7 +213,7 @@ export default function UserHome({navigation}) {
   const handleSubCategories = category => {
     dispatch(setActiveCategoryIndex(category.id));
     dispatch(getSubCategories({categoryId: category.id}));
-    dispatch(getRestaurants({categoryId: category.id}));
+    dispatch(getRestaurantsHome({categoryId: category.id}));
     dispatch(setOrderOfferAmount(category.order_offer_amount));
   };
 
@@ -237,8 +239,9 @@ export default function UserHome({navigation}) {
     setRefreshing(false);
   }, []);
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    navigation.navigate('CategoriesScreen');
   };
 
   const filteredRestaurants = useMemo(() => {
@@ -268,7 +271,7 @@ export default function UserHome({navigation}) {
             dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
             dispatch(getBanners());
             if (!restaurants || restaurants.length === 0) {
-              dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+              dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
             }
             dispatch(getSubCategories({categoryId: activeCategoryIndex}));
           }
@@ -472,16 +475,17 @@ export default function UserHome({navigation}) {
               </SkeletonPlaceholder>
             ) : (
               <>
-                <View style={styles.searchContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen',{isFromHome:true})} style={styles.searchContainer}>
                   <TextInput
                     placeholderTextColor={'#666666'}
                     placeholder="Search for your favorites"
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={handleSearch}
+                    editable={false}
                   />
                   <Icon name="search" size={24} color="gray" />
-                </View>
+                </TouchableOpacity>
 
                 { categories && (
                   <FlatList
@@ -622,20 +626,21 @@ export default function UserHome({navigation}) {
                 ( */}
                   <FlatList
                     showsVerticalScrollIndicator={false}
-                    data={filteredRestaurants}
+                    data={homeRestaurnats}
                     keyExtractor={item => item.shop_id}
                     renderItem={({item}) => {
                       const distance = item.distance;
                       return (
                       <TouchableOpacity
                         style={styles.restaurantCard}
-                        onPress={() =>
+                        onPress={() =>{
+                          
                           navigation.navigate('RestaurantScreen', {
                             shopId: item.shop_id,
                             shopItem: item.shop_items_tb_nm,
                             item,
                           })
-                        }>
+                        }}>
                         <Image
                           source={{uri: item.shop_image}}
                           style={styles.restaurantImage}
@@ -653,10 +658,10 @@ export default function UserHome({navigation}) {
                               <Text style={styles.statText}>{item.shop_rating}</Text>
                             </View>
 
-                            <View style={styles.statItem}>
+                            {/* <View style={styles.statItem}>
                               <DeliveryVehicle />
                               <Text style={styles.statText}>{distance < 3 ? 'Free' : 'Paid'}</Text>
-                            </View>
+                            </View> */}
 
                             <View style={styles.statItem}>
                               <Clock />

@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import BottomNavigation from '../screens/daddy/BottomNavigation';
 import RestaurantScreen from '../screens/daddy/RestaurantScreen';
 import CategorieItems from '../screens/daddy/CategorieItems';
@@ -25,6 +25,7 @@ import OTPVerification from '../screens/daddy/OTPVerification';
 import LocationSelectionScreen from '../screens/daddy/LocationSelectionScreen';
 import RefundPolicyScreen from '../screens/daddy/RefundPolicyScreen';
 import AboutUsScreen from '../screens/daddy/AboutUsScreen';
+import CategoriesScreen from '../screens/daddy/CategoriesScreen';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
@@ -61,6 +62,14 @@ export default function RentalNavigation() {
       name="LocationSelection"
       component={LocationSelectionScreen}
       options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="CategoriesScreen"
+      component={CategoriesScreen}
+      options={{
+        cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
+        gestureDirection: 'vertical',
+      }}
     />
  </Stack.Navigator>
   )

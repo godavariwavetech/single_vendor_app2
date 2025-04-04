@@ -26,5 +26,6 @@ export const endpoints = {
   GET_COUPONS:'public_app/coupon_list',
   PLACE_ORDER:'public_app/orderplaced',
   GET_CHARGES_LIST:'public_app/application_common_api',
-  REQUEST_OTP:'public_app/getuserloginotp'
+  REQUEST_OTP:'public_app/getuserloginotp',
+  GLOBAL_SEARCH:'public_app/search_allitems'
 };

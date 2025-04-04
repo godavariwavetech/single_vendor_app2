@@ -95,11 +95,11 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       mapRef.current?.animateToRegion(newRegion, 1000);
       await getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
       
-      // Clear any previous stored location when manually selecting current location
-      dispatch(setLocation(null));
-      dispatch(setLocationName(null));
-      dispatch(setLocationId(null));
-      
+      // Update Redux with new current location
+      dispatch(setLocation(newRegion));
+      dispatch(setLocationName(address));
+      dispatch(setLocationId(null)); // Reset ID since it's not a saved location
+
     } catch (error) {
       console.error('Error getting location:', error);
     } finally {
@@ -257,8 +257,6 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       setRegion(validRegion);
       mapRef.current?.animateToRegion(validRegion, 1000);
       getAddressFromCoordinates(validRegion.latitude, validRegion.longitude);
-    } else {
-      getCurrentLocation();
     }
   }, [getCurrentLocation, storedLocation]);
 
@@ -467,6 +465,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     elevation: 3,
+    borderWidth:1,
+    borderColor:"#065E2C"
   },
   searchIcon: {
     marginRight: 10,

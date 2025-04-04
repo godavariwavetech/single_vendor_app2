@@ -10,6 +10,8 @@ import {
   Linking,
   BackHandler,
   RefreshControl,
+  Alert,
+  TextInput,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -23,6 +25,8 @@ import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 // import { getOrderDetails } from '../../redux/reducers/addressSlice';
 import { useDispatch } from 'react-redux';
 import { getOrderDetails, getOrders } from '../../redux/reducers/daddy';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import CustomModal from '../../components/CustomModal';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   // const { orderDetails } = route.params;
@@ -30,6 +34,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [subOrderData, setSubOrderData] = useState([])
   const [refreshing, setRefreshing] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const getOrderData = async () => {
     const response = await dispatch(getOrders({orderId:route.params?.orderDetails?.id}));
@@ -37,6 +44,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       setOrderDetails(response.payload.data[0]);
     }
   }
+
+  console.log(route.params?.orderDetails,"+++++++++++>>>>>ORDER DETAILS",route.params)
 
   const fetchOrderItems = async () => {
     if(!orderDetails?.id) return;
@@ -53,6 +62,18 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   useEffect(() => {
     fetchOrderItems();
   }, [orderDetails]);
+
+
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = route.params?.fromOrderSuccess ? BackHandler.addEventListener('hardwareBackPress', backAction) : null
+
+    return () => backHandler && backHandler.remove(); 
+  }, [route.params]);
 
   
   const orderData = {
@@ -153,16 +174,16 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     });
   };
 
-  useEffect(() => {
-    const backAction = () => {
-      handleBackPress();
-      return true; // Prevent default back action
-    };
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     handleBackPress();
+  //     return true; // Prevent default back action
+  //   };
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
-    return () => backHandler.remove(); // Cleanup the event listener
-  }, []);
+  //   return () =>backHandler && backHandler.remove(); // Cleanup the event listener
+  // }, []);
 
 
 
@@ -173,7 +194,30 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     setRefreshing(false);
   };
 
+  const handleCancelOrder = async () => {
+    try {
+      await dispatch(cancelOrder({ orderId: orderDetails.id }));
+      Alert.alert('Success', 'Your order has been cancelled');
+      navigation.goBack();
+      setShowCancelModal(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to cancel order');
+      setShowCancelModal(false);
+    }
+  };
 
+  const handleSubmitReview = async () => {
+    try {
+      await dispatch(submitReview({
+        order_id: orderDetails.id,
+        rating,
+        comment
+      }));
+      Alert.alert('Success', 'Thank you for your review!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit review');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -183,7 +227,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={()=>navigation.goBack()}
+          onPress={()=> route.params?.fromOrderSuccess ? handleBackPress() : navigation.goBack()}
         >
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
@@ -261,20 +305,22 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         </View>
 
         {/* Delivery Agent */}
-        <View style={styles.agentContainer}>
-          <View style={styles.agentHeader}>
-            <Text style={styles.sectionTitle}>Delivery Agent</Text>
-            <TouchableOpacity onPress={handleCallDriver} style={styles.callAgentButton}>
-              <MaterialIcons name="call" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.agentInfo}>
-            <View style={styles.agentDetails}>
-              <Text style={styles.agentName}>{orderData.deliveryAgent.name}</Text>
-              <Text style={styles.agentStatus}>{orderData.deliveryAgent.status}</Text>
+        {orderData.deliveryAgent.name !== 'N/A' && (
+          <View style={styles.agentContainer}>
+            <View style={styles.agentHeader}>
+              <Text style={styles.sectionTitle}>Delivery Agent</Text>
+              <TouchableOpacity onPress={handleCallDriver} style={styles.callAgentButton}>
+                <MaterialIcons name="call" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.agentInfo}>
+              <View style={styles.agentDetails}>
+                <Text style={styles.agentName}>{orderData.deliveryAgent.name}</Text>
+                <Text style={styles.agentStatus}>{orderData.deliveryAgent.status}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Cart Items */}
         <View style={styles.cartSection}>
@@ -373,7 +419,63 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             </View>
           </View>
         </View>
+
+        {orderDetails?.order_status < 4 && (
+          <View style={styles.actionButtonContainer}>
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => setShowCancelModal(true)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel Order</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {orderDetails?.order_status === 4  && (
+          <View style={styles.reviewSection}>
+            <Text style={styles.sectionTitle}>Rate Your Experience</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity 
+                  key={star} 
+                  onPress={() => setRating(star)}
+                >
+                  <FontAwesome5 
+                    name="star" 
+                    solid={star <= rating}
+                    size={30} 
+                    color={star <= rating ? '#FFD700' : '#E0E0E0'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write your review..."
+              multiline
+              numberOfLines={4}
+              value={comment}
+              onChangeText={setComment}
+            />
+            <TouchableOpacity 
+              style={styles.submitButton} 
+              onPress={handleSubmitReview}
+            >
+              <Text style={styles.submitButtonText}>Submit Review</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
+
+      <CustomModal
+        visible={showCancelModal}
+        title="Confirm Cancellation"
+        message="Are you sure you want to cancel this order?"
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep Order"
+        onConfirm={handleCancelOrder}
+        onCancel={() => setShowCancelModal(false)}
+      />
     </View>
   );
 };
@@ -669,6 +771,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#D8D8D8',
     borderRadius: 5,
     marginHorizontal: 5,
+  },
+  actionButtonContainer: {
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  cancelButton: {
+    backgroundColor: '#E63B3B',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  reviewSection: {
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginVertical: 15,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#065E2C',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

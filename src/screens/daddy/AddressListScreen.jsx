@@ -47,8 +47,8 @@ const AddressListScreen = ({ navigation, route }) => {
   const handleSelectAddress = async (address) => {
     try {
       const response = await dispatch(checkAddressExistence({
-        latitude: parseFloat(address.customer_latitude),
-        longitude: parseFloat(address.customer_longitude)
+        latitude: parseFloat(address?.customer_latitude),
+        longitude: parseFloat(address?.customer_longitude)
       }));
 
       // Check if response is valid

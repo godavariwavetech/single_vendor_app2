@@ -26,10 +26,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, getItemsList, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { setRestaurnatDetails } from '../../redux/reducers/auth';
+import { globalSearch } from '../../redux/reducers/addressSlice';
 
 
 const RestaurantScreen = ({navigation,route}) => {
@@ -38,10 +40,11 @@ const RestaurantScreen = ({navigation,route}) => {
   const [cart, setCart] = useState({});
   const dispatch = useDispatch();
   const {restaurantItems,itemsFilter,cartItems,cartRestaurant,subCategories} = useSelector(state=>state.Dashboard) 
-  const [filterType,setFilterType] = useState("")
-  const [filteredData , setFilterData] = useState([])
+  const [filterType, setFilterType] = useState("All");
+  const [filteredData, setFilterData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFilters, setActiveFilters] = useState(['All']);
   const pan = useRef(new Animated.ValueXY({ x: responsiveWidth(100) - 88, y: responsiveHeight(100) - 138 })).current;
   const [menuVisible, setMenuVisible] = useState(false);
   const [draggableMenuVisible, setDraggableMenuVisible] = useState(false);
@@ -51,7 +54,20 @@ const RestaurantScreen = ({navigation,route}) => {
   const [showReviews, setShowReviews] = useState(false);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const timeoutRef = useRef();
+  const { globalSearchResults } = useSelector(state => state.address);
 
+  // Restore original mergedFilters
+  const mergedFilters = [
+    { filter_name: 'All', id: 'all' },
+    ...[...new Set((restaurantItems || [])
+      .map(item => item.filter_one)
+      .filter(Boolean))]
+      .map(filterName => ({
+        filter_name: filterName,
+        id: filterName.toLowerCase().replace(' ', '-')
+      }))
+  ];
 
   const getItems = async() =>{
     try {
@@ -67,16 +83,13 @@ const RestaurantScreen = ({navigation,route}) => {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    if (!text.trim()) {
-      setFilterData(restaurantItems);
-      return;
+    clearTimeout(timeoutRef.current);
+    
+    if (text.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        dispatch(globalSearch({ searchText: text }));
+      }, 500);
     }
-    const query = text.toLowerCase().trim();
-    const filtered = restaurantItems.filter(item => 
-      item.item_name.toLowerCase().includes(query) ||
-      item.item_description?.toLowerCase().includes(query)
-    );
-    setFilterData(filtered);
   };
 
   const handleMenuAction = (action) => {
@@ -99,17 +112,43 @@ const RestaurantScreen = ({navigation,route}) => {
     setMenuVisible(false);
   };
 
-  const handleFilter = (selected) =>{
-    if(selected.filter_name===filterType){
-      setFilterType("");
-      setFilterData(restaurantItems)
-      return
+  const handleFilter = (selected) => {
+    if (selected.type === 'subcategory') {
+      setActiveSubCategoryFilter(selected.filter_name === 'All' ? 'All' : selected.filter_name);
+    } else {
+      if (selected.filter_name === 'All') {
+        setActiveFilters(['All']);
+        return;
+      }
+      const newFilters = activeFilters.includes(selected.filter_name) 
+        ? activeFilters.filter(f => f !== selected.filter_name)
+        : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
+      setActiveFilters(newFilters);
     }
-  setFilterType(selected.filter_name)
-  const updatedData = restaurantItems.filter((item)=>{
-    return item.filter_one===selected.filter_name})
-  setFilterData(updatedData)
-  }
+  };
+
+  useEffect(() => {
+    if (!restaurantItems) return;
+    
+    const filtered = restaurantItems.filter(item => {
+      // 1. Check search match
+      const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.item_description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // 2. Check Veg/Non Veg filter
+      const matchesFilters = activeFilters.includes('All') || 
+                            activeFilters.includes(item.filter_one);
+
+      // 3. Check subcategory menu selection
+      const matchesMenu = filterType === 'All' || 
+                         item.sub_category_name === filterType;
+
+      // Combine all conditions
+      return matchesSearch && matchesFilters && matchesMenu;
+    });
+    
+    setFilterData(filtered);
+  }, [searchQuery, activeFilters, restaurantItems, filterType]);
 
   useEffect(()=>{
     route.params &&  getItems()
@@ -219,13 +258,13 @@ const RestaurantScreen = ({navigation,route}) => {
   };
 
   const handleDraggableMenuAction = (subCategory) => {
-    if (subCategory === 'clear') {
-      setFilterType("");
+    if (subCategory.sub_category_name === 'All') {
+      setFilterType('All');
       setFilterData(restaurantItems);
     } else {
       setFilterType(subCategory.sub_category_name);
       const filteredItems = restaurantItems.filter(item => 
-        item.sub_category_id === subCategory.sub_category_id
+        item.sub_category_name === subCategory.sub_category_name
       );
       setFilterData(filteredItems);
     }
@@ -234,6 +273,50 @@ const RestaurantScreen = ({navigation,route}) => {
 
 
   // console.log(subCategories,"route.?.item")
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const renderFilters = () => (
+    <FlatList
+      data={mergedFilters}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={item => item.id}
+      contentContainerStyle={styles.filterList}
+      renderItem={({item}) => {
+        const isActive = item.type === 'subcategory' 
+          ? item.filter_name === activeSubCategoryFilter
+          : activeFilters.includes(item.filter_name);
+
+        return (
+          <TouchableOpacity
+            onPress={() => handleFilter(item)}
+            style={[
+              styles.filterButton,
+              {
+                borderColor: isActive ? "#0EAF50" : '#8F8F8F',
+                backgroundColor: isActive ? "#0EAF50" : '#fff',
+              }
+            ]}
+          >
+            {item.type !== 'subcategory' && (
+              <HeaderPick2 color={
+                item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
+                item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
+              } />
+            )}
+            <Text style={[styles.filterText, { color: isActive ? "#fff" : '#313131' }]}>
+              {item.filter_name}
+            </Text>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  );
 
   return (
     <View style={styles.container}>
@@ -276,19 +359,28 @@ const RestaurantScreen = ({navigation,route}) => {
           </View>
 
           <View style={styles.searchContainer}>
-            <TextInput
-              placeholder="Search items..."
-              style={styles.searchInput}
-              placeholderTextColor={'#A3A3A3'}
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
-            <Icon
-              name="search"
-              size={24}
-              color="#A3A3A3"
-              style={styles.searchIcon}
-            />
+            <View style={styles.inputWrapper}>
+              <MaterialIcons 
+                name="search" 
+                size={24} 
+                color="#666" 
+                style={styles.searchIcon} 
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search food items..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={() => setSearchQuery('')}
+                >
+                  <MaterialIcons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </ImageBackground>
@@ -327,28 +419,7 @@ const RestaurantScreen = ({navigation,route}) => {
       )} */}
 
       <View>
-        <FlatList
-          data={itemsFilter}
-          horizontal
-          keyExtractor={item => item.id}
-          style={styles.filterList}
-          renderItem={({item, index}) => {
-            return (
-              <TouchableOpacity
-                onPress={() => handleFilter(item)}
-                style={[styles.filterButton, {
-                  borderColor: filterType === item.filter_name ? "#0EAF50" : '#8F8F8F',
-                  backgroundColor: filterType === item.filter_name ? "#0EAF50" : '#fff',
-                }]}
-              >
-                <HeaderPick2 color={item.filter_name === "Veg" ? (filterType === item.filter_name ? "#fff" : "#0EAF50") : item.filter_name === "Non Veg" && "#CD2A2A"} />
-                <Text style={[styles.filterText, { color: filterType === item.filter_name ? "#fff" : '#313131' }]}>
-                  {item.filter_name}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
+        {renderFilters()}
       </View>
 
       {isLoading ? (
@@ -415,39 +486,53 @@ const RestaurantScreen = ({navigation,route}) => {
         />
       )}
 
-      <Animated.View
+      <Animated.View 
         {...panResponder.panHandlers}
         style={[styles.draggableMenu, pan.getLayout()]}
       >
         <TouchableOpacity 
-          style={styles.menuButton} 
+          style={styles.menuButton}
           onPress={() => setDraggableMenuVisible(!draggableMenuVisible)}
         >
           <Text style={styles.menuText}>Menu</Text>
           <FontAwesome6 name="book-bookmark" color="#065E2C" size={30} />
         </TouchableOpacity>
+
         {draggableMenuVisible && (
-          <View style={[styles.menuContainer, { left: -205 }]}>
-            {subCategories?.map((category) => (
-              <TouchableOpacity 
-                key={category.id}
-                style={styles.menuItemContainer}
-                onPress={() => handleDraggableMenuAction(category)}
-              >
-                <Image 
-                  source={{ uri: category.sub_category_image }} 
-                  style={styles.categoryImage}
-                />
-                <Text style={styles.menuItemText}>{category.sub_category_name}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity 
-              style={[styles.menuItemContainer, styles.clearFilterContainer]}
-              onPress={() => handleDraggableMenuAction('clear')}
-            >
-              <Icon name="clear" size={20} color="#666" />
-              <Text style={[styles.menuItemText, styles.clearFilterText]}>Clear Filters</Text>
-            </TouchableOpacity>
+          <View style={styles.menuContent}>
+            
+            <FlatList
+              data={[
+                { sub_category_name: 'All', sub_category_id: 'all' },
+                ...restaurantItems
+                  ?.reduce((acc, item) => {
+                    if (item.sub_category_name && !acc.find(cat => cat.sub_category_name === item.sub_category_name)) {
+                      acc.push({
+                        sub_category_name: item.sub_category_name,
+                        sub_category_id: item.sub_category_id
+                      });
+                    }
+                    return acc;
+                  }, [])
+              ]}
+              keyExtractor={(item) => item.sub_category_id?.toString() || 'all'}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleDraggableMenuAction(item)}
+                >
+                  <Text style={[
+                    styles.menuItemText,
+                    (filterType === item.sub_category_name || item.sub_category_name === 'All') && styles.activeMenuText
+                  ]}>
+                    {item.sub_category_name}
+                  </Text>
+                  {filterType === item.sub_category_name && (
+                    <MaterialIcons name="check" size={20} color="#0EAF50" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
           </View>
         )}
       </Animated.View>
@@ -523,8 +608,34 @@ const styles = StyleSheet.create({
     height: 48,
     marginHorizontal: responsiveWidth(5),
   },
-  searchInput: { flex: 1, padding: 5, color: '#000', fontSize: 16, fontWeight: 500 },
-  searchIcon: { marginRight: 5 },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    flex: 1,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingLeft: 45,
+    paddingRight: 40,
+    fontSize: 16,
+    color: '#000',
+  },
   filterList: { marginVertical: 5, paddingHorizontal: 15 },
   filterButton: {
     padding: 5,
@@ -612,16 +723,17 @@ const styles = StyleSheet.create({
   },
   addButtonText: { color: '#065E2C', fontWeight: '700', fontSize: 14 },
   draggableMenu: {
+    position: 'absolute',
+    backgroundColor: 'white',
     width: 68,
     height: 68,
     borderRadius: 16,
-    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 7,
-    position: "absolute",
-    bottom: 70,
-    right: 20
+    zIndex: 100,
+    left: 20,
+    bottom: 40,
   },
   menuText: { fontSize: 12, fontWeight: 700, color: "#065E2C" },
   menuButton: {
@@ -631,38 +743,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  categoryImage: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 12
-  },
-  menuContainer: {
+  menuContent: {
     position: 'absolute',
-    top: 0,
-    left: 70,
+    bottom:0,
+    left: -205,
     backgroundColor: '#fff',
     padding: 10,
     borderRadius: 8,
     elevation: 5,
     width: 200,
-    maxHeight: 400,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    overflow: 'scroll'
+    flexDirection: 'column'
   },
-  menuItemContainer: {
+  menuHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
   },
   menuItemText: {
     marginLeft: 12,
@@ -670,12 +782,8 @@ const styles = StyleSheet.create({
     color: '#313131',
     fontWeight: '500',
   },
-  clearFilterContainer: {
-    borderBottomWidth: 0,
-    marginTop: 4,
-  },
-  clearFilterText: {
-    color: '#666',
+  activeMenuText: {
+    fontWeight: '700',
   },
   cartSummary: (translateY) => ({
     position: "absolute",
