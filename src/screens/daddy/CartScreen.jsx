@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   footer: {
     padding: 20,
     alignItems: 'center',
-    paddingBottom: 0,
+    paddingBottom: 20,
   },
   addressText: {
     fontSize: 16,

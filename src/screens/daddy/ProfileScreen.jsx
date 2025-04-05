@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -23,18 +24,18 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Feather from 'react-native-vector-icons/Feather';
 import Octicons from 'react-native-vector-icons/Octicons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 // import { logout } from '../../redux/reducers/daddy';
 import CustomModal from '../../components/CustomModal';
-import { actionLogout } from '../../redux/reducers/auth';
-import { clearCart, getOrders } from '../../redux/reducers/daddy';
+import {actionLogout} from '../../redux/reducers/auth';
+import {clearCart, getOrders} from '../../redux/reducers/daddy';
 import VersionCheck from 'react-native-version-check';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { customerId } = useSelector(state => state.Auth);
+  const {customerId} = useSelector(state => state.Auth);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,9 +45,19 @@ const ProfileScreen = () => {
   const [appVersion, setAppVersion] = useState('');
 
   const getOrdersData = async () => {
-    const response = await dispatch(getOrders({orderId:0}));
-    response?.payload?.data[0] && setOrders([response.payload.data[0]]);
-  }
+    try {
+      setIsLoading(true);
+      const response = await dispatch(getOrders({orderId:0}));
+      const sortedOrders = response?.payload?.data?.sort((a, b) => 
+        new Date(b.order_date + 'T' + b.order_time) - new Date(a.order_date + 'T' + a.order_time)
+      ) || [];
+      setOrders(sortedOrders.slice(0, 1));
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     getOrdersData();
@@ -56,32 +67,53 @@ const ProfileScreen = () => {
     const getVersion = async () => {
       try {
         const version = await VersionCheck.getCurrentVersion();
-        console.log(">>>>>>>>>>>>>>>>MNMNMNMMNMNM",version)
+        console.log('>>>>>>>>>>>>>>>>MNMNMNMMNMNM', version);
         setAppVersion(version);
       } catch (error) {
-        console.log("Error getting app version:", error);
+        console.log('Error getting app version:', error);
       }
     };
     getVersion();
   }, []);
 
-  const getOrderStatus = (status) => {
-    switch(status) {
-      case 0: return "Pending";
-      case 1: return "Accepted";
-      case 2: return "Preparing";
-      case 3: return "Ready";
-      case 4: return "Delivered";
-      case 5: return "Cancelled";
-      default: return "Unknown";
-    }
+  const STATUS_MAP = {
+    0: 'Order Placed',
+    1: 'Order Accepted',
+    2: 'Preparing Your Order',
+    3: 'Order Completed',
+    4: 'Order Cancelled by You',
+    5: 'Order Rejected by Restaurant',
+    6: 'Order Not Received',
+    7: 'Waiting for Payment',
+    8: 'Delivery Partner Assigned',
+  };
+
+  const getOrderStatus = status => {
+    return STATUS_MAP[status] || 'Unknown Status';
+  };
+
+  const getStatusColor = status => {
+    const colorMap = {
+      0: '#C3A710', // Order Placed - Yellow
+      1: '#065E2C', // Order Accepted - Green
+      2: '#065E2C', // Preparing - Green
+      3: '#065E2C', // Completed - Green
+      4: '#FF4B4B', // Cancelled - Red
+      5: '#FF4B4B', // Rejected - Red
+      6: '#FF4B4B', // Not Received - Red
+      7: '#C3A710', // Waiting Payment - Yellow
+      8: '#065E2C', // Delivery Assigned - Green
+    };
+    return colorMap[status] || '#666'; // Default gray
   };
 
   const handleUpdate = async () => {
     try {
-      await Linking.openURL("https://play.google.com/store/apps/details?id=com.localdaddy");
+      await Linking.openURL(
+        'https://play.google.com/store/apps/details?id=com.localdaddy',
+      );
     } catch (error) {
-      console.log("Play Store error:", error);
+      console.log('Play Store error:', error);
     } finally {
       setShowUpdateModal(false);
     }
@@ -97,7 +129,7 @@ const ProfileScreen = () => {
     dispatch(clearCart());
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],
+      routes: [{name: 'Login'}],
     });
   };
 
@@ -111,7 +143,7 @@ const ProfileScreen = () => {
         setShowUpdateModal(false); // Ensure update modal is hidden
       }
     } catch (error) {
-      console.log("Update check failed:", error);
+      console.log('Update check failed:', error);
       setUpdateModalVisible(true); // Show error message
       setShowUpdateModal(false);
     }
@@ -119,70 +151,61 @@ const ProfileScreen = () => {
 
   const renderOrder = ({item}) => (
     <View style={styles.orderCard}>
-      <View style={{flexDirection:"row", justifyContent:"space-between", marginBottom: responsiveHeight(0.5)}}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: responsiveHeight(0.5),
+        }}>
         <Text style={styles.orderId}>Order ID: {item?.order_id}</Text>
-        <Text style={[
-          styles.orderStatus,
-          {color: item?.order_status === 4 ? '#065E2C' : item?.order_status === 5 ? '#FF4B4B' : '#C3A710'}
-        ]}>
+        <Text
+          style={[
+            styles.orderStatus,
+            {color: getStatusColor(item?.order_status)},
+          ]}>
           {getOrderStatus(item?.order_status)}
         </Text>
       </View>
-      
+
       <Text style={styles.orderDetails} numberOfLines={1}>
-        Delivered to: <Text style={{fontWeight:"400"}} numberOfLines={1}>{item?.delivery_address}</Text>
+        Delivered to:{' '}
+        <Text style={{fontWeight: '400'}} numberOfLines={1}>
+          {item?.delivery_address}
+        </Text>
       </Text>
-      
+
       <Text style={styles.orderDate}>
         {item?.order_date} at {item?.order_time}
       </Text>
-     
+
       <View style={styles.restaurantInfo}>
-        <View style={{flexDirection:"row", alignItems:"center", gap: 10, marginVertical: responsiveHeight(1)}}>
-          <Image 
-            source={{uri: item?.shop_image}}  
-            style={{width: responsiveWidth(15), height: responsiveWidth(15), borderRadius: 10}}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginVertical: responsiveHeight(1),
+          }}>
+          <Image
+            source={{uri: item?.shop_image}}
+            style={{
+              width: responsiveWidth(15),
+              height: responsiveWidth(15),
+              borderRadius: 10,
+            }}
           />
           <View style={{width: responsiveWidth(50)}}>
-            <Text style={styles.restaurantName} numberOfLines={1}>{item?.shop_name}</Text>
+            <Text style={styles.restaurantName} numberOfLines={1}>
+              {item?.shop_name}
+            </Text>
             <Text style={styles.menuItem} numberOfLines={1}>
-              {item?.item_count} item{Number(item?.item_count) > 1 ? 's' : ''} • {item?.slot_timings}
+              {item?.item_count} item{Number(item?.item_count) > 1 ? 's' : ''} •{' '}
+              {item?.slot_timings}
             </Text>
           </View>
           <Text style={styles.price}>₹{item?.grand_total}</Text>
         </View>
-        
-        {/* <View style={styles.buttonRow}>
-          {item.order_status === 0 ? (
-            <TouchableOpacity 
-              style={[styles.reorderButton, { width: '100%' }]}
-              onPress={() => navigation.navigate('OrderDetails', { orderId: item.order_id })}
-            >
-              <Text style={[styles.buttonText, { color: '#065E2C' }]}>ORDER DETAILS</Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <TouchableOpacity 
-                style={styles.reorderButton}
-                onPress={() => navigation.navigate('Reorder', { orderId: item.order_id })}
-              >
-                <Text style={styles.buttonText}>REORDER</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.rateButton}>
-                <Text style={[styles.buttonText, {color:"#fff"}]}>RATE ORDER</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View> */}
       </View>
-{/*       
-      <View style={styles.dottedLineContainer}>
-        {Array(20)
-          .fill(0)
-          .map((_, index) => (
-            <View key={index} style={styles.dot} />
-          ))}
-      </View> */}
     </View>
   );
 
@@ -190,43 +213,73 @@ const ProfileScreen = () => {
     {
       id: '1',
       title: 'About Us',
-      icon: <MaterialCommunityIcons name="information-outline" size={24} color="#065E2C" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="information-outline"
+          size={24}
+          color="#065E2C"
+        />
+      ),
       onPress: () => navigation.navigate('AboutUs'),
     },
     {
       id: '2',
       title: 'Address List',
-      icon:  <Ionicons name="clipboard-outline" size={24} color="#065E2C" />,
+      icon: <Ionicons name="clipboard-outline" size={24} color="#065E2C" />,
       onPress: () => navigation.navigate('AddressList'),
     },
     {
       id: '3',
       title: 'Support',
-      icon:  <Feather name="user" size={24} color="#065E2C" />,
+      icon: <Feather name="user" size={24} color="#065E2C" />,
       onPress: () => navigation.navigate('Support'),
     },
     {
       id: '4',
       title: 'Give Feedback',
-      icon:  <MaterialCommunityIcons name="card-bulleted-outline" size={24} color="#065E2C" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="card-bulleted-outline"
+          size={24}
+          color="#065E2C"
+        />
+      ),
       onPress: () => navigation.navigate('Feedback'),
     },
     {
       id: '5',
       title: 'Privacy Policy',
-      icon:  <MaterialCommunityIcons name="shield-account" size={24} color="#065E2C" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="shield-account"
+          size={24}
+          color="#065E2C"
+        />
+      ),
       onPress: () => navigation.navigate('PrivacyPolicy'),
     },
     {
       id: '6',
       title: 'Terms and Conditions',
-      icon:  <MaterialCommunityIcons name="file-document" size={24} color="#065E2C" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="file-document"
+          size={24}
+          color="#065E2C"
+        />
+      ),
       onPress: () => navigation.navigate('TermsConditions'),
     },
     {
       id: '7',
       title: 'Refund Policy',
-      icon:  <MaterialCommunityIcons name="credit-card-refund-outline" size={24} color="#065E2C" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="credit-card-refund-outline"
+          size={24}
+          color="#065E2C"
+        />
+      ),
       onPress: () => navigation.navigate('RefundPolicy'),
     },
     {
@@ -235,25 +288,26 @@ const ProfileScreen = () => {
       icon: <MaterialCommunityIcons name="update" size={24} color="#065E2C" />,
       onPress: handleCheckForUpdate,
     },
-    customerId ? 
-    {
-      id: '9',
-      title: 'Logout',
-      icon:  <Feather name="log-out" size={24} color="#065E2C"  />,
-      onPress: () => setLogoutModalVisible(true),
-    }
-    :
-    {
-      id: '9',
-      title: 'Login',
-      icon: <MaterialCommunityIcons name="login" size={24} color="#065E2C" />,
-      onPress: () => navigation.navigate('Register1',{isFromCart:true}),
-    }
+    customerId
+      ? {
+          id: '9',
+          title: 'Logout',
+          icon: <Feather name="log-out" size={24} color="#065E2C" />,
+          onPress: () => setLogoutModalVisible(true),
+        }
+      : {
+          id: '9',
+          title: 'Login',
+          icon: (
+            <MaterialCommunityIcons name="login" size={24} color="#065E2C" />
+          ),
+          onPress: () => navigation.navigate('Register1', {isFromCart: true}),
+        },
   ];
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={"transparent"} barStyle={'light-content'} />
+      <StatusBar backgroundColor={'transparent'} barStyle={'light-content'} />
       <LinearGradient
         colors={['#065E2C', '#F7F2F2']}
         style={styles.gradientContainer}>
@@ -275,16 +329,27 @@ const ProfileScreen = () => {
               borderRadius: 100,
             }}
           />
-          <Text style={styles.profileName}>{userDetails?.name  || "Hello User"}</Text>
+          <Text style={styles.profileName}>
+            {userDetails?.name || 'Hello User'}
+          </Text>
         </View>
       </LinearGradient>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
-      >
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={async () => {
+              setIsLoading(true);
+              await getOrdersData();
+              setIsLoading(false);
+            }}
+          />
+        }>
         <View style={styles.ordersHeader}>
           <Text style={styles.ordersTitle}>Your Orders</Text>
-          <TouchableOpacity onPress={()=>navigation.navigate("Reorder")}>
+          <TouchableOpacity onPress={() => navigation.navigate('Reorder')}>
             <Text style={styles.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -292,64 +357,52 @@ const ProfileScreen = () => {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#065E2C" />
           </View>
-        ) : orders?.length === 0 ? (
-          <View style={styles.noOrdersContainer}>
-            <MaterialCommunityIcons name="package-variant" size={50} color="#A3A3A3" />
-            <Text style={styles.noOrdersText}>No orders found</Text>
-            <Text style={styles.noOrdersSubText}>Your order history will appear here</Text>
-          </View>
-        ) : (
+        ) : orders.length > 0 ? (
           <FlatList
-            scrollEnabled={false}
             data={orders}
             renderItem={renderOrder}
-            style={{
-              borderWidth: 1.5,
-              marginHorizontal: responsiveWidth(5),
-              borderRadius: 10,
-              backgroundColor: '#fff',
-              borderColor:"#A3A3A3"
-            }}
-            keyExtractor={item => item?.id?.toString()}
+            keyExtractor={item => item.order_id}
+            contentContainerStyle={styles.listContainer}
           />
+        ) : (
+          <View style={styles.noOrdersContainer}>
+            <MaterialCommunityIcons name="food-off" size={50} color="#A3A3A3" />
+            <Text style={styles.noOrdersText}>No recent orders found</Text>
+          </View>
         )}
         <View style={styles.menuOptions}>
-          {menuItems.map((item) => (
+          {menuItems.map(item => (
             <TouchableOpacity
               key={item.id}
               style={styles.menuItemMain}
               onPress={item.onPress}>
               <View style={styles.menuItemLeft}>
                 {item.icon}
-                <Text style={[styles.menuText]}>
-                  {item.title}
-                </Text>
+                <Text style={[styles.menuText]}>{item.title}</Text>
               </View>
               <Icon name="chevron-right" size={24} color="#666" />
             </TouchableOpacity>
           ))}
-           <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>
-          App Version: {appVersion || '1.0.0'}
-        </Text>
-      </View>
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>
+              App Version: {appVersion || '1.0.0'}
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
-     
-
       <CustomModal
         visible={updateModalVisible}
-        title={showUpdateModal ? "Update Available" : "App Updated"}
+        title={showUpdateModal ? 'Update Available' : 'App Updated'}
         message={
-          showUpdateModal 
-            ? "A new version is available. Please update now!"
+          showUpdateModal
+            ? 'A new version is available. Please update now!'
             : "You're using the latest version of Local Daddy"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
         showCancel={false}
-        cancelText=''
+        cancelText=""
       />
 
       <CustomModal
@@ -377,7 +430,7 @@ const ProfileScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: '#fff',
   },
   scrollView: {
@@ -402,64 +455,74 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     //  elevation: 3
   },
-  orderId: {fontSize: 14, fontWeight: '500',color:"#3D3D3D"},
-  orderStatus: {color: '#065E2C', fontWeight: '600',fontSize:14},
+  orderId: {fontSize: 14, fontWeight: '500', color: '#3D3D3D'},
+  orderStatus: {color: '#065E2C', fontWeight: '600', fontSize: 14},
   orderDetails: {
-    fontSize: 12, 
+    fontSize: 12,
     color: '#3D3D3D',
-    fontWeight:"600",
-    width:responsiveWidth(65),
-    marginBottom:responsiveHeight(0.3)
-
+    fontWeight: '600',
+    width: responsiveWidth(65),
+    marginBottom: responsiveHeight(0.3),
   },
   orderDate: {
     fontSize: 12,
-     color: '#525252',
-     fontWeight:"400",
-     marginBottom:responsiveHeight(0.3)
-    },
+    color: '#525252',
+    fontWeight: '400',
+    marginBottom: responsiveHeight(0.3),
+  },
   restaurantInfo: {marginVertical: 0},
   restaurantName: {fontSize: 16, fontWeight: 'bold'},
   menuItem: {fontSize: 14, color: '#555'},
-  price: {fontSize: 16, color: '#065E2C', fontWeight: 'bold',alignSelf:"flex-start"},
+  price: {
+    fontSize: 16,
+    color: '#065E2C',
+    fontWeight: 'bold',
+    alignSelf: 'flex-start',
+  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     // marginTop: 10,
   },
   reorderButton: {
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
     // padding: 5,
-     borderRadius: 5,
-     borderWidth:1,
-     borderColor:"#A3A3A3",
-     alignItems:"center",
-     justifyContent:"center",
-     paddingVertical:5,
-     width:responsiveWidth(38)
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#A3A3A3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    width: responsiveWidth(38),
     //  paddingHorizontal:20
-
-},
+  },
   rateButton: {
-    backgroundColor: '#00773F', 
+    backgroundColor: '#00773F',
     // padding: 5,
-     borderRadius: 5,
-     width:responsiveWidth(38),
-     alignItems:"center",
-     justifyContent:"center"
-},
+    borderRadius: 5,
+    width: responsiveWidth(38),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonText: {color: '#A3A3A3', fontWeight: 'bold'},
   menuOptions: {
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 85 : 60, // Add extra padding to menu options
   },
-    menuItemMain: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#A3A3A3',flexDirection:"row",justifyContent:"space-between",alignItems:"center", },
+  menuItemMain: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#A3A3A3',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: responsiveWidth(3),
   },
-  menuText: {fontSize: 16, color: '#000',fontWeight:"600",textAlign:"left"},
+  menuText: {fontSize: 16, color: '#000', fontWeight: '600', textAlign: 'left'},
   gradientContainer: {
     paddingVertical: 20,
   },
@@ -467,7 +530,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: responsiveHeight(2),
     alignSelf: 'center',
-
   },
   dot: {
     width: 5, // Dot size
@@ -511,10 +573,10 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    left:10
+    left: 10,
   },
   versionText: {
     fontSize: 14,
@@ -544,6 +606,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  listContainer: {
+    padding: 10,
   },
 });
 

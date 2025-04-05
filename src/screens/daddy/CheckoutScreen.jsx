@@ -11,6 +11,7 @@ import {
   StatusBar,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -28,6 +29,8 @@ import {
   removeFromCart,
   // removeCoupon,
   placeOrder,
+  generateOrderId,
+  updateOrderStatus,
 } from '../../redux/reducers/daddy';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -40,7 +43,7 @@ import RestaurantScreen from './RestaurantScreen';
 const CheckoutScreen = ({navigation, route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
   const {appliedCoupon} = useSelector(state => state.coupons);
-  const {userDetails, chargesList, selectedAddress} = useSelector(
+  const { chargesList, selectedAddress} = useSelector(
     state => state.address,
   );
   const {
@@ -67,6 +70,7 @@ const CheckoutScreen = ({navigation, route}) => {
     gstAmount: 0,
     totalCharge: 0,
   });
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const paymentMethods = ['Pay Online', 'COD'];
 
@@ -120,9 +124,9 @@ const CheckoutScreen = ({navigation, route}) => {
       }
 
       let discountAmount = 0;
-      if (totals.totalSellingPrice >= appliedCoupon.coupon_upto_price) {
+      if (totals.totalSellingPrice >= appliedCoupon.coupon_max_price_limit) {
         discountAmount =
-          (totals.totalSellingPrice * appliedCoupon.coupon_percentage) / 100;
+          (totals.totalSellingPrice * appliedCoupon.coupon_max_price_limit) / 100;
         discountAmount = Math.min(
           discountAmount,
           appliedCoupon.coupon_upto_price,
@@ -136,7 +140,6 @@ const CheckoutScreen = ({navigation, route}) => {
     }
   };
 
-  console.log(appliedCoupon,"+++++++++++>>>>>APPLIED COUPON")
 
   const renderCartItem = ({item}) => {
     const eachPrice = Number(item.selling_price) * Number(item.quantity);
@@ -177,6 +180,7 @@ const CheckoutScreen = ({navigation, route}) => {
     );
   };
 
+
   function calculateDeliveryCharge(
     distance,
     cartPrice,
@@ -211,109 +215,118 @@ const CheckoutScreen = ({navigation, route}) => {
     };
   }
 
-  console.log("selectedAddress",reaturantDetails)
 
   const handlePlaceOrder = async () => {
+    try {
+      setIsProcessingPayment(true);
+      let payload = {
+        order_status:0,
+        actual_total_amount: itemsTotalPrice,
+        customer_id: customerId,
+        customer_name: selectedAddress?.customer_name,
+        customer_mobile_number: selectedAddress?.customer_mobile_number,
+        category_id: cartItems[0]?.category_id,
+        sub_category_id: cartItems[0]?.sub_category_id,
+        admin_percentage: 10,
+        item_count: cartItems.length,
+        total_amount: totalSellingPrice,
+        total_saving_amount: totalSavings,
+        coupon_amount: couponDiscount,
+        delivery_charges:delivery.totalCharge,
+        grand_total: grandTotal,
+        location_id: locationId,
+        location_name: locationName,
+        payment_type: selectedPaymentMethod,
+        payment_id: selectedPaymentMethod,
+        razorpay_order_id: null, 
+        order_instructions: 'test are',
+        coupon_type: appliedCoupon?.coupon_type||"0",
+        coupon_id: appliedCoupon?.id||"0",
+        delivery_address: selectedAddress
+          ? selectedAddress.full_address
+          : 'No address selected',
+        order_latitude: selectedAddress
+          ? selectedAddress.customer_latitude
+          : '0',
+        order_longitude: selectedAddress
+          ? selectedAddress.customer_longitude
+          : '0',
+        slot_timings: 'Fast Delivery',
+        order_distance: distance,
+        ext_del_charge: '0',
+        shop_id: cartItems[0]?.shop_id,
+        user_player_id: null,
+        order_type: 0,
+        delivery_charges_gst: delivery.gstAmount,
+        handling_charges: chargesList[0].handling_charges,
+        packing_charges: 0,
+        packing_charges_gst:0,
+        donation_charges: chargesList[0].donation_charges,
+        sub_order_array: cartItems.map(item => ({
+          item_name: item.item_name,
+          item_image: item.item_image,
+          item_id: item.id,
+          category_id: item.category_id,
+          sub_category_id: item.sub_category_id,
+          category_name: item.category_name,
+          sub_category_name: item.sub_category_name,
+          actualitem_price: item.actual_price,
+          item_price: item.selling_price,
+          sub_item_count: item.quantity,
+          item_total_amount: item.selling_price * item.quantity,
+          filter_name: item.filter_one,
+          item_description: item.item_description,
+          saving_price: item.discount_amount,
+          shop_id: item.shop_id,
+          filter_one: item.filter_one,
+        })),
+      };
 
-    let payload = {
-      order_status:0,
-      actual_total_amount: itemsTotalPrice,
-      customer_id: customerId,
-      customer_name: userDetails?.name,
-      customer_mobile_number: userDetails?.contact,
-      category_id: cartItems[0]?.category_id,
-      sub_category_id: cartItems[0]?.sub_category_id,
-      admin_percentage: 10,
-      item_count: cartItems.length,
-      total_amount: totalSellingPrice,
-      total_saving_amount: totalSavings,
-      coupon_amount: couponDiscount,
-      delivery_charges:delivery.totalCharge,
-      grand_total: grandTotal,
-      location_id: locationId,
-      location_name: locationName,
-      payment_type: selectedPaymentMethod,
-      payment_id: selectedPaymentMethod,
-      razorpay_order_id: null, 
-      order_instructions: 'test are',
-      coupon_type: appliedCoupon?.coupon_type||"0",
-      coupon_id: appliedCoupon?.id||"0",
-      delivery_address: selectedAddress
-        ? selectedAddress.full_address
-        : 'No address selected',
-      order_latitude: selectedAddress
-        ? selectedAddress.customer_latitude
-        : '0',
-      order_longitude: selectedAddress
-        ? selectedAddress.customer_longitude
-        : '0',
-      slot_timings: 'Fast Delivery',
-      order_distance: distance,
-      ext_del_charge: '0',
-      shop_id: cartItems[0]?.shop_id,
-      user_player_id: null,
-      order_type: 0,
-      delivery_charges_gst: delivery.gstAmount,
-      handling_charges: chargesList[0].handling_charges,
-      packing_charges: 0,
-      packing_charges_gst:0,
-      donation_charges: chargesList[0].donation_charges,
-      sub_order_array: cartItems.map(item => ({
-        item_name: item.item_name,
-        item_image: item.item_image,
-        item_id: item.id,
-        category_id: item.category_id,
-        sub_category_id: item.sub_category_id,
-        category_name: item.category_name,
-        sub_category_name: item.sub_category_name,
-        actualitem_price: item.actual_price,
-        item_price: item.selling_price,
-        sub_item_count: item.quantity,
-        item_total_amount: item.selling_price * item.quantity,
-        filter_name: item.filter_one,
-        item_description: item.item_description,
-        saving_price: item.discount_amount,
-        shop_id: item.shop_id,
-        filter_one: item.filter_one,
-      })),
-    };
+      if (selectedPaymentMethod === 'COD') {
+       const responseCod = await dispatch(placeOrder({orderDetails: payload}));
+        navigation.replace('OrderSuccess', {response: responseCod.payload});
+        return;
+      }
 
-    if (selectedPaymentMethod === 'COD') {
-     const responseCod = await dispatch(placeOrder({orderDetails: payload}));
-      navigation.replace('OrderSuccess', {response: responseCod.payload});
-      return;
+      payload.order_status=7;
+      const pacedResponse=await dispatch(placeOrder({orderDetails: payload}));
+
+      if(!pacedResponse.payload) return
+        const orderIdResponse=await dispatch(generateOrderId({orderAmount: 100}));
+      const options = {
+        description: 'Order Payment',
+        image: '',
+        currency: 'INR',
+        key: 'rzp_live_tZgZCC254NtRmU',
+        order_id:orderIdResponse.payload.id,
+        amount: 100,
+        name: 'Local Daddy',
+        prefill: {
+          // email: "test@gmail.com",
+          contact: selectedAddress?.customer_mobile_number,
+          name: selectedAddress?.customer_name,
+        },
+        theme: {color: '#065E2C'},
+      };
+
+      RazorpayCheckout.open(options)
+        .then(async data => {
+          console.log("response from razorpay",data)
+          payload.payment_id=data.razorpay_payment_id;
+          payload.razorpay_order_id=data.razorpay_payment_id;
+          payload.order_status=0;
+          const updateOrderStatusResponse=await dispatch(updateOrderStatus({paymentId:data.razorpay_payment_id,rzpId:data.razorpay_order_id,orderId:pacedResponse.payload.id}))
+          console.log("responselkmksdfkljas",updateOrderStatusResponse)
+          navigation.replace('OrderSuccess', {response: pacedResponse.payload});
+        })
+        .catch(error => {
+          console.error('Payment error:', error);
+        });
+    } catch (error) {
+      console.error('Payment error:', error);
+    } finally {
+      setIsProcessingPayment(false);
     }
-
-    payload.order_status=7;
-    dispatch(placeOrder({orderDetails: payload}));
-
-    const options = {
-      description: 'Order Payment',
-      image: '',
-      currency: 'INR',
-      key: 'rzp_test_QNQ6xyfpco3YGe',
-      amount: grandTotal * 100,
-      name: 'Local Daddy',
-      prefill: {
-        email: "test@gmail.com",
-        contact: "7997753587",
-        name: "Alex",
-      },
-      theme: {color: '#065E2C'},
-    };
-
-    RazorpayCheckout.open(options)
-      .then(async data => {
-        payload.payment_id=data.razorpay_payment_id;
-        payload.razorpay_order_id=data.razorpay_payment_id;
-        payload.order_status=0;
-
-        const responseRaz = await dispatch(placeOrder({orderDetails: payload}));
-        navigation.replace('OrderSuccess', {response: responseRaz.payload});
-      })
-      .catch(error => {
-        console.error('Payment error:', error);
-      });
   };
 
   const navigateToCoupons = () => {
@@ -501,6 +514,10 @@ const CheckoutScreen = ({navigation, route}) => {
         {/* Billing */}
         <Text style={styles.sectionTitle}>Billing</Text>
         <View style={styles.billingCard}>
+        <View style={styles.billRow}>
+            <Text style={styles.billLabel}>Original Price</Text>
+            <Text style={styles.billValue}>₹ {totalSellingPrice+totalSavings}</Text>
+          </View>
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>Amount</Text>
             <Text style={styles.billValue}>₹ {totalSellingPrice}</Text>
@@ -621,17 +638,22 @@ const CheckoutScreen = ({navigation, route}) => {
 
         <TouchableOpacity
           style={styles.placeOrderButton}
-          onPress={handlePlaceOrder}>
-          <View style={styles.placeOrderContent}>
-            <View style={styles.orderTotal}>
-              <Text style={styles.orderTotalValue}>₹{grandTotal}</Text>
-              <Text style={styles.orderTotalLabel}>Total</Text>
+          onPress={handlePlaceOrder}
+          disabled={isProcessingPayment}>
+          {isProcessingPayment ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <View style={styles.placeOrderContent}>
+              <View style={styles.orderTotal}>
+                <Text style={styles.orderTotalLabel}>Total</Text>
+                <Text style={styles.orderTotalValue}>₹ {grandTotal}</Text>
+              </View>
+              <View style={styles.placeOrderTextContainer}>
+                <Text style={styles.placeOrderText}>Place Order</Text>
+                <MaterialIcons name="arrow-forward-ios" size={16} color="#fff" />
+              </View>
             </View>
-            <View style={styles.placeOrderTextContainer}>
-              <Text style={styles.placeOrderText}>Place Order</Text>
-              <AntDesign name="caretright" size={18} color="#CCCCCC" />
-            </View>
-          </View>
+          )}
         </TouchableOpacity>
       </View>
 

@@ -333,7 +333,17 @@ export default function UserHome({navigation}) {
     dispatch(setOrderOfferAmount(amount));
   };
 
-  console.log("+++++++++++selectedAddress","+++++++++>>>",selectedAddress)
+  const handleBannerPress = (banner) => {
+    const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
+    if(item.length > 0){
+      navigation.navigate('RestaurantScreen', {
+        shopId: item.shop_id,
+        shopItem: item.shop_items_tb_nm,
+        item,
+      })
+    }
+  };
+
 
   return (
     <View style={styles.mainContainer}>
@@ -606,12 +616,12 @@ export default function UserHome({navigation}) {
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
                 renderItem={({item}) => (
-                  <View style={styles.bannerContainer}>
+                  <TouchableOpacity onPress={() => handleBannerPress(item)} style={styles.bannerContainer}>
                     <Image
                       source={{uri: item.banner_image}}
                       style={styles.bannerImage}
                     />
-                  </View>
+                  </TouchableOpacity>
                 )}
               />
             )}
@@ -619,13 +629,8 @@ export default function UserHome({navigation}) {
             {activeCategoryIndex === 1 ? (
               <View>
                 <Text style={styles.sectionTitle}>Restaurants Near You</Text>
-
-                {/* {loading.restaurants ? (
-                  <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#065E2C" />
-                  </View>
-                ) : 
-                ( */}
+                
+                {homeRestaurnats?.length > 0 ? (
                   <FlatList
                     showsVerticalScrollIndicator={false}
                     data={homeRestaurnats}
@@ -662,7 +667,7 @@ export default function UserHome({navigation}) {
 
                             {/* <View style={styles.statItem}>
                               <DeliveryVehicle />
-                              <Text style={styles.statText}>{distance < 3 ? 'Free' : 'Paid'}</Text>
+                              <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
                             </View> */}
 
                             <View style={styles.statItem}>
@@ -674,7 +679,11 @@ export default function UserHome({navigation}) {
                       </TouchableOpacity>
                     )}}
                   />
-                {/* )} */}
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No restaurants found in your area</Text>
+                  </View>
+                )}
               </View>
             ) : (
               loading.restaurants ? (
@@ -879,5 +888,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginHorizontal: 20,
   },
 });

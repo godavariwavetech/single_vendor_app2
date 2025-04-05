@@ -80,7 +80,7 @@ const handleNotificationNavigation = (data, navigation) => {
 
 export const getFCMToken = async () => {
   const token = await messaging().getToken();
-  //console.log(token)
+  console.log(token)
   messaging().onMessage(async (remoteMessage) => {
     await notifee.createChannel({
       id: 'default1',

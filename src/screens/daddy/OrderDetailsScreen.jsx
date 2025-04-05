@@ -28,6 +28,7 @@ import {getOrderDetails, getOrders} from '../../redux/reducers/daddy';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import CustomModal from '../../components/CustomModal';
 import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
+import { getMessaging } from '@react-native-firebase/messaging';
 
 const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
@@ -160,10 +161,10 @@ const OrderDetailsScreen = ({navigation, route}) => {
     // Parse the delivery_boy_array
     deliveryBoys =
       deliveryBoys && typeof deliveryBoys === 'string'
-        ? JSON.parse(deliveryBoys.replace(/'/g, '"')) // Replace single quotes with double quotes
+        ? JSON.parse(deliveryBoys.replace(/'/g, '"'))
         : [];
 
-    // Update orderData with parsed delivery boys
+
     if (Array.isArray(deliveryBoys) && deliveryBoys.length > 0) {
       orderData.deliveryAgent.name =
         deliveryBoys[0]?.delivery_boy_name || 'N/A';
@@ -216,7 +217,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const handleCancelOrder = async () => {
     try {
       await dispatch(cancelOrder({orderId: orderDetails.id}));
-      navigation.goBack();
+      route.params?.fromOrderSuccess ? handleBackPress()  :navigation.goBack();
       setShowCancelModal(false);
     } catch (error) {
       Alert.alert('Error', 'Failed to cancel order');
@@ -243,6 +244,14 @@ const OrderDetailsScreen = ({navigation, route}) => {
       Alert.alert('Error', 'Failed to submit review');
     }
   };
+
+  useEffect(()=>{
+    getMessaging().onMessage(async (remoteMessage) => {
+      onRefresh()
+    })
+  },[])
+
+  console.log("orderData.restaurant",orderDetails?.order_date)
 
   return (
     <View style={styles.container}>
@@ -271,6 +280,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
 
       <ScrollView
         style={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
@@ -328,7 +338,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
               {orderData.restaurant.name}
             </Text>
             <Text style={styles.orderTime}>
-              Ordered At {orderData.restaurant.orderTime}
+              Ordered At:- {orderDetails?.order_date} {orderData.restaurant.orderTime}
             </Text>
           </View>
           <TouchableOpacity
@@ -414,9 +424,9 @@ const OrderDetailsScreen = ({navigation, route}) => {
           <Text style={styles.sectionTitle}>Delivery Details</Text>
           <View style={styles.addressCard}>
             <View style={styles.addressSection}>
-              <MaterialIcons name="home" size={24} color="#666" />
+              {/* <MaterialIcons name="home" size={24} color="#666" /> */}
               <View style={styles.addressInfo}>
-                <Text style={styles.addressType}>Home</Text>
+                {/* <Text style={styles.addressType}>Home</Text> */}
                 <Text style={styles.addressText}>
                   {orderData.delivery.address}
                   {'\n'}
@@ -424,14 +434,14 @@ const OrderDetailsScreen = ({navigation, route}) => {
                 </Text>
               </View>
             </View>
-            <View style={styles.dottedLineContainer}>
+            {/* <View style={styles.dottedLineContainer}>
               {Array(20)
                 .fill(0)
                 .map((_, index) => (
                   <View key={index} style={styles.dot} />
                 ))}
-            </View>
-            <View style={styles.contactSection}>
+            </View> */}
+            {/* <View style={styles.contactSection}>
               <MaterialIcons name="person" size={24} color="#666" />
               <View style={styles.contactInfo}>
                 <Text style={styles.contactName}>
@@ -441,7 +451,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
                   {orderData.delivery.phone}
                 </Text>
               </View>
-            </View>
+            </View> */}
           </View>
         </View>
 
@@ -593,12 +603,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: responsiveWidth(7),
+    marginBottom: responsiveHeight(2),
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-    // marginLeft: responsiveWidth(3),
   },
   orderId: {
     fontSize: 12,

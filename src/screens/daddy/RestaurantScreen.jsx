@@ -440,10 +440,25 @@ const RestaurantScreen = ({navigation,route}) => {
           style={styles.itemList}
           columnWrapperStyle={styles.columnWrapper}
           renderItem={({item}) => {
+            const isUnavailable = item.active_status === "1";
             const indexValue = cartItems.findIndex(value => value.id === item.id);
             return (
-              <View style={styles.card}>
-                <Image source={{uri: item.item_image}} style={styles.image} />
+              <TouchableOpacity 
+                style={[styles.card, isUnavailable && styles.unavailableCard]}
+                onPress={() => !isUnavailable && handleAddToCart(item)}
+                disabled={isUnavailable}
+              >
+                {isUnavailable && (
+                  <View style={styles.unavailableOverlay}>
+                    <Text style={styles.unavailableText}>Currently Unavailable</Text>
+                  </View>
+                )}
+                
+                <Image 
+                  source={{uri: item.item_image}} 
+                  style={[styles.image, isUnavailable && styles.unavailableImage]}
+                />
+                
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.item_name}</Text>
                   <View style={styles.itemIcon}>
@@ -480,7 +495,7 @@ const RestaurantScreen = ({navigation,route}) => {
                     </TouchableOpacity>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
@@ -903,6 +918,30 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  unavailableCard: {
+    opacity: 0.6,
+    backgroundColor: '#f0f0f0',
+  },
+  unavailableImage: {
+    opacity: 0.5,
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  unavailableText: {
+    color: '#ff4444',
+    fontWeight: '700',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

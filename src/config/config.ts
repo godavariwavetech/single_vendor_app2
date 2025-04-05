@@ -30,5 +30,7 @@ export const endpoints = {
   GLOBAL_SEARCH:'public_app/search_allitems',
   GIVE_APP_FEEDBACK:'public_app/postapprating',
   CANCEL_ORDER:'public_app/cancleorder',
-  GIVE_ORDER_RATING:"public_app/postorderrating"
+  GIVE_ORDER_RATING:"public_app/postorderrating",
+  GENERATE_ORDER_ID:'public_app/generateorderid',
+  UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails'
 };

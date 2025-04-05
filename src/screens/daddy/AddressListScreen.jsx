@@ -22,7 +22,7 @@ import { checkAddressExistence, deleteAddress, getAddressList } from '../../redu
 import { useFocusEffect } from '@react-navigation/native';
 import CustomModal from '../../components/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { setSelectedAddress as setSelectedAddressAction } from '../../redux/reducers/addressSlice';
+import { setSelectedAddress as setSelectedAddressAction, setUserDetails } from '../../redux/reducers/addressSlice';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { haversineDistance } from './distanceCalculator';
 
@@ -46,7 +46,6 @@ const AddressListScreen = ({ navigation, route }) => {
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
-  console.log("reaturantDetails",reaturantDetails)
 
   const handleSelectAddress = async (address) => {
     try {
@@ -66,6 +65,7 @@ const AddressListScreen = ({ navigation, route }) => {
 
       // Check if response is valid
       if (response.payload?.status === 300) {
+        dispatch(setSelectedAddress(address))
         // Handle case where address is not available
         setShowAddressModal(true);
         return;
@@ -123,10 +123,11 @@ const AddressListScreen = ({ navigation, route }) => {
     setSelectedAddress(null);
   };
 
-  const handleAddAddress = () => {
+  const handleAddAddress = (address) => {
     if (!customerId) {
       setShowLoginModal(true);
     } else {
+      dispatch(setUserDetails(address))
       navigation.navigate('AddAddress');
     }
   };

@@ -27,9 +27,18 @@ const ReorderScreen = ({navigation}) => {
   const [refreshing, setRefreshing] = useState(false); 
   const timeoutRef = useRef();
   const { globalSearchResults } = useSelector(state => state.address);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const getOrdersData = async () => {
-    const response = await dispatch(getOrders({orderId:0}));
+    try {
+      setInitialLoading(true);
+      const response = await dispatch(getOrders({orderId:0}));
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setInitialLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -269,7 +278,11 @@ const ReorderScreen = ({navigation}) => {
           </View>
         </View>
       </LinearGradient>
-      {filteredOrders?.length > 0 ? (
+      {initialLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#065E2C" />
+        </View>
+      ) : filteredOrders?.length > 0 ? (
         <FlatList
           data={filteredOrders}
           renderItem={renderRestaurantCard}
@@ -595,6 +608,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

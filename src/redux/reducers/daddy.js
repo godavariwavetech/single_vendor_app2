@@ -384,6 +384,47 @@ export const placeOrder = createAsyncThunk(
   }
 )
 
+export const generateOrderId = createAsyncThunk(
+  "generateOrderId",
+  async(
+      {orderAmount},
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+      const response = await api.post(endpoints.GENERATE_ORDER_ID,{
+        "order_amount": Number(orderAmount)*100
+      })
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+  }
+)
+
+export const updateOrderStatus = createAsyncThunk(
+  "updateOrderStatus",
+  async(
+      {paymentId,rzpId,orderId},
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+      const response = await api.post(endpoints.UPDATE_ORDER_STATUS, {
+        "payment_id":paymentId,
+        "razorpay_order_id": rzpId,
+        "id":orderId
+      })
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+  }
+)
+
+
 export const checkServiceAvailability = createAsyncThunk(
   'dashboard/checkServiceAvailability',
   async (coordinates, { rejectWithValue }) => {

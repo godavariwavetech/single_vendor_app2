@@ -27,10 +27,10 @@ const CouponsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
 
   const handleApplyCoupon = (coupon) => {
-    if (totalPrice >= coupon.coupon_upto_price) {
+    if (totalPrice >= coupon.coupon_max_price_limit) {
       setSelectedCoupon(coupon);
     } else {
-      setErrorMessage(`This coupon requires a minimum order value of ₹${coupon.coupon_upto_price}.`);
+      setErrorMessage(`This coupon requires a minimum order value of ₹${coupon.coupon_max_price_limit}.`);
       setErrorModalVisible(true);
     }
   };
