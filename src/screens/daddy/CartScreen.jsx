@@ -271,7 +271,7 @@ const CartScreen = ({navigation,route}) => {
                   style={[styles.modalButton, styles.confirmButton]}
                   onPress={() => {
                     setShowLoginModal(false);
-                    navigation.navigate('Login');
+                    navigation.navigate('Register1',{isFromCart:true});
                   }}>
                   <Text style={styles.confirmButtonText}>Login</Text>
                 </TouchableOpacity>

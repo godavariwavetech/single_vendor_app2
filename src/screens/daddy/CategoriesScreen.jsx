@@ -24,6 +24,7 @@ import { getAllCategories, setActiveCategoryIndex, setsubCategory } from '../../
 import { useDispatch, useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
@@ -43,6 +44,21 @@ const CategoriesScreen = ({navigation,route}) => {
     };
     fetchCategories();
   }, [dispatch]);
+
+  useEffect(() => {
+    if (route.params?.isFromHome) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.goBack()}
+          >
+            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          </TouchableOpacity>
+        )
+      });
+    }
+  }, [navigation, route.params]);
 
   useEffect(() => {
     if(!allCategories) return;
@@ -119,13 +135,11 @@ const CategoriesScreen = ({navigation,route}) => {
   }, [searchQuery, categories, globalSearchResults]); // Single dependency array
 
   const handleNavigation = async(item,subItem) => {
-    console.log(item,"+++++++<<><><>",subItem)
     await dispatch(setActiveCategoryIndex(item.category_id));
     dispatch(setsubCategory(subItem));
     navigation.navigate('CategorieItems');
   }
 
-  console.log("isFromHome>>>>>>>>>>>>>>",route?.params)
 
   const renderItem = (item,subItem) => {
     if (typeof item?.category_id === 'string' && item.category_id.startsWith('search-')) {
@@ -212,8 +226,15 @@ const CategoriesScreen = ({navigation,route}) => {
         colors={['#065E2C', '#F7F2F2']}
         style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
-          <CategoryInactive color="#fff" />
-          <Text style={styles.headerTitle}>Categories</Text>
+          {route.params?.isFromHome ? (
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            </TouchableOpacity>
+          ):  <CategoryInactive color="#fff" />}
+          <Text style={styles.headerTitle}>All Categories</Text>
         </View>
         <View style={styles.searchContainer}>
           <View style={styles.inputWrapper}>
@@ -309,14 +330,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   gradientContainer: {
-    paddingTop: 10,
+    paddingBottom: 20,
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: responsiveWidth(5),
+    paddingTop: responsiveHeight(5),
     gap: 10,
-    marginTop: responsiveHeight(5),
-    marginLeft: responsiveWidth(5),
+  },
+  backButton: {
+    padding: 5,
   },
   headerTitle: {
     color: '#fff',

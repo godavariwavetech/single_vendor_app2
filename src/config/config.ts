@@ -27,5 +27,8 @@ export const endpoints = {
   PLACE_ORDER:'public_app/orderplaced',
   GET_CHARGES_LIST:'public_app/application_common_api',
   REQUEST_OTP:'public_app/getuserloginotp',
-  GLOBAL_SEARCH:'public_app/search_allitems'
+  GLOBAL_SEARCH:'public_app/search_allitems',
+  GIVE_APP_FEEDBACK:'public_app/postapprating',
+  CANCEL_ORDER:'public_app/cancleorder',
+  GIVE_ORDER_RATING:"public_app/postorderrating"
 };

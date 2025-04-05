@@ -24,6 +24,7 @@ import CustomModal from '../../components/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { setSelectedAddress as setSelectedAddressAction } from '../../redux/reducers/addressSlice';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { haversineDistance } from './distanceCalculator';
 
 const AddressListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -37,15 +38,27 @@ const AddressListScreen = ({ navigation, route }) => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const  [toggleValue,setToggleValue] = useState(false)
   const [refreshing, setRefreshing] = useState(false);
-  const { customerId,locationId } = useSelector(state => state.Auth);
+  const { customerId,reaturantDetails } = useSelector(state => state.Auth);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [isCheckingAddress, setIsCheckingAddress] = useState(false);
 
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
+  console.log("reaturantDetails",reaturantDetails)
+
   const handleSelectAddress = async (address) => {
     try {
+      setIsCheckingAddress(true);
+
+      const value = haversineDistance(
+        address?.customer_latitude,
+        address?.customer_longitude,
+        reaturantDetails.shop_latitude,
+        reaturantDetails.shop_longitude,
+      );
+      
       const response = await dispatch(checkAddressExistence({
         latitude: parseFloat(address?.customer_latitude),
         longitude: parseFloat(address?.customer_longitude)
@@ -58,7 +71,7 @@ const AddressListScreen = ({ navigation, route }) => {
         return;
       }
 
-      if (response.payload?.data?.length > 0) {
+      if (response.payload?.data?.length > 0 &&Number(value)<= Number(reaturantDetails.maximum_del_km)) {
         dispatch(setSelectedAddressAction(address));
         if (isFromCart) {
           navigation.navigate('Checkout');
@@ -69,6 +82,8 @@ const AddressListScreen = ({ navigation, route }) => {
     } catch (error) {
       console.log("Error checking address:", error);
       setShowAddressModal(true);
+    } finally {
+      setIsCheckingAddress(false);
     }
   };
 
@@ -118,7 +133,11 @@ const AddressListScreen = ({ navigation, route }) => {
 
   const renderAddress = ({ item }) => {
     return (
-    <TouchableOpacity style={styles.addressCard} onPress={() => handleSelectAddress(item)}>
+    <TouchableOpacity 
+      style={styles.addressCard} 
+      onPress={() => handleSelectAddress(item)}
+      disabled={isCheckingAddress}
+    >
       <View style={styles.addressHeader}>
         <Text style={styles.addressType}>{item.address_type}</Text>
         <View style={styles.actionButtons}>
@@ -250,6 +269,11 @@ const AddressListScreen = ({ navigation, route }) => {
         cancelText=""
         // showCancel={false}
       />
+      {isCheckingAddress && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#065E2C" />
+        </View>
+      )}
     </View>
   );
 };
@@ -430,6 +454,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

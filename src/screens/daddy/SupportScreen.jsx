@@ -7,15 +7,15 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const SupportScreen = ({ navigation }) => {
   const handleCall = () => {
-    Linking.openURL('tel:+1234567890');
+    Linking.openURL('tel:+8074709926');
   };
 
   const handleEmail = () => {
-    Linking.openURL('mailto:support@escapye.com');
+    Linking.openURL('mailto:localdaddyweb@gmail.com');
   };
 
   const handleWhatsApp = () => {
-    Linking.openURL('https://wa.me/1234567890');
+    Linking.openURL('https://wa.me/918074709926');
   };
 
   return (

@@ -4,15 +4,23 @@ import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useDispatch } from 'react-redux';
+import { submitAppReview } from '../../redux/reducers/reviews';
+import CustomModal from '../../components/CustomModal';
 
 const FeedbackScreen = ({ navigation }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const dispatch = useDispatch();
 
-  const handleSubmit = () => {
-    // Handle feedback submission
-    console.log('Rating:', rating, 'Comment:', comment);
-    navigation.goBack();
+  const handleSubmit = async () => {
+    try {
+      await dispatch(submitAppReview({rating, comment}));
+      setShowSuccessModal(true);
+    } catch (error) {
+      // Handle error
+    }
   };
 
   return (
@@ -63,6 +71,19 @@ const FeedbackScreen = ({ navigation }) => {
           <Text style={styles.submitButtonText}>Submit Feedback</Text>
         </TouchableOpacity>
       </View>
+
+      <CustomModal
+        visible={showSuccessModal}
+        title="Thank You!"
+        message="Your feedback has been submitted successfully."
+        confirmText="OK"
+        onConfirm={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+        showCancel={false}
+        cancelText=''
+      />
     </View>
   );
 };

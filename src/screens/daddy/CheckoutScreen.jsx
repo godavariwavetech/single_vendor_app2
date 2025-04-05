@@ -185,14 +185,13 @@ const CheckoutScreen = ({navigation, route}) => {
   ) {
     let deliveryCharge = reaturantDetails?.minimum_del_charge;
 
-    if (distance >= (reaturantDetails?.minimum_km||3)) {
-      deliveryCharge = 10 + (distance - 3) * (reaturantDetails?.per_km_chargers||10);
+    if (distance >= Number(reaturantDetails?.minimum_km||3)) {
+      deliveryCharge = deliveryCharge + (Number(distance) - Number(reaturantDetails?.minimum_km)) * (reaturantDetails?.per_km_chargers||10);
     }
 
     if (cartPrice < minOrderPrice) {
       deliveryCharge += 10;
     }
-console.log("+?????????????",distance,cartPrice,minOrderPrice)
     // let gstAmount =
     //   (Number(deliveryCharge) * Number(chargesList ? chargesList[0].gst_percentage : 18)) / 100;
     let gstAmount = 0;
@@ -281,7 +280,6 @@ console.log("+?????????????",distance,cartPrice,minOrderPrice)
 
     if (selectedPaymentMethod === 'COD') {
      const responseCod = await dispatch(placeOrder({orderDetails: payload}));
-      console.log(responseCod.payload,"+++++++++++>>>>>RESPONSE COD")
       navigation.replace('OrderSuccess', {response: responseCod.payload});
       return;
     }

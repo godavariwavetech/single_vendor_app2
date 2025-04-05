@@ -333,6 +333,8 @@ export default function UserHome({navigation}) {
     dispatch(setOrderOfferAmount(amount));
   };
 
+  console.log("+++++++++++selectedAddress","+++++++++>>>",selectedAddress)
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={'transparent'} translucent />
@@ -398,7 +400,7 @@ export default function UserHome({navigation}) {
             <View style={styles.headerContainer}>
               <View>
                 <TouchableOpacity 
-                  onPress={() => navigation.navigate("SelectServiceFromLocation")} 
+                  onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress:selectedAddress})} 
                   style={styles.locationContainer}
                 >
                   <Octicons name="location" color="#fff" size={25} />
