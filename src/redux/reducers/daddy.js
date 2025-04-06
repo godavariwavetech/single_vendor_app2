@@ -525,9 +525,9 @@ export const Dashboard = createSlice({
       state.appliedCoupon = action.payload;
     },
     removeCoupon: (state) => {
-      console.log(">>>>>>>>>>>>>>>>>>>>>><MM<M<<M<")
       state.appliedCoupon = null;
     },
+  
   },
   extraReducers: builder => {
 

@@ -32,5 +32,6 @@ export const endpoints = {
   CANCEL_ORDER:'public_app/cancleorder',
   GIVE_ORDER_RATING:"public_app/postorderrating",
   GENERATE_ORDER_ID:'public_app/generateorderid',
-  UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails'
+  UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails',
+  GET_RESULT_FULL_DATA:'public_app/searchitemsfull'
 };

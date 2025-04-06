@@ -69,6 +69,8 @@ const addressSlice = createSlice({
     userDetails: null,
     chargesList: null,
     globalSearchResults: null,
+    isNetworkConnected: null,
+    onloadComponents: false,
   },
   reducers: {
     setSelectedAddress: (state, action) => {
@@ -79,6 +81,14 @@ const addressSlice = createSlice({
     },
     setUserDetails: (state, action) => {
       state.userDetails = action.payload;
+    },
+    setIsNetworkConnected: (state, action) => {
+      state.isNetworkConnected = action.payload;
+      if(action.payload){
+        state.onloadComponents = true;
+      }else{
+        state.onloadComponents = false;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -129,5 +139,5 @@ const addressSlice = createSlice({
   },
 });
 
-export const { setSelectedAddress, clearSelectedAddress, setUserDetails } = addressSlice.actions;
+export const { setSelectedAddress, clearSelectedAddress, setUserDetails, setIsNetworkConnected } = addressSlice.actions;
 export default addressSlice.reducer;

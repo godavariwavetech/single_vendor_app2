@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import { getResultFullData } from '../../redux/reducers/reviews';
 
 const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
@@ -209,9 +210,12 @@ const CategoriesScreen = ({navigation,route}) => {
     </TouchableOpacity>
   );
 
-  const handleSearchResultPress = (result) => {
+  const handleSearchResultPress = async (result) => {
     // Handle navigation based on search result type
     console.log("Search result pressed:", result);
+    const response = await dispatch(getResultFullData({resultData:result}));
+
+    console.log(result,"ressult>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LLLLLLLLLLL",response)
     // Example: navigation.navigate('SearchResultDetail', {result});
   };
 

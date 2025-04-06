@@ -68,6 +68,25 @@ export const submitAppReview = createAsyncThunk(
     },
   );
 
+
+  export const getResultFullData = createAsyncThunk(
+    'getResultFullData',
+    async (
+      {resultData},
+      {getState, rejectWithValue, fulfillWithValue},
+    ) => {
+        console.log("called here")
+      const response = await api.post(endpoints.GET_RESULT_FULL_DATA,resultData);
+      if (response) {
+        if (response.data) {
+          return fulfillWithValue(response.data);
+        } else {
+          return rejectWithValue('Something went wrong!');
+        }
+      }
+    },
+  );
+
 const initialState = {
   loading: false,
   message: null,

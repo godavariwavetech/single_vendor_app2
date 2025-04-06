@@ -7,11 +7,62 @@ import SplashScreen from 'react-native-splash-screen'
 import { getFCMToken } from './src/services/NotificationsService';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import { requestNotificationPermission, setupNotificationHandlers } from './src/services/NotificationsService';
-import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
+import { Alert, Linking, PermissionsAndroid, Platform, View, Text, StyleSheet, Animated } from 'react-native';
 import { checkNotifications, requestNotifications } from 'react-native-permissions';
 import VersionCheck from 'react-native-version-check'; 
 import CustomAlert from './src/components/CustomAlert';
 import CustomModal from './src/components/CustomModal';
+import NetInfo from '@react-native-community/netinfo';
+import { setIsNetworkConnected } from './src/redux/reducers/addressSlice';
+import { useDispatch } from 'react-redux';
+const NetworkStatusBanner = () => {
+  const [isConnected, setIsConnected] = useState(true);
+  const [slideAnim] = useState(new Animated.Value(-50));
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+      dispatch(setIsNetworkConnected(state.isConnected));
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: isConnected ? -50 : 0, // Slide down when disconnected
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isConnected, slideAnim]);
+
+  if (isConnected) return null;
+
+  return (
+    <Animated.View style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}>
+      <Text style={styles.text}>No Internet Connection</Text>
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  banner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: 'red',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  text: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom:10
+  },
+});
 
 const App = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -55,7 +106,7 @@ const App = () => {
   const checkForUpdate = async () => {
     try {
       const res = await VersionCheck.needUpdate();
-      if (res.isNeeded) {
+      if (res?.isNeeded) {
         console.log("first")
         setShowUpdateModal(true);
       }else{
@@ -86,26 +137,18 @@ const App = () => {
   return (
     <Provider store={store}>
       <NavigationContainer>
-        <AppNavigation />
-
-        <CustomModal
-        visible={showUpdateModal}
-       title="Update Available"
-       message="A new version of the app is available. Please update to continue using all features."
-       confirmText="Update Now"
-       onConfirm={handleUpdate}
-      //  showCancel={false}
-       cancelText=''
-      />
-        
-        {/* <CustomAlert
-          visible={showUpdateModal}
-          title="Update Available"
-          message="A new version of the app is available. Please update to continue using all features."
-          confirmText="Update Now"
-          onConfirm={handleUpdate}
-          showCancel={false}
-        /> */}
+        <View style={{ flex: 1 }}>
+          <NetworkStatusBanner />
+          <AppNavigation />
+          <CustomModal
+            visible={showUpdateModal}
+            title="Update Available"
+            message="A new version of the app is available. Please update to continue using all features."
+            confirmText="Update Now"
+            onConfirm={handleUpdate}
+            cancelText=''
+          />
+        </View>
       </NavigationContainer>
     </Provider>
   );

@@ -45,6 +45,9 @@ import Geolocation from '@react-native-community/geolocation';
 import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import ServiceUnavailableScreen from './ServiceUnavailableScreen';
+import NetInfo from '@react-native-community/netinfo';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Skeleton from './Skeleton';
 // import {GOOGLE_MAPS_API_KEY} from '@env';
 
 export default function UserHome({navigation}) {
@@ -52,6 +55,7 @@ export default function UserHome({navigation}) {
     serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
     const {customerId,locationName,orderOfferAmount} =
     useSelector(state => state.Auth);
+    const {isNetworkConnected,onloadComponents} = useSelector(state => state.address);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -63,6 +67,8 @@ export default function UserHome({navigation}) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
+  const [initialNetLoad, setInitialNetLoad] = useState(false);
+
 
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
@@ -193,6 +199,9 @@ export default function UserHome({navigation}) {
     }, [authLocation])
   );
 
+
+
+
   // useEffect(() => {
   //   const checkAvailability = async () => {
   //     if (selectedAddress) {
@@ -244,11 +253,6 @@ export default function UserHome({navigation}) {
     navigation.navigate('CategoriesScreen');
   };
 
-  const filteredRestaurants = useMemo(() => {
-    return restaurants?.filter(restaurant =>
-      restaurant.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [restaurants, searchQuery]);
 
   const checkServiceAvailability = async () => {
     const abortController = new AbortController();
@@ -304,8 +308,13 @@ export default function UserHome({navigation}) {
   //   }, [authLocation, serviceAvailable])
   // );
 
-  // Update the combined loading state
-  const isLoading = loading.addressCheck || isLoadingLocation || loading.categories || loading.banners || serviceAvailable === null;
+  // Update the isLoading calculation
+  let isLoading = (
+    loading.addressCheck || 
+    isLoadingLocation || 
+    loading.categories || 
+    loading.banners
+  );
 
   const calculateDeliveryTime = (distance) => {
     if (distance < 3) {
@@ -344,66 +353,75 @@ export default function UserHome({navigation}) {
     }
   };
 
+  // useEffect(() => {
+  //   if(isNetworkConnected){
+  //     isLoading = false;
+  //   }else{
+  //     isLoading = true;
+  //   }
+  // }, [isNetworkConnected])
+
+  // Update network reconnect handler
+  // useEffect(() => {
+  //   const unsubscribe = NetInfo.addEventListener(state => {
+  //     console.log("++++++++++++++++STATTTATAT",isConnected)
+  //     if (state.isConnected) {
+  //       // Reset loading states to trigger skeleton
+  //       dispatch({ type: 'dashboard/getCategories/pending' });
+  //       dispatch({ type: 'dashboard/getBanners/pending' });
+  //       dispatch({ type: 'dashboard/checkAddressExistence/pending' });
+        
+  //       // Fetch fresh data
+  //       checkServiceAvailability();
+  //       dispatch(getCategories());
+  //       dispatch(getBanners());
+  //       dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
+  //     }
+  //   });
+  //   return () => unsubscribe();
+  // }, []);
+
+  // Handle network connection changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(async state => {
+      if (state.isConnected && !isNetworkConnected) {
+        // Connection restored - show loading state
+        // setRefreshing(true);
+        setInitialNetLoad(true)
+        await checkServiceAvailability()
+        // Refresh all data
+        await Promise.all([
+          dispatch(getCategories()),
+          dispatch(getBanners()),
+          dispatch(getRestaurantsHome({categoryId: activeCategoryIndex})),
+          dispatch(getSubCategories({categoryId: activeCategoryIndex}))
+        ]);
+        
+        // Small delay to ensure smooth transition
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // setRefreshing(false);
+        setInitialNetLoad(false)
+      }
+    });
+    return () => unsubscribe();
+  }, [isNetworkConnected, activeCategoryIndex, dispatch]);
+
+  console.log("serviceAvailable","isNetworkConnected",isNetworkConnected,serviceAvailable)
 
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={'transparent'} translucent />
-      {isLoading ? (
-        <SkeletonPlaceholder>
-          {/* Location Skeleton */}
-          <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" padding={15}>
-            <SkeletonPlaceholder.Item width={30} height={30} borderRadius={15} />
-            <SkeletonPlaceholder.Item marginLeft={10}>
-              <SkeletonPlaceholder.Item width={200} height={20} />
-              <SkeletonPlaceholder.Item marginTop={6} width={150} height={16} />
-            </SkeletonPlaceholder.Item>
-          </SkeletonPlaceholder.Item>
-
-          {/* Search Bar Skeleton */}
-          <SkeletonPlaceholder.Item 
-            height={50} 
-            borderRadius={8} 
-            marginHorizontal={15}
-            marginBottom={20}
-          />
-
-          {/* Banners Skeleton */}
-          <SkeletonPlaceholder.Item
-            height={120}
-            borderRadius={8}
-            marginHorizontal={15}
-            marginBottom={20}
-          />
-
-          {/* Categories Skeleton */}
-          <SkeletonPlaceholder.Item
-            flexDirection="row"
-            justifyContent="space-between"
-            paddingHorizontal={15}
-            marginBottom={20}
-          >
-            {[1,2,3,4].map((_, i) => (
-              <SkeletonPlaceholder.Item
-                key={i}
-                width={70}
-                height={70}
-                borderRadius={35}
-              />
-            ))}
-          </SkeletonPlaceholder.Item>
-
-          {/* Restaurants Skeleton */}
-          <SkeletonPlaceholder.Item paddingHorizontal={15}>
-            {[1,2,3].map((_, i) => (
-              <SkeletonPlaceholder.Item
-                key={i}
-                height={160}
-                borderRadius={8}
-                marginBottom={20}
-              />
-            ))}
-          </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder>
+      
+      {isNetworkConnected === null ? (
+       <Skeleton  />
+      ) :( !isNetworkConnected && !categories )? (
+        <View style={styles.offlineContainer}>
+          <MaterialCommunityIcons name="wifi-off" size={40} color="#666" />
+          <Text style={styles.offlineText}>No internet connection available</Text>
+          <Text style={styles.offlineSubText}>Please check your network settings</Text>
+        </View>
+      ) :( isLoading|| initialNetLoad )? (
+        <Skeleton  />
       ) : serviceAvailable ? (
         <>
           <LinearGradient colors={['#065E2C', '#F7F2F2']} style={styles.gradientContainer}>
@@ -429,63 +447,6 @@ export default function UserHome({navigation}) {
               </TouchableOpacity>
             </View>
 
-            {loading.addressCheck || isLoadingLocation  ? (
-              <SkeletonPlaceholder borderRadius={4}>
-                {/* Location Skeleton */}
-                <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" padding={15}>
-                  <SkeletonPlaceholder.Item width={30} height={30} borderRadius={15} />
-                  <SkeletonPlaceholder.Item marginLeft={10}>
-                    <SkeletonPlaceholder.Item width={200} height={20} />
-                    <SkeletonPlaceholder.Item marginTop={6} width={150} height={16} />
-                  </SkeletonPlaceholder.Item>
-                </SkeletonPlaceholder.Item>
-
-                {/* Search Bar Skeleton */}
-                <SkeletonPlaceholder.Item 
-                  height={50} 
-                  borderRadius={8} 
-                  marginHorizontal={15}
-                  marginBottom={20}
-                />
-
-                {/* Banners Skeleton */}
-                <SkeletonPlaceholder.Item
-                  height={120}
-                  borderRadius={8}
-                  marginHorizontal={15}
-                  marginBottom={20}
-                />
-
-                {/* Categories Skeleton */}
-                <SkeletonPlaceholder.Item
-                  flexDirection="row"
-                  justifyContent="space-between"
-                  paddingHorizontal={15}
-                  marginBottom={20}
-                >
-                  {[1,2,3,4].map((_, i) => (
-                    <SkeletonPlaceholder.Item
-                      key={i}
-                      width={70}
-                      height={70}
-                      borderRadius={35}
-                    />
-                  ))}
-                </SkeletonPlaceholder.Item>
-
-                {/* Restaurants Skeleton */}
-                <SkeletonPlaceholder.Item paddingHorizontal={15}>
-                  {[1,2,3].map((_, i) => (
-                    <SkeletonPlaceholder.Item
-                      key={i}
-                      height={160}
-                      borderRadius={8}
-                      marginBottom={20}
-                    />
-                  ))}
-                </SkeletonPlaceholder.Item>
-              </SkeletonPlaceholder>
-            ) : (
               <>
                 <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen',{isFromHome:true})} style={styles.searchContainer}>
                   <TextInput
@@ -545,7 +506,6 @@ export default function UserHome({navigation}) {
                   />
                 )}
               </>
-            )}
           </LinearGradient>
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -559,11 +519,6 @@ export default function UserHome({navigation}) {
             style={styles.container}
           >
             <View>
-              {loading.subCategories ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color="#065E2C" />
-                </View>
-              ) : (
                 <FlatList
                   data={subCategories}
                   horizontal
@@ -601,14 +556,8 @@ export default function UserHome({navigation}) {
                     </Shadow>
                   )}
                 />
-              )}
             </View>
 
-            {loading.banners ? (
-              <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color="#065E2C" />
-              </View>
-            ) : (
               <FlatList
                 ref={flatListRef}
                 data={banners}
@@ -624,7 +573,6 @@ export default function UserHome({navigation}) {
                   </TouchableOpacity>
                 )}
               />
-            )}
 
             {activeCategoryIndex === 1 ? (
               <View>
@@ -636,48 +584,60 @@ export default function UserHome({navigation}) {
                     data={homeRestaurnats}
                     keyExtractor={item => item.shop_id}
                     renderItem={({item}) => {
+                      const isUnavailable = item.shop_active_status === "1";
                       const distance = item.distance;
+                      
                       return (
-                      <TouchableOpacity
-                        style={styles.restaurantCard}
-                        onPress={() =>{
-                          
-                          navigation.navigate('RestaurantScreen', {
-                            shopId: item.shop_id,
-                            shopItem: item.shop_items_tb_nm,
-                            item,
-                          })
-                        }}>
-                        <Image
-                          source={{uri: item.shop_image}}
-                          style={styles.restaurantImage}
-                        />
-                        <View style={styles.restaurantInfo}>
-                          <Text style={styles.restaurantName}>
-                            {item.shop_name}
-                          </Text>
-                          <Text style={styles.restaurantType}>
-                            {item.shop_address}
-                          </Text>
-                          <View style={styles.restaurantStats}>
-                            <View style={styles.statItem}>
-                              <ReviewStar />
-                              <Text style={styles.statText}>{item.shop_rating}</Text>
+                        <TouchableOpacity
+                          style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
+                          onPress={() => {
+                            if (!isUnavailable) {
+                              navigation.navigate('RestaurantScreen', {
+                                shopId: item.shop_id,
+                                shopItem: item.shop_items_tb_nm,
+                                item,
+                              });
+                            }
+                          }}
+                          disabled={isUnavailable}
+                        >
+                          {isUnavailable && (
+                            <View style={styles.unavailableOverlay}>
+                              <Text style={styles.unavailableText}>Currently Unavailable</Text>
                             </View>
+                          )}
+                          
+                          <Image
+                            source={{uri: item.shop_image}}
+                            style={[styles.restaurantImage, isUnavailable && styles.grayImage]}
+                          />
+                          <View style={styles.restaurantInfo}>
+                            <Text style={styles.restaurantName}>
+                              {item.shop_name}
+                            </Text>
+                            <Text style={styles.restaurantType}>
+                              {item.shop_address}
+                            </Text>
+                            <View style={styles.restaurantStats}>
+                              <View style={styles.statItem}>
+                                <ReviewStar />
+                                <Text style={styles.statText}>{item.shop_rating}</Text>
+                              </View>
 
-                            {/* <View style={styles.statItem}>
-                              <DeliveryVehicle />
-                              <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
-                            </View> */}
+                              {/* <View style={styles.statItem}>
+                                <DeliveryVehicle />
+                                <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
+                              </View> */}
 
-                            <View style={styles.statItem}>
-                              <Clock />
-                              <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
+                              <View style={styles.statItem}>
+                                <Clock />
+                                <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
-                    )}}
+                        </TouchableOpacity>
+                      );
+                    }}
                   />
                 ) : (
                   <View style={styles.emptyContainer}>
@@ -685,18 +645,11 @@ export default function UserHome({navigation}) {
                   </View>
                 )}
               </View>
-            ) : (
-              loading.restaurants ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color="#065E2C" />
-                </View>
-              ) : (
-                <ShopSection shops={restaurants} />
-              )
-            )}
+            ) : <ShopSection shops={restaurants} />
+            }
           </ScrollView>
         </>
-      ) : (
+      ) : serviceAvailable===false &&(
         <ServiceUnavailableScreen />
       )}
     </View>
@@ -900,5 +853,53 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginHorizontal: 20,
+  },
+  unavailableCard: {
+    opacity: 0.6,
+    backgroundColor: '#f0f0f0',
+  },
+  grayImage: {
+    opacity: 0.5,
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderRadius: 15,
+  },
+  unavailableText: {
+    color: '#ff4444',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  offlineContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  offlineText: {
+    fontSize: 18,
+    color: '#333',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  offlineSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

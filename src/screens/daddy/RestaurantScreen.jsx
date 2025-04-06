@@ -426,7 +426,7 @@ const RestaurantScreen = ({navigation,route}) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#065E2C" />
         </View>
-      ) : filteredData.length === 0 ? (
+      ) : filteredData?.length === 0 ? (
         <View style={styles.noItemsContainer}>
           <MaterialCommunityIcons name="food-off" size={50} color="#A3A3A3" />
           <Text style={styles.noItemsText}>No items found</Text>
