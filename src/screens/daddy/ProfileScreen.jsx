@@ -48,10 +48,7 @@ const ProfileScreen = () => {
     try {
       setIsLoading(true);
       const response = await dispatch(getOrders({orderId:0}));
-      const sortedOrders = response?.payload?.data?.sort((a, b) => 
-        new Date(b.order_date + 'T' + b.order_time) - new Date(a.order_date + 'T' + a.order_time)
-      ) || [];
-      setOrders(sortedOrders.slice(0, 1));
+      response.payload.data.length > 0 && setOrders([response.payload.data[0]]);
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
@@ -305,6 +302,8 @@ const ProfileScreen = () => {
         },
   ];
 
+  console.log(orders,"+++++++++++++++++>>>>ORDERS")
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={'transparent'} barStyle={'light-content'} />
@@ -361,7 +360,7 @@ const ProfileScreen = () => {
           <FlatList
             data={orders}
             renderItem={renderOrder}
-            keyExtractor={item => item.order_id}
+            keyExtractor={item => item?.order_id}
             contentContainerStyle={styles.listContainer}
           />
         ) : (

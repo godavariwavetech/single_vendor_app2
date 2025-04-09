@@ -200,6 +200,14 @@ export const getRestaurantsHome = createAsyncThunk(
   ) =>{
 
     const {location,locationId} = getState().Auth;
+    console.log({
+      "shop_latitude": location.latitude,
+      "shop_longitude": location.longitude,
+      "location_id": locationId,
+      "category_id": categoryId,
+      "sub_category_id":subCatergoryId||0,
+      "shop_id": 0
+  },"+++++++++++++++++++++++++++++>>>>>>>>>>>>>>>>>>>>")
       const response = await api.post(endpoints.GET_SHOPS,{
           "shop_latitude": location.latitude,
           "shop_longitude": location.longitude,
@@ -749,6 +757,7 @@ export const Dashboard = createSlice({
     });
     builder.addCase(getRestaurantsHome.fulfilled, (state, action) => {
       state.loading = false;
+      console.log("action.payload",action.payload.data)
       state.homeRestaurnats = action.payload.data[0];
     });   
     builder.addCase(getRestaurantsHome.rejected, (state) => {
