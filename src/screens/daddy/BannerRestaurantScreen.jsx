@@ -53,6 +53,7 @@ const BannerRestaurantScreen = ({navigation,route}) => {
   const {location,locationId} = useSelector(state=>state.Auth)
   // const [bottomGap,setBottomGap] = useState(0)
   const bottomGap = new Animated.Value(0);
+  const flatListRef = useRef(null);
 
 
   console.log("called")
@@ -143,6 +144,17 @@ useEffect(()=>{
         scaleAnims.set(itemId, new Animated.Value(1));
       }
 
+      const index = filteredData.findIndex(item => item.id === itemId);
+      if (index !== -1 && flatListRef.current && filteredData.length > 0 && index < filteredData.length) {
+        requestAnimationFrame(() => {
+          flatListRef.current?.scrollToIndex({
+            index,
+            viewOffset: 100,
+            animated: true
+          });
+        });
+      }
+
       const timer = setTimeout(() => {
         setHighlightedItemId(null);
         setRenderedItems(prev => {
@@ -157,7 +169,7 @@ useEffect(()=>{
         clearTimeout(timer);
       };
     }
-  }, [route?.params]);
+  }, [route?.params, filteredData]);
 
   const handleAddToCart = (item) => {
     console.log(cartRestaurant,restaurantData)
@@ -469,13 +481,20 @@ useEffect(()=>{
         <Animated.View style={{flex:1,paddingBottom:bottomGap}}>
 
         <FlatList
+          ref={flatListRef}
           data={filteredData}
           keyExtractor={item => item.id}
           numColumns={2}
           style={[styles.itemList]}
           columnWrapperStyle={styles.columnWrapper}
-
           renderItem={renderItem}
+          onScrollToIndexFailed={({ index, highestMeasuredFrameIndex }) => {
+            if (highestMeasuredFrameIndex >= 0) {
+              flatListRef.current?.scrollToIndex({ index: highestMeasuredFrameIndex });
+            } else if (filteredData.length > 0) {
+              flatListRef.current?.scrollToEnd();
+            }
+          }}
         />
         </Animated.View>
       )}

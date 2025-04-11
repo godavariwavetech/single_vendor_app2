@@ -350,7 +350,7 @@ useEffect(() => {
   };
 
   const handleBannerPress = (banner) => {
-     navigation.navigate('BannerRestaurantScreen',{highlightItemId:4})
+     navigation.navigate('BannerRestaurantScreen',{highlightItemId:9})
     // const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
     // if(item.length > 0){
     //   navigation.navigate('RestaurantScreen', {
