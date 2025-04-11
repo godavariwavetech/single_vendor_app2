@@ -10,7 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
+import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 
 const { width } = Dimensions.get('window');
 
@@ -24,10 +24,11 @@ const ServiceUnavailableScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Image
+        <MaterialIcons name="location-off" size={responsiveFontSize(25)} color="#666" />
+        {/* <Image
           source={{ uri: 'https://raw.githubusercontent.com/Adarsh-arya/local_daddy_images/main/no_service.png' }}
           style={styles.image}
-        />
+        /> */}
         <Text style={styles.titleText}>Service Not Available</Text>
         <Text style={styles.messageText}>
           We're currently not serving in your area. Please choose from our available service locations.
@@ -35,7 +36,7 @@ const ServiceUnavailableScreen = () => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button,{alignItems:"center",justifyContent:"center"}]}
             onPress={() => navigation.navigate('ServicesAvailable')}
           >
             <Text style={styles.buttonText}>Browse Available Areas</Text>

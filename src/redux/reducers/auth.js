@@ -149,9 +149,11 @@ export const AuthSlice = createSlice({
       state.location = action.payload;
     },
     setLocationName: (state, action) => {
+      console.log("calling setLocationName",action.payload)
       state.locationName = action.payload;
     },
     setLocationId: (state, action) => {
+      console.log("calling setLocationId",action.payload)
       state.locationId = action.payload;
     },
     clearNavigationFlag: (state) => {

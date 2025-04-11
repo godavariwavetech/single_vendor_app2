@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  BackHandler,
+  RefreshControl,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -19,16 +21,16 @@ import { setLocation, setLocationId, setLocationName } from '../../redux/reducer
 
 const { width } = Dimensions.get('window');
 
-const ServicesAvailableScreen = ({ navigation }) => {
+const ServicesAvailableScreen = ({ navigation,route }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredAreas, setFilteredAreas] = useState([]);
   const { availableAreas, loading } = useSelector(state => state.Dashboard);
   const dispatch = useDispatch();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     dispatch(getServices());
   }, []);
-
 
   useEffect(() => {
     if (availableAreas) {
@@ -45,6 +47,15 @@ const ServicesAvailableScreen = ({ navigation }) => {
     navigation.navigate("BottomNavigation")
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(getServices());
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -52,7 +63,7 @@ const ServicesAvailableScreen = ({ navigation }) => {
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+        {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />}
         </TouchableOpacity>
         <Text style={styles.title}>Available Service Areas</Text>
       </View>
@@ -72,6 +83,14 @@ const ServicesAvailableScreen = ({ navigation }) => {
         <ActivityIndicator size="large" color="#065E2C" style={styles.loader} />
       ) : (
         <FlatList
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#065E2C']}
+              tintColor="#065E2C"
+            />
+          }
           data={filteredAreas}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   StatusBar,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   PermissionsAndroid,
   RefreshControl,
@@ -21,7 +20,6 @@ import {
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import ReviewStar from './tabassets/ReviewStar';
-import DeliveryVehicle from './tabassets/DeliveryVehicle';
 import Clock from './tabassets/Clock';
 import {Shadow} from 'react-native-shadow-2';
 import ShopSection from './builder/ShopSection';
@@ -29,26 +27,22 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   getBanners,
   getCategories,
-  getRestaurants,
   getSubCategories,
   setActiveCategoryIndex,
   setsubCategory,
   getAddressList,
-  setAddressList,
   updateUserAddress,
-  checkServiceAvailability,
   checkAddressExistence,
   getRestaurantsHome,
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
-import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import ServiceUnavailableScreen from './ServiceUnavailableScreen';
 import NetInfo from '@react-native-community/netinfo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Skeleton from './Skeleton';
-// import {GOOGLE_MAPS_API_KEY} from '@env';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export default function UserHome({navigation}) {
   const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
@@ -68,10 +62,24 @@ export default function UserHome({navigation}) {
   const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
   const [initialNetLoad, setInitialNetLoad] = useState(false);
+  const [serviceCheckFailed, setServiceCheckFailed] = useState(false);
+  const [errorOccured, setErrorOccured] = useState(false);
+  const networkStatusRef = useRef(isNetworkConnected);
 
+useEffect(() => {
+  networkStatusRef.current = isNetworkConnected;
+}, [isNetworkConnected]);
 
+  // Calculate isLoading from Redux loading states
+  let isLoading = (
+    loading.addressCheck || 
+    isLoadingLocation || 
+    loading.categories || 
+    loading.banners
+  );
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
+      setErrorOccured(false)
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${"AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c"}`,
       );
@@ -82,6 +90,7 @@ export default function UserHome({navigation}) {
       return 'Address not found';
     } catch (error) {
       console.error('Error getting address:', error);
+      setErrorOccured(true);
       return 'Error getting address';
     }
   };
@@ -111,6 +120,8 @@ export default function UserHome({navigation}) {
           contact: userAddress?.contact || '',
         };
 
+        if(!isNetworkConnected) return
+
         dispatch(updateUserAddress(currentLocationAddress));
         setSelectedAddress(currentLocationAddress);
         setIsLoadingLocation(false);
@@ -129,9 +140,29 @@ export default function UserHome({navigation}) {
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
-      getCurrentLocation();
+      try {
+        const status = await Geolocation.requestAuthorization('whenInUse');
+        if (status !== 'granted') {
+          networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
+        } else {
+          getCurrentLocation();
+        }
+      } catch (err) {
+        networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
+      }
     } else {
       try {
+        const startTime = Date.now();
+        const testUrl = 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png';
+        
+        const response = await fetch(testUrl);
+        const blob = await response.blob();
+        
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000; // in seconds
+        const bitsLoaded = blob.size * 8;
+        const speedMbps = (bitsLoaded / (1024 * 1024)) / duration;
+        console.log("SPEED",speedMbps)
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -142,22 +173,30 @@ export default function UserHome({navigation}) {
             buttonPositive: 'OK',
           },
         );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
+        } else {
           getCurrentLocation();
         }
       } catch (err) {
-        console.warn(err);
+        networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
       }
     }
-  }, [getCurrentLocation]);
+  }, [getCurrentLocation, navigation,isNetworkConnected]);
 
   const getCategoreis = async () => {
-     dispatch(getCategories());
-     dispatch(getSubCategories({categoryId: activeCategoryIndex}));
-    dispatch(getBanners());
+    try {
+      setErrorOccured(false)
+      dispatch(getCategories());
+      dispatch(getSubCategories({categoryId: activeCategoryIndex}));
+      dispatch(getBanners());
     if (!restaurants || restaurants.length === 0) {
       dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
       // dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+    }
+    } catch (error) {
+      setErrorOccured(true)
+      console.log("ERRORIN INITIAL LOAD",error)
     }
   };
 
@@ -171,6 +210,7 @@ export default function UserHome({navigation}) {
           customer_latitude: authLocation.latitude.toString(),
           customer_longitude: authLocation.longitude.toString(),
         };
+        if(!isNetworkConnected) return
         setSelectedAddress(currentAddress);
       } else if (userAddress) {
         setSelectedAddress(userAddress);
@@ -198,26 +238,6 @@ export default function UserHome({navigation}) {
       checkOnFocus();
     }, [authLocation])
   );
-
-
-
-
-  // useEffect(() => {
-  //   const checkAvailability = async () => {
-  //     if (selectedAddress) {
-  //       const result = await dispatch(checkServiceAvailability({
-  //         lat: selectedAddress.customer_latitude,
-  //         lng: selectedAddress.customer_longitude
-  //       }));
-        
-  //       if (!result.payload?.available) {
-  //         navigation.navigate('ServiceUnavailable');
-  //       }
-  //     }
-  //   };
-
-  //   checkAvailability();
-  // }, [selectedAddress, dispatch, navigation]);
 
   const handleSubCategories = category => {
     dispatch(setActiveCategoryIndex(category.id));
@@ -253,7 +273,6 @@ export default function UserHome({navigation}) {
     navigation.navigate('CategoriesScreen');
   };
 
-
   const checkServiceAvailability = async () => {
     const abortController = new AbortController();
     
@@ -261,6 +280,7 @@ export default function UserHome({navigation}) {
       if (!authLocation || !mounted) return;
       
       try {
+        setErrorOccured(false)
         const response = await dispatch(checkAddressExistence({
           latitude: authLocation.latitude,
           longitude: authLocation.longitude
@@ -281,8 +301,9 @@ export default function UserHome({navigation}) {
           }
         }
       } catch (error) {
+        setErrorOccured(true)
         if (error.name !== 'AbortError' && mounted) {
-          console.error('Service check failed:', error);
+          // console.error('Service check failed:', error);
         }
       }
     };
@@ -299,22 +320,6 @@ export default function UserHome({navigation}) {
       checkServiceAvailability();
     }
   }, [authLocation,serviceAvailable]);
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (authLocation && serviceAvailable) {
-  //       checkServiceAvailability();
-  //     }
-  //   }, [authLocation, serviceAvailable])
-  // );
-
-  // Update the isLoading calculation
-  let isLoading = (
-    loading.addressCheck || 
-    isLoadingLocation || 
-    loading.categories || 
-    loading.banners
-  );
 
   const calculateDeliveryTime = (distance) => {
     if (distance < 3) {
@@ -353,34 +358,6 @@ export default function UserHome({navigation}) {
     }
   };
 
-  // useEffect(() => {
-  //   if(isNetworkConnected){
-  //     isLoading = false;
-  //   }else{
-  //     isLoading = true;
-  //   }
-  // }, [isNetworkConnected])
-
-  // Update network reconnect handler
-  // useEffect(() => {
-  //   const unsubscribe = NetInfo.addEventListener(state => {
-  //     console.log("++++++++++++++++STATTTATAT",isConnected)
-  //     if (state.isConnected) {
-  //       // Reset loading states to trigger skeleton
-  //       dispatch({ type: 'dashboard/getCategories/pending' });
-  //       dispatch({ type: 'dashboard/getBanners/pending' });
-  //       dispatch({ type: 'dashboard/checkAddressExistence/pending' });
-        
-  //       // Fetch fresh data
-  //       checkServiceAvailability();
-  //       dispatch(getCategories());
-  //       dispatch(getBanners());
-  //       dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
-  //     }
-  //   });
-  //   return () => unsubscribe();
-  // }, []);
-
   // Handle network connection changes
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(async state => {
@@ -388,6 +365,7 @@ export default function UserHome({navigation}) {
         // Connection restored - show loading state
         // setRefreshing(true);
         setInitialNetLoad(true)
+        
         await checkServiceAvailability()
         // Refresh all data
         await Promise.all([
@@ -396,6 +374,7 @@ export default function UserHome({navigation}) {
           dispatch(getRestaurantsHome({categoryId: activeCategoryIndex})),
           dispatch(getSubCategories({categoryId: activeCategoryIndex}))
         ]);
+        
         
         // Small delay to ensure smooth transition
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -406,41 +385,55 @@ export default function UserHome({navigation}) {
     return () => unsubscribe();
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
 
-  console.log("serviceAvailable","isNetworkConnected",isNetworkConnected,serviceAvailable)
+
+  console.log("+++++++++++++++>>>>>>>>>>>>>>CATEGOIRIES",categories)
+
 
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={'transparent'} translucent />
       
       {isNetworkConnected === null ? (
-       <Skeleton  />
-      ) :( !isNetworkConnected && !categories )? (
+          <Skeleton/>
+      ) : !isNetworkConnected && !categories ? (
         <View style={styles.offlineContainer}>
           <MaterialCommunityIcons name="wifi-off" size={40} color="#666" />
           <Text style={styles.offlineText}>No internet connection available</Text>
           <Text style={styles.offlineSubText}>Please check your network settings</Text>
         </View>
-      ) :( isLoading|| initialNetLoad )? (
-        <Skeleton  />
+      ) : serviceCheckFailed && !isLoading ? (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={40} color="#FF4444" />
+          <Text style={styles.errorText}>Network Error</Text>
+          <Text style={styles.errorSubText}>Failed to connect to the server</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={checkServiceAvailability}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : isLoading || initialNetLoad ? (
+        <Skeleton/>
       ) : serviceAvailable ? (
         <>
           <LinearGradient colors={['#065E2C', '#F7F2F2']} style={styles.gradientContainer}>
             <View style={styles.headerContainer}>
               <View>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress:selectedAddress})} 
-                  style={styles.locationContainer}
-                >
-                  <Octicons name="location" color="#fff" size={25} />
-                  <View>
-                    <Text style={styles.locationTitle}>
-                      {isLoadingLocation ? 'Getting location...' : (selectedAddress?.address_type || 'Current Location')}
-                    </Text>
-                    <Text style={styles.locationAddress} numberOfLines={1}>
-                      {isLoadingLocation ? 'Please wait...' : (selectedAddress?.full_address || 'Add your delivery address')}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress})} 
+                    style={styles.locationContainer}
+                  >
+                    <Octicons name="location" color="#fff" size={25} />
+                    <View>
+                      <Text style={styles.locationTitle}>
+                        {locationName ? ( locationName || 'Current Location') : 'Select Location'}
+                      </Text>
+                      <Text style={styles.locationAddress} numberOfLines={1}>
+                        {selectedAddress?.full_address || 'Tap to choose delivery location'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={() => navigation.navigate('Support')} style={styles.supportButton}>
                 <Icon name="support-agent" size={30} color="grey" />
@@ -649,9 +642,23 @@ export default function UserHome({navigation}) {
             }
           </ScrollView>
         </>
-      ) : serviceAvailable===false &&(
+      ) : serviceAvailable===false ?(
         <ServiceUnavailableScreen />
-      )}
+      ) 
+      : !categories && !errorOccured ? <Skeleton /> :
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Something went wrong</Text>
+        <TouchableOpacity 
+          style={styles.retryButton} 
+          onPress={() => {
+            checkServiceAvailability();
+            getCategoreis();
+          }}
+        >
+          <Text style={styles.retryText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+      }
     </View>
   );
 }
@@ -901,5 +908,63 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  locationFallback: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    margin: 20,
+    alignItems: 'center',
+  },
+  locationWarning: {
+    fontSize: 16,
+    color: '#FF4444',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  locationButton: {
+    backgroundColor: '#065E2C',
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  locationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  locationOr: {
+    color: '#666',
+    marginVertical: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: 'grey',
+    marginBottom: 20,
+  },
+  errorSubText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#065E2C',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

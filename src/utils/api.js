@@ -4,7 +4,7 @@ import { store } from "../redux/store";
 
 const api = axios.create({
   baseURL,
-  timeout: 10000,
+  timeout: 5000,
 });
 
 api.interceptors.request.use(
