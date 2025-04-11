@@ -47,6 +47,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
   const searchTimeout = useRef(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCheckingAddress, setIsCheckingAddress] = useState(false);
 
   const { loading } = useSelector(state => state.Dashboard);
   const { location: storedLocation, locationName, locationId } = useSelector(state => state.Auth);
@@ -73,6 +74,19 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     }
   };
 
+  
+
+  useEffect(()=>{
+    const newRegion = {
+      latitude: route?.params?.selectedAddress?.customer_latitude,
+      longitude:  route?.params?.selectedAddress?.customer_longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    };
+    console.log(">>>>>>>>>>>>>>>CALLING",route.params)
+    setRegion(newRegion);
+  },[ route?.params?.selectedAddress])
+
   const getCurrentLocation = useCallback(async () => {
     setIsLoadingLocation(true);
     try {
@@ -95,11 +109,11 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       mapRef.current?.animateToRegion(newRegion, 1000);
       await getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
       
-      // Clear any previous stored location when manually selecting current location
-      dispatch(setLocation(null));
-      dispatch(setLocationName(null));
-      dispatch(setLocationId(null));
-      
+      // Update Redux with new current location
+      dispatch(setLocation(newRegion));
+      dispatch(setLocationName(address));
+      dispatch(setLocationId(null)); // Reset ID since it's not a saved location
+
     } catch (error) {
       console.error('Error getting location:', error);
     } finally {
@@ -123,6 +137,10 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       setSearchResults([]);
       return;
     }
+
+    // console.log(route.params,"+++++++++++++++MMMNMMNNMNN")
+
+
 
     // Set new timeout for API call
     searchTimeout.current = setTimeout(async () => {
@@ -222,6 +240,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
   const handleConfirmLocation = async() => {
     try {
+      setIsCheckingAddress(true);
       const response = await dispatch(checkAddressExistence({
         latitude: parseFloat(region.latitude),
         longitude: parseFloat(region.longitude)
@@ -243,8 +262,12 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       
     } catch (error) {
       console.error('Location confirmation error:', error);
+    } finally {
+      setIsCheckingAddress(false);
     }
   };
+
+  console.log("region>>>>>>>>>>>>>>>>>",region)
 
   useEffect(() => {
     if (storedLocation) {
@@ -257,8 +280,6 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       setRegion(validRegion);
       mapRef.current?.animateToRegion(validRegion, 1000);
       getAddressFromCoordinates(validRegion.latitude, validRegion.longitude);
-    } else {
-      getCurrentLocation();
     }
   }, [getCurrentLocation, storedLocation]);
 
@@ -274,11 +295,13 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     </View>
 
     <View style={styles.mapContainer}>
-      <MapView
+  { region &&   <MapView
+        key={`map-${region.latitude}-${region.longitude}`}
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
+        initialRegion={region}
         onPanDrag={() => setIsDragging(true)}
         onRegionChangeComplete={(newRegion) => {
           if (isDragging) {
@@ -288,7 +311,8 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         }}
         showsMyLocationButton={false}
         moveOnMarkerPress={false}
-      />
+        // key={}
+      />}
       <View style={styles.markerOverlay}>
         <View style={styles.markerContainer}>
             <MaterialIcons name="location-on" size={40} color="#065E2C" />
@@ -366,9 +390,9 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         <TouchableOpacity 
             style={styles.confirmButton}
             onPress={handleConfirmLocation}
-            disabled={loading.addressCheck}
+            disabled={isCheckingAddress}
           >
-            {loading ? (
+            {isCheckingAddress ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.confirmButtonText}>Confirm Location</Text>
@@ -467,6 +491,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     elevation: 3,
+    borderWidth:1,
+    borderColor:"#065E2C"
   },
   searchIcon: {
     marginRight: 10,

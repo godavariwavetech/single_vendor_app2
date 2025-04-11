@@ -26,5 +26,12 @@ export const endpoints = {
   GET_COUPONS:'public_app/coupon_list',
   PLACE_ORDER:'public_app/orderplaced',
   GET_CHARGES_LIST:'public_app/application_common_api',
-  REQUEST_OTP:'public_app/getuserloginotp'
+  REQUEST_OTP:'public_app/getuserloginotp',
+  GLOBAL_SEARCH:'public_app/search_allitems',
+  GIVE_APP_FEEDBACK:'public_app/postapprating',
+  CANCEL_ORDER:'public_app/cancleorder',
+  GIVE_ORDER_RATING:"public_app/postorderrating",
+  GENERATE_ORDER_ID:'public_app/generateorderid',
+  UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails',
+  GET_RESULT_FULL_DATA:'public_app/searchitemsfull'
 };

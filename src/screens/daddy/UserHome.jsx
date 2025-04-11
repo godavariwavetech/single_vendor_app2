@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   StatusBar,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   PermissionsAndroid,
   RefreshControl,
@@ -21,7 +20,6 @@ import {
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import ReviewStar from './tabassets/ReviewStar';
-import DeliveryVehicle from './tabassets/DeliveryVehicle';
 import Clock from './tabassets/Clock';
 import {Shadow} from 'react-native-shadow-2';
 import ShopSection from './builder/ShopSection';
@@ -29,28 +27,29 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   getBanners,
   getCategories,
-  getRestaurants,
   getSubCategories,
   setActiveCategoryIndex,
   setsubCategory,
   getAddressList,
-  setAddressList,
   updateUserAddress,
-  checkServiceAvailability,
   checkAddressExistence,
+  getRestaurantsHome,
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
-import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import ServiceUnavailableScreen from './ServiceUnavailableScreen';
-// import {GOOGLE_MAPS_API_KEY} from '@env';
+import NetInfo from '@react-native-community/netinfo';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Skeleton from './Skeleton';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export default function UserHome({navigation}) {
-  const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, serviceAvailable} =
-    useSelector(state => state.Dashboard);
+  const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
+    serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
     const {customerId,locationName,orderOfferAmount} =
     useSelector(state => state.Auth);
+    const {isNetworkConnected,onloadComponents} = useSelector(state => state.address);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -62,11 +61,27 @@ export default function UserHome({navigation}) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
+  const [initialNetLoad, setInitialNetLoad] = useState(false);
+  const [serviceCheckFailed, setServiceCheckFailed] = useState(false);
+  const [errorOccured, setErrorOccured] = useState(false);
+  const networkStatusRef = useRef(isNetworkConnected);
 
+useEffect(() => {
+  networkStatusRef.current = isNetworkConnected;
+}, [isNetworkConnected]);
+
+  // Calculate isLoading from Redux loading states
+  let isLoading = (
+    loading.addressCheck || 
+    isLoadingLocation || 
+    loading.categories || 
+    loading.banners
+  );
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
+      setErrorOccured(false)
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${"YOUR_GOOGLE_MAPS_API_KEY"}`,
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${"AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c"}`,
       );
       const data = await response.json();
       if (data.results && data.results.length > 0) {
@@ -75,6 +90,7 @@ export default function UserHome({navigation}) {
       return 'Address not found';
     } catch (error) {
       console.error('Error getting address:', error);
+      setErrorOccured(true);
       return 'Error getting address';
     }
   };
@@ -104,6 +120,8 @@ export default function UserHome({navigation}) {
           contact: userAddress?.contact || '',
         };
 
+        if(!isNetworkConnected) return
+
         dispatch(updateUserAddress(currentLocationAddress));
         setSelectedAddress(currentLocationAddress);
         setIsLoadingLocation(false);
@@ -122,9 +140,29 @@ export default function UserHome({navigation}) {
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
-      getCurrentLocation();
+      try {
+        const status = await Geolocation.requestAuthorization('whenInUse');
+        if (status !== 'granted') {
+          networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
+        } else {
+          getCurrentLocation();
+        }
+      } catch (err) {
+        networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
+      }
     } else {
       try {
+        const startTime = Date.now();
+        const testUrl = 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png';
+        
+        const response = await fetch(testUrl);
+        const blob = await response.blob();
+        
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000; // in seconds
+        const bitsLoaded = blob.size * 8;
+        const speedMbps = (bitsLoaded / (1024 * 1024)) / duration;
+        console.log("SPEED",speedMbps)
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -135,21 +173,30 @@ export default function UserHome({navigation}) {
             buttonPositive: 'OK',
           },
         );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
+        } else {
           getCurrentLocation();
         }
       } catch (err) {
-        console.warn(err);
+        networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
       }
     }
-  }, [getCurrentLocation]);
+  }, [getCurrentLocation, navigation,isNetworkConnected]);
 
   const getCategoreis = async () => {
-     dispatch(getCategories());
-     dispatch(getSubCategories({categoryId: activeCategoryIndex}));
-    dispatch(getBanners());
+    try {
+      setErrorOccured(false)
+      dispatch(getCategories());
+      dispatch(getSubCategories({categoryId: activeCategoryIndex}));
+      dispatch(getBanners());
     if (!restaurants || restaurants.length === 0) {
-      dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+      dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
+      // dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+    }
+    } catch (error) {
+      setErrorOccured(true)
+      console.log("ERRORIN INITIAL LOAD",error)
     }
   };
 
@@ -163,6 +210,7 @@ export default function UserHome({navigation}) {
           customer_latitude: authLocation.latitude.toString(),
           customer_longitude: authLocation.longitude.toString(),
         };
+        if(!isNetworkConnected) return
         setSelectedAddress(currentAddress);
       } else if (userAddress) {
         setSelectedAddress(userAddress);
@@ -191,27 +239,10 @@ export default function UserHome({navigation}) {
     }, [authLocation])
   );
 
-  // useEffect(() => {
-  //   const checkAvailability = async () => {
-  //     if (selectedAddress) {
-  //       const result = await dispatch(checkServiceAvailability({
-  //         lat: selectedAddress.customer_latitude,
-  //         lng: selectedAddress.customer_longitude
-  //       }));
-        
-  //       if (!result.payload?.available) {
-  //         navigation.navigate('ServiceUnavailable');
-  //       }
-  //     }
-  //   };
-
-  //   checkAvailability();
-  // }, [selectedAddress, dispatch, navigation]);
-
   const handleSubCategories = category => {
     dispatch(setActiveCategoryIndex(category.id));
     dispatch(getSubCategories({categoryId: category.id}));
-    dispatch(getRestaurants({categoryId: category.id}));
+    dispatch(getRestaurantsHome({categoryId: category.id}));
     dispatch(setOrderOfferAmount(category.order_offer_amount));
   };
 
@@ -237,15 +268,10 @@ export default function UserHome({navigation}) {
     setRefreshing(false);
   }, []);
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    navigation.navigate('CategoriesScreen');
   };
-
-  const filteredRestaurants = useMemo(() => {
-    return restaurants?.filter(restaurant =>
-      restaurant.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [restaurants, searchQuery]);
 
   const checkServiceAvailability = async () => {
     const abortController = new AbortController();
@@ -254,6 +280,7 @@ export default function UserHome({navigation}) {
       if (!authLocation || !mounted) return;
       
       try {
+        setErrorOccured(false)
         const response = await dispatch(checkAddressExistence({
           latitude: authLocation.latitude,
           longitude: authLocation.longitude
@@ -268,14 +295,15 @@ export default function UserHome({navigation}) {
             dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
             dispatch(getBanners());
             if (!restaurants || restaurants.length === 0) {
-              dispatch(getRestaurants({categoryId: activeCategoryIndex}));
+              dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
             }
             dispatch(getSubCategories({categoryId: activeCategoryIndex}));
           }
         }
       } catch (error) {
+        setErrorOccured(true)
         if (error.name !== 'AbortError' && mounted) {
-          console.error('Service check failed:', error);
+          // console.error('Service check failed:', error);
         }
       }
     };
@@ -292,17 +320,6 @@ export default function UserHome({navigation}) {
       checkServiceAvailability();
     }
   }, [authLocation,serviceAvailable]);
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (authLocation && serviceAvailable) {
-  //       checkServiceAvailability();
-  //     }
-  //   }, [authLocation, serviceAvailable])
-  // );
-
-  // Update the combined loading state
-  const isLoading = loading.addressCheck || isLoadingLocation || loading.categories || loading.banners || serviceAvailable === null;
 
   const calculateDeliveryTime = (distance) => {
     if (distance < 3) {
@@ -330,158 +347,111 @@ export default function UserHome({navigation}) {
     dispatch(setOrderOfferAmount(amount));
   };
 
+  const handleBannerPress = (banner) => {
+    const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
+    if(item.length > 0){
+      navigation.navigate('RestaurantScreen', {
+        shopId: item.shop_id,
+        shopItem: item.shop_items_tb_nm,
+        item,
+      })
+    }
+  };
+
+  // Handle network connection changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(async state => {
+      if (state.isConnected && !isNetworkConnected) {
+        // Connection restored - show loading state
+        // setRefreshing(true);
+        setInitialNetLoad(true)
+        
+        await checkServiceAvailability()
+        // Refresh all data
+        await Promise.all([
+          dispatch(getCategories()),
+          dispatch(getBanners()),
+          dispatch(getRestaurantsHome({categoryId: activeCategoryIndex})),
+          dispatch(getSubCategories({categoryId: activeCategoryIndex}))
+        ]);
+        
+        
+        // Small delay to ensure smooth transition
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // setRefreshing(false);
+        setInitialNetLoad(false)
+      }
+    });
+    return () => unsubscribe();
+  }, [isNetworkConnected, activeCategoryIndex, dispatch]);
+
+
+  console.log("+++++++++++++++>>>>>>>>>>>>>>CATEGOIRIES",categories)
+
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={'transparent'} translucent />
-      {isLoading ? (
-        <SkeletonPlaceholder>
-          {/* Location Skeleton */}
-          <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" padding={15}>
-            <SkeletonPlaceholder.Item width={30} height={30} borderRadius={15} />
-            <SkeletonPlaceholder.Item marginLeft={10}>
-              <SkeletonPlaceholder.Item width={200} height={20} />
-              <SkeletonPlaceholder.Item marginTop={6} width={150} height={16} />
-            </SkeletonPlaceholder.Item>
-          </SkeletonPlaceholder.Item>
-
-          {/* Search Bar Skeleton */}
-          <SkeletonPlaceholder.Item 
-            height={50} 
-            borderRadius={8} 
-            marginHorizontal={15}
-            marginBottom={20}
-          />
-
-          {/* Banners Skeleton */}
-          <SkeletonPlaceholder.Item
-            height={120}
-            borderRadius={8}
-            marginHorizontal={15}
-            marginBottom={20}
-          />
-
-          {/* Categories Skeleton */}
-          <SkeletonPlaceholder.Item
-            flexDirection="row"
-            justifyContent="space-between"
-            paddingHorizontal={15}
-            marginBottom={20}
+      
+      {isNetworkConnected === null ? (
+          <Skeleton/>
+      ) : !isNetworkConnected && !categories ? (
+        <View style={styles.offlineContainer}>
+          <MaterialCommunityIcons name="wifi-off" size={40} color="#666" />
+          <Text style={styles.offlineText}>No internet connection available</Text>
+          <Text style={styles.offlineSubText}>Please check your network settings</Text>
+        </View>
+      ) : serviceCheckFailed && !isLoading ? (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={40} color="#FF4444" />
+          <Text style={styles.errorText}>Network Error</Text>
+          <Text style={styles.errorSubText}>Failed to connect to the server</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={checkServiceAvailability}
           >
-            {[1,2,3,4].map((_, i) => (
-              <SkeletonPlaceholder.Item
-                key={i}
-                width={70}
-                height={70}
-                borderRadius={35}
-              />
-            ))}
-          </SkeletonPlaceholder.Item>
-
-          {/* Restaurants Skeleton */}
-          <SkeletonPlaceholder.Item paddingHorizontal={15}>
-            {[1,2,3].map((_, i) => (
-              <SkeletonPlaceholder.Item
-                key={i}
-                height={160}
-                borderRadius={8}
-                marginBottom={20}
-              />
-            ))}
-          </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : isLoading || initialNetLoad ? (
+        <Skeleton/>
       ) : serviceAvailable ? (
         <>
           <LinearGradient colors={['#065E2C', '#F7F2F2']} style={styles.gradientContainer}>
             <View style={styles.headerContainer}>
               <View>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate("SelectServiceFromLocation")} 
-                  style={styles.locationContainer}
-                >
-                  <Octicons name="location" color="#fff" size={25} />
-                  <View>
-                    <Text style={styles.locationTitle}>
-                      {isLoadingLocation ? 'Getting location...' : (selectedAddress?.address_type || 'Current Location')}
-                    </Text>
-                    <Text style={styles.locationAddress} numberOfLines={1}>
-                      {isLoadingLocation ? 'Please wait...' : (selectedAddress?.full_address || 'Add your delivery address')}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress})} 
+                    style={styles.locationContainer}
+                  >
+                    <Octicons name="location" color="#fff" size={25} />
+                    <View>
+                      <Text style={styles.locationTitle}>
+                        {locationName ? ( locationName || 'Current Location') : 'Select Location'}
+                      </Text>
+                      <Text style={styles.locationAddress} numberOfLines={1}>
+                        {selectedAddress?.full_address || 'Tap to choose delivery location'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={() => navigation.navigate('Support')} style={styles.supportButton}>
                 <Icon name="support-agent" size={30} color="grey" />
               </TouchableOpacity>
             </View>
 
-            {loading.addressCheck || isLoadingLocation  ? (
-              <SkeletonPlaceholder borderRadius={4}>
-                {/* Location Skeleton */}
-                <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" padding={15}>
-                  <SkeletonPlaceholder.Item width={30} height={30} borderRadius={15} />
-                  <SkeletonPlaceholder.Item marginLeft={10}>
-                    <SkeletonPlaceholder.Item width={200} height={20} />
-                    <SkeletonPlaceholder.Item marginTop={6} width={150} height={16} />
-                  </SkeletonPlaceholder.Item>
-                </SkeletonPlaceholder.Item>
-
-                {/* Search Bar Skeleton */}
-                <SkeletonPlaceholder.Item 
-                  height={50} 
-                  borderRadius={8} 
-                  marginHorizontal={15}
-                  marginBottom={20}
-                />
-
-                {/* Banners Skeleton */}
-                <SkeletonPlaceholder.Item
-                  height={120}
-                  borderRadius={8}
-                  marginHorizontal={15}
-                  marginBottom={20}
-                />
-
-                {/* Categories Skeleton */}
-                <SkeletonPlaceholder.Item
-                  flexDirection="row"
-                  justifyContent="space-between"
-                  paddingHorizontal={15}
-                  marginBottom={20}
-                >
-                  {[1,2,3,4].map((_, i) => (
-                    <SkeletonPlaceholder.Item
-                      key={i}
-                      width={70}
-                      height={70}
-                      borderRadius={35}
-                    />
-                  ))}
-                </SkeletonPlaceholder.Item>
-
-                {/* Restaurants Skeleton */}
-                <SkeletonPlaceholder.Item paddingHorizontal={15}>
-                  {[1,2,3].map((_, i) => (
-                    <SkeletonPlaceholder.Item
-                      key={i}
-                      height={160}
-                      borderRadius={8}
-                      marginBottom={20}
-                    />
-                  ))}
-                </SkeletonPlaceholder.Item>
-              </SkeletonPlaceholder>
-            ) : (
               <>
-                <View style={styles.searchContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen',{isFromHome:true})} style={styles.searchContainer}>
                   <TextInput
                     placeholderTextColor={'#666666'}
                     placeholder="Search for your favorites"
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={handleSearch}
+                    editable={false}
                   />
                   <Icon name="search" size={24} color="gray" />
-                </View>
+                </TouchableOpacity>
 
                 { categories && (
                   <FlatList
@@ -529,7 +499,6 @@ export default function UserHome({navigation}) {
                   />
                 )}
               </>
-            )}
           </LinearGradient>
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -543,11 +512,6 @@ export default function UserHome({navigation}) {
             style={styles.container}
           >
             <View>
-              {loading.subCategories ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color="#065E2C" />
-                </View>
-              ) : (
                 <FlatList
                   data={subCategories}
                   horizontal
@@ -585,14 +549,8 @@ export default function UserHome({navigation}) {
                     </Shadow>
                   )}
                 />
-              )}
             </View>
 
-            {loading.banners ? (
-              <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color="#065E2C" />
-              </View>
-            ) : (
               <FlatList
                 ref={flatListRef}
                 data={banners}
@@ -600,89 +558,107 @@ export default function UserHome({navigation}) {
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
                 renderItem={({item}) => (
-                  <View style={styles.bannerContainer}>
+                  <TouchableOpacity onPress={() => handleBannerPress(item)} style={styles.bannerContainer}>
                     <Image
                       source={{uri: item.banner_image}}
                       style={styles.bannerImage}
                     />
-                  </View>
+                  </TouchableOpacity>
                 )}
               />
-            )}
 
             {activeCategoryIndex === 1 ? (
               <View>
                 <Text style={styles.sectionTitle}>Restaurants Near You</Text>
-
-                {/* {loading.restaurants ? (
-                  <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#065E2C" />
-                  </View>
-                ) : 
-                ( */}
+                
+                {homeRestaurnats?.length > 0 ? (
                   <FlatList
                     showsVerticalScrollIndicator={false}
-                    data={filteredRestaurants}
+                    data={homeRestaurnats}
                     keyExtractor={item => item.shop_id}
                     renderItem={({item}) => {
+                      const isUnavailable = item.shop_active_status === "1";
                       const distance = item.distance;
+                      
                       return (
-                      <TouchableOpacity
-                        style={styles.restaurantCard}
-                        onPress={() =>
-                          navigation.navigate('RestaurantScreen', {
-                            shopId: item.shop_id,
-                            shopItem: item.shop_items_tb_nm,
-                            item,
-                          })
-                        }>
-                        <Image
-                          source={{uri: item.shop_image}}
-                          style={styles.restaurantImage}
-                        />
-                        <View style={styles.restaurantInfo}>
-                          <Text style={styles.restaurantName}>
-                            {item.shop_name}
-                          </Text>
-                          <Text style={styles.restaurantType}>
-                            {item.shop_address}
-                          </Text>
-                          <View style={styles.restaurantStats}>
-                            <View style={styles.statItem}>
-                              <ReviewStar />
-                              <Text style={styles.statText}>{item.shop_rating}</Text>
+                        <TouchableOpacity
+                          style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
+                          onPress={() => {
+                            if (!isUnavailable) {
+                              navigation.navigate('RestaurantScreen', {
+                                shopId: item.shop_id,
+                                shopItem: item.shop_items_tb_nm,
+                                item,
+                              });
+                            }
+                          }}
+                          disabled={isUnavailable}
+                        >
+                          {isUnavailable && (
+                            <View style={styles.unavailableOverlay}>
+                              <Text style={styles.unavailableText}>Currently Unavailable</Text>
                             </View>
+                          )}
+                          
+                          <Image
+                            source={{uri: item.shop_image}}
+                            style={[styles.restaurantImage, isUnavailable && styles.grayImage]}
+                          />
+                          <View style={styles.restaurantInfo}>
+                            <Text style={styles.restaurantName}>
+                              {item.shop_name}
+                            </Text>
+                            <Text style={styles.restaurantType}>
+                              {item.shop_address}
+                            </Text>
+                            <View style={styles.restaurantStats}>
+                              <View style={styles.statItem}>
+                                <ReviewStar />
+                                <Text style={styles.statText}>{item.shop_rating}</Text>
+                              </View>
 
-                            <View style={styles.statItem}>
-                              <DeliveryVehicle />
-                              <Text style={styles.statText}>{distance < 3 ? 'Free' : 'Paid'}</Text>
-                            </View>
+                              {/* <View style={styles.statItem}>
+                                <DeliveryVehicle />
+                                <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
+                              </View> */}
 
-                            <View style={styles.statItem}>
-                              <Clock />
-                              <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
+                              <View style={styles.statItem}>
+                                <Clock />
+                                <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
-                    )}}
+                        </TouchableOpacity>
+                      );
+                    }}
                   />
-                {/* )} */}
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No restaurants found in your area</Text>
+                  </View>
+                )}
               </View>
-            ) : (
-              loading.restaurants ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color="#065E2C" />
-                </View>
-              ) : (
-                <ShopSection shops={restaurants} />
-              )
-            )}
+            ) : <ShopSection shops={restaurants} />
+            }
           </ScrollView>
         </>
-      ) : (
+      ) : serviceAvailable===false ?(
         <ServiceUnavailableScreen />
-      )}
+      ) 
+      : !categories && !errorOccured ? <Skeleton /> :
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Something went wrong</Text>
+        <TouchableOpacity 
+          style={styles.retryButton} 
+          onPress={() => {
+            checkServiceAvailability();
+            getCategoreis();
+          }}
+        >
+          <Text style={styles.retryText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+      }
     </View>
   );
 }
@@ -872,5 +848,123 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  unavailableCard: {
+    opacity: 0.6,
+    backgroundColor: '#f0f0f0',
+  },
+  grayImage: {
+    opacity: 0.5,
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderRadius: 15,
+  },
+  unavailableText: {
+    color: '#ff4444',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  offlineContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  offlineText: {
+    fontSize: 18,
+    color: '#333',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  offlineSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationFallback: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    margin: 20,
+    alignItems: 'center',
+  },
+  locationWarning: {
+    fontSize: 16,
+    color: '#FF4444',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  locationButton: {
+    backgroundColor: '#065E2C',
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  locationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  locationOr: {
+    color: '#666',
+    marginVertical: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: 'grey',
+    marginBottom: 20,
+  },
+  errorSubText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#065E2C',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

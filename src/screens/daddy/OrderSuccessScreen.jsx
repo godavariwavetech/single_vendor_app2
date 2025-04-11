@@ -36,11 +36,10 @@ const OrderSuccessScreen = ({ navigation, route }) => {
   },[])
 
 
+  console.log(route?.params,"+++++++++++>>>>>RESPONSE")
+
   const handleBackPress = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'BottomNavigation' }],
-    });
+    navigation.navigate('OrderDetails',{fromOrderSuccess:true,orderDetails:route?.params?.response});
   };
 
   useEffect(() => {

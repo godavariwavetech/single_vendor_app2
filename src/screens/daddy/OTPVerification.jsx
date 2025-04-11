@@ -324,14 +324,14 @@ export default function OTPVerification({navigation,route}) {
             )}
           </TouchableOpacity>
 
-          <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center",marginTop:15}}>
+          {/* <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center",marginTop:15}}>
             <Text style={styles.signupText}>
               Don't have an account?
             </Text>
-            <TouchableOpacity style={{alignSelf:"flex-start"}} onPress={()=>navigation.navigate("Register")}> 
+            <TouchableOpacity style={{alignSelf:"flex-start"}} onPress={()=>navigation.goBack()}> 
               <Text style={styles.signupLink}> Sign Up</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
       </View>
     </Pressable>

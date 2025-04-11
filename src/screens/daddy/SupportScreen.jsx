@@ -6,31 +6,16 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const SupportScreen = ({ navigation }) => {
-  const faqs = [
-    {
-      question: "How do I track my order?",
-      answer: "You can track your order in real-time through the 'Orders' section of the app."
-    },
-    {
-      question: "What payment methods are accepted?",
-      answer: "We accept all major credit/debit cards, UPI, and cash on delivery."
-    },
-    {
-      question: "How can I cancel my order?",
-      answer: "You can cancel your order within 5 minutes of placing it through the 'Orders' section."
-    }
-  ];
-
   const handleCall = () => {
-    Linking.openURL('tel:+1234567890');
+    Linking.openURL('tel:+8074709926');
   };
 
   const handleEmail = () => {
-    Linking.openURL('mailto:support@escapye.com');
+    Linking.openURL('mailto:localdaddyweb@gmail.com');
   };
 
   const handleWhatsApp = () => {
-    Linking.openURL('https://wa.me/1234567890');
+    Linking.openURL('https://wa.me/918074709926');
   };
 
   return (
@@ -50,28 +35,18 @@ const SupportScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.contactOptions}>
             <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
-              <MaterialIcons name="phone" size={24} color="#065E2C" />
-              <Text style={styles.contactText}>Call Support</Text>
+              <MaterialIcons name="phone" size={32} color="#065E2C" />
+              <Text style={styles.contactText}>Call Support Team</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
-              <MaterialIcons name="email" size={24} color="#065E2C" />
-              <Text style={styles.contactText}>Email Us</Text>
+              <MaterialIcons name="email" size={32} color="#065E2C" />
+              <Text style={styles.contactText}>Send Email</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
-              <MaterialIcons name="chat" size={24} color="#065E2C" />
-              <Text style={styles.contactText}>WhatsApp</Text>
+              <FontAwesome6 name="whatsapp" size={32} color="#065E2C" />
+              <Text style={styles.contactText}>Chat on WhatsApp</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.faqSection}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-          {faqs.map((faq, index) => (
-            <View key={index} style={styles.faqItem}>
-              <Text style={styles.question}>{faq.question}</Text>
-              <Text style={styles.answer}>{faq.answer}</Text>
-            </View>
-          ))}
         </View>
       </ScrollView>
     </View>
@@ -115,51 +90,35 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(4),
   },
   contactOptions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: responsiveHeight(2),
-    elevation: 2,
+    borderRadius: 15,
+    paddingVertical: responsiveHeight(3),
+    paddingHorizontal: responsiveHeight(2),
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    gap: responsiveHeight(3),
   },
   contactOption: {
     alignItems: 'center',
-    flex: 1,
+    width: '100%',
+    padding: responsiveHeight(1.5),
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    gap: 15,
   },
   contactText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#065E2C',
-    fontWeight: '600',
-  },
-  faqSection: {
-    marginBottom: responsiveHeight(4),
-  },
-  faqItem: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: responsiveHeight(2),
-    marginBottom: responsiveHeight(2),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  question: {
+    marginTop: 0,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  answer: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    color: '#065E2C',
+    fontWeight: '700',
   },
 });
 

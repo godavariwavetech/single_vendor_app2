@@ -7,8 +7,9 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -25,6 +26,8 @@ import Entypo from "react-native-vector-icons/Entypo"
 import { useDispatch, useSelector } from 'react-redux';
 import { getRestaurants } from '../../redux/reducers/daddy';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const restaurants = [
   {
@@ -124,22 +127,43 @@ export default function CategorieItems({navigation,route}) {
   const [filterData,setFilterData] = useState([]);
   const [activeFilter,setActiveFilter] = useState(0)
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const timeoutRef = useRef();
+  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+  const [activeFilters, setActiveFilters] = useState(['All']);
 
-  const handleFilter = (selsected) =>{
-      setActiveFilter(selsected.filter_id)
-  }
+  const handleFilter = (selected) => {
+    if (selected.filter_name === 'All') {
+      setActiveFilters(['All']);
+      return;
+    }
+
+    const newFilters = activeFilters.includes(selected.filter_name) 
+      ? activeFilters.filter(f => f !== selected.filter_name)
+      : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
+
+    setActiveFilters(newFilters);
+  };
 
   const getFilters = async () =>{
     try {
       setIsLoading(true);
-      const getResponse = await dispatch(getRestaurants({categoryId:activeCategoryIndex,subCatergoryId:activeSubCategory.sub_category_id}))
-      setFilterData(getResponse.payload.data[1])
+      const getResponse = await dispatch(getRestaurants({
+        categoryId: activeCategoryIndex,
+        subCatergoryId: activeSubCategory.sub_category_id
+      }));
+      
+      setFilterData(getResponse.payload.data[1] || []);
+      
     } catch (error) {
       console.error('Error fetching data:', error);
+      setFilterData([]);
     } finally {
       setIsLoading(false);
     }
   }
+
+  console.log(activeSubCategory,"++++++++++++++ACTIVESUB CATEGORY")
 
   useFocusEffect(useCallback(()=>{
     getFilters()
@@ -151,6 +175,53 @@ export default function CategorieItems({navigation,route}) {
     }
   },[activeSubCategory])
 
+  useEffect(() => {
+    if (!restaurants) return;
+
+    const lowerQuery = searchQuery.toLowerCase();
+    const filtered = restaurants.filter(restaurant => {
+      // Search matches
+      const matchesSearch = restaurant.shop_name.toLowerCase().includes(lowerQuery) ||
+                            restaurant.shop_items?.some(item => 
+                              item.item_name.toLowerCase().includes(lowerQuery)
+                            );
+
+      // Filter matches
+      const matchesFilters = activeFilters.includes('All') || 
+        activeFilters.some(filterName => {
+          // Find the filter in filterData
+          const filter = filterData.find(f => f.filter_name === filterName);
+          if (!filter) return false;
+          
+          // Convert shop_ids string to array and check inclusion
+          const shopIds = filter["GROUP_CONCAT(shop_id)"].split(',');
+          return shopIds.includes(restaurant.shop_id.toString());
+        });
+
+      return matchesSearch && matchesFilters;
+    });
+
+    setFilteredRestaurants(filtered);
+  }, [searchQuery, restaurants, activeFilters, filterData]);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    clearTimeout(timeoutRef.current);
+    
+    if (query.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        // Filtering is now handled by the useEffect
+      }, 500);
+    }
+  };
+
+  const mergedFilters = [
+    { filter_name: 'All', filter_id: 'all' },
+    ...(Array.isArray(filterData) ? filterData.filter(apiFilter => 
+      apiFilter.filter_name !== 'All'
+    ) : [])
+  ];
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -161,17 +232,20 @@ export default function CategorieItems({navigation,route}) {
       );
     }
 
-    if (!restaurants || restaurants.length === 0) {
+    if (!filteredRestaurants || filteredRestaurants.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No data found</Text>
+          <MaterialIcons name="search-off" size={40} color="#ccc" />
+          <Text style={styles.emptyText}>
+            {searchQuery ? `No results for "${searchQuery}"` : 'No restaurants found'}
+          </Text>
         </View>
       );
     }
 
     return (
       <FlatList
-        data={restaurants}
+        data={filteredRestaurants}
         showsVerticalScrollIndicator={false}
         keyExtractor={item => item.id}
         renderItem={({item}) => {
@@ -221,6 +295,42 @@ export default function CategorieItems({navigation,route}) {
     );
   };
 
+  const renderFilters = () => (
+    <View>
+    <FlatList
+      data={mergedFilters}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={item => item.filter_id}
+      contentContainerStyle={styles.filterList}
+      renderItem={({item}) => {
+        const isActive = activeFilters.includes(item.filter_name);
+        return (
+          <TouchableOpacity
+            onPress={() => handleFilter(item)}
+            style={[
+              styles.filterButton,
+              {
+                borderColor: isActive ? "#0EAF50" : '#8F8F8F',
+                backgroundColor: isActive ? "#0EAF50" : '#fff',
+              }
+            ]}
+          >
+            <HeaderPick2 color={
+              item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
+              item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
+            } />
+            <Text style={[styles.filterText, { color: isActive ? "#fff" : '#313131' }]}>
+              {item.filter_name}
+            </Text>
+          </TouchableOpacity>
+        );
+      }}
+    />
+    </View>
+
+  );
+
   return (
     <View style={styles.main}>
       <StatusBar backgroundColor={"transparent"} translucent barStyle={"light-content"} />
@@ -250,29 +360,30 @@ export default function CategorieItems({navigation,route}) {
             style={styles.headerImage} 
           />
         </View>
-      </LinearGradient>
-{/* 
-      <View>
-        <FlatList
-          data={filterData}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item.filter_id}
-          style={styles.filterList}
-          renderItem={({item,index}) => {
-            return (
-              <TouchableOpacity
-                onPress={()=>navigation.navigate("RestaurantScreen",{shopId:item.shop_id,shopItem:item.shop_items_tb_nm,item})}
-                style={styles.filterButton}>
-                <HeaderPick2 color={item.filter_name==="Veg"?"#0EAF50":"#CD2A2A"} />
-                <Text style={styles.filterText}>
-                  {item.filter_name}
-                </Text>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholderTextColor="#666666"
+              placeholder="Search restaurants..."
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+            <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <MaterialIcons name="close" size={20} color="#666" />
               </TouchableOpacity>
-            );
-          }}
-        />
-      </View> */}
+            )}
+          </View>
+        </View>
+      </LinearGradient>
+
+      {renderFilters()}
 
       {renderContent()}
     </View>
@@ -286,11 +397,13 @@ const styles = StyleSheet.create({
   },
   gradientContainer: {
     paddingTop: 40,
-    paddingBottom: 30,
+    paddingBottom: 10,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    // marginBottom: responsiveHeight(2),
+    paddingHorizontal: responsiveWidth(5),
   },
   headerLeft: {
     flex: 1,
@@ -300,9 +413,10 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#000',
+    marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -314,13 +428,13 @@ const styles = StyleSheet.create({
     height: 131,
   },
   filterList: {
-    marginTop: 5,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
   filterButton: {
     padding: 5,
     borderWidth: 1,
-    borderColor: '#8F8F8F',
     borderRadius: 6,
     marginHorizontal: 3,
     paddingHorizontal: 10,
@@ -329,8 +443,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   filterText: {
-    color: '#313131',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   loadingContainer: {
@@ -355,7 +468,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#000",
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: 16,
+    marginTop: 10,
   },
   card: {
     flexDirection: 'row',
@@ -438,5 +552,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#D8D8D8',
     borderRadius: 5,
     marginHorizontal: 5,
+  },
+  searchContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    height: 56,
+    marginHorizontal: responsiveWidth(5),
+    elevation: 2,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    flex: 1,
+    paddingHorizontal: 15,
+  },
+  searchInput: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    flex: 1,
+    paddingLeft: 40,
+    paddingRight: 35,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
   },
 });

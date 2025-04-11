@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, StatusBar, Image, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, ScrollView, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
@@ -10,6 +10,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useDispatch, useSelector } from 'react-redux';
 import { getOrderDetails, getOrders, addToCart, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { useFocusEffect } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { globalSearch } from '../../redux/reducers/addressSlice';
 
 const ReorderScreen = ({navigation}) => {
   const [expandedRestaurants, setExpandedRestaurants] = useState({});
@@ -23,10 +25,20 @@ const ReorderScreen = ({navigation}) => {
   // New state for search query
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false); 
-
+  const timeoutRef = useRef();
+  const { globalSearchResults } = useSelector(state => state.address);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const getOrdersData = async () => {
-    const response = await dispatch(getOrders({orderId:0}));
+    try {
+      setInitialLoading(true);
+      const response = await dispatch(getOrders({orderId:0}));
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setInitialLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -94,8 +106,19 @@ const ReorderScreen = ({navigation}) => {
     dispatch(removeFromCart(item));
   };
 
-  // Filter orders based on search query
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    clearTimeout(timeoutRef.current);
+    
+    if (query.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        dispatch(globalSearch({ searchText: query }));
+      }, 500);
+    }
+  };
+
   const filteredOrders = orders?.filter(order => 
+    globalSearchResults?.some(result => result.shop_name === order.shop_name) ||
     order.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -174,7 +197,7 @@ const ReorderScreen = ({navigation}) => {
           <TouchableOpacity 
             style={styles.viewDetailsButton}
             onPress={() => {
-              fetchOrderItems(item.id);
+              // fetchOrderItems(item.id);
               navigation.navigate('OrderDetails', { orderDetails: item });
             }}
             disabled={isLoading}
@@ -232,20 +255,34 @@ const ReorderScreen = ({navigation}) => {
       <LinearGradient colors={['#065E2C', '#F7F2F2']} style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           <ReorderInactive color='#fff' />
-          <Text style={styles.headerTitle}>Reorder</Text>
+          <Text style={styles.headerTitle}>Orders</Text>
         </View>
         <View style={styles.searchContainer}>
-          <TextInput
-            placeholderTextColor={'#666666'}
-            placeholder="Search for your favorites"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <Icon name="search" size={24} color="gray" />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholderTextColor={'#666666'}
+              placeholder="Search for your favorites"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+            <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <MaterialIcons name="close" size={20} color="#666" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </LinearGradient>
-      {filteredOrders?.length > 0 ? (
+      {initialLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#065E2C" />
+        </View>
+      ) : filteredOrders?.length > 0 ? (
         <FlatList
           data={filteredOrders}
           renderItem={renderRestaurantCard}
@@ -318,21 +355,41 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   searchContainer: {
-    marginTop: 15,
+    marginHorizontal: responsiveWidth(5),
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(1),
     backgroundColor: '#fff',
     borderRadius: 15,
+    padding: 5,
+    height: 48,
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    paddingHorizontal: 10,
-    marginHorizontal: responsiveWidth(3),
-    marginVertical: responsiveHeight(3)
+    position: 'relative',
+    flex: 1,
   },
   searchInput: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
     flex: 1,
+    paddingVertical: 8,
+    paddingLeft: 45,
+    paddingRight: 40,
+    fontSize: 16,
+    color: '#000',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
   },
   listContainer: {
     paddingBottom: responsiveHeight(8)
@@ -551,6 +608,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

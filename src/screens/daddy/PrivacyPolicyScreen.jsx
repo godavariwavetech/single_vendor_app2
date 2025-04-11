@@ -15,8 +15,8 @@ const PrivacyPolicyScreen = () => {
         </TouchableOpacity>
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
-      <ScrollView style={{padding: 20}}>
-        <Text style={styles.effectiveDate}>Effective Date: [Date]</Text>
+      <ScrollView style={{padding: 20,paddingBottom:100}}>
+        <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
         <Text style={styles.content}>
           Welcome to Local Daddy! Your privacy is important to us. This Privacy Policy explains how Local Daddy ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
@@ -77,11 +77,10 @@ const PrivacyPolicyScreen = () => {
         </Text>
 
         <Text style={styles.subtitle}>8. Contact Us</Text>
-        <Text style={styles.content}>
+        <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For questions about this policy:{"\n"}
-          Email: support@localdaddy.com{"\n"}
-          Address: [Your Physical Address]{"\n"}
-          Phone: [Your Contact Number]
+          Email: localdaddyweb@gmail.com{"\n"}
+          Phone: 80747 09926
         </Text>
       </ScrollView>
     </View>
@@ -92,6 +91,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingBottom:20
   },
   header: { 
     backgroundColor: '#065E2C',

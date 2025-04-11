@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,8 +22,12 @@ import {
 import CategoryInactive from './tabassets/CategoryInactive';
 import { getAllCategories, setActiveCategoryIndex, setsubCategory } from '../../redux/reducers/daddy';
 import { useDispatch, useSelector } from 'react-redux';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { globalSearch } from '../../redux/reducers/addressSlice';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import { getResultFullData } from '../../redux/reducers/reviews';
 
-const CategoriesScreen = ({navigation}) => {
+const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +35,8 @@ const CategoriesScreen = ({navigation}) => {
   const [loading, setLoading] = useState(true);
 
   const dispatch = useDispatch();
+  const timeoutRef = useRef();
+  const { globalSearchResults } = useSelector(state => state.address);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -39,6 +45,21 @@ const CategoriesScreen = ({navigation}) => {
     };
     fetchCategories();
   }, [dispatch]);
+
+  useEffect(() => {
+    if (route.params?.isFromHome) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.goBack()}
+          >
+            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          </TouchableOpacity>
+        )
+      });
+    }
+  }, [navigation, route.params]);
 
   useEffect(() => {
     if(!allCategories) return;
@@ -60,30 +81,59 @@ const CategoriesScreen = ({navigation}) => {
     setFilteredCategories(result);
   }, [allCategories]);
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    clearTimeout(timeoutRef.current);
+    
+    if (query.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        dispatch(globalSearch({ searchText: query }));
+      }, 500);
+    }
+  };
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredCategories(categories);
       return;
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    const filtered = categories.map(category => {
-      const categoryMatches = category.category_name.toLowerCase().includes(query);
-      const filteredSubCategories = category.sub_categories.filter(subCategory =>
-        subCategory.sub_category_name.toLowerCase().includes(query)
+    // 1. Always start with local filtering
+    const localFiltered = categories.map(category => {
+      const categoryMatches = category.category_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const subCategoryMatches = category.sub_categories.filter(sub => 
+        sub.sub_category_name.toLowerCase().includes(searchQuery.toLowerCase())
       );
-
-      if (categoryMatches || filteredSubCategories.length > 0) {
-        return {
-          ...category,
-          sub_categories: categoryMatches ? category.sub_categories : filteredSubCategories
-        };
-      }
-      return null;
+      
+      return (categoryMatches || subCategoryMatches.length > 0) ? {
+        ...category,
+        sub_categories: categoryMatches ? category.sub_categories : subCategoryMatches
+      } : null;
     }).filter(Boolean);
 
-    setFilteredCategories(filtered);
-  }, [searchQuery, categories]);
+    // 2. Add API results if available
+    const apiResults = (globalSearchResults || [])
+      .filter(result => result.search_table === 'z_food_restaurant_item_lst_t')
+      .map(result => ({
+        category_id: `search-${result.search_id}`,
+        category_name: 'Search Results',
+        sub_categories: [{
+          id: result.search_id,
+          sub_category_name: result.search_text,
+          sub_category_image: result.search_image
+        }]
+      }));
+
+    // 3. Merge both results
+    const combinedResults = [...localFiltered, ...apiResults];
+    
+    // 4. Remove duplicate categories
+    const uniqueResults = combinedResults.filter((v,i,a) => 
+      a.findIndex(t => t.category_id === v.category_id) === i
+    );
+
+    setFilteredCategories(uniqueResults);
+  }, [searchQuery, categories, globalSearchResults]); // Single dependency array
 
   const handleNavigation = async(item,subItem) => {
     await dispatch(setActiveCategoryIndex(item.category_id));
@@ -91,7 +141,28 @@ const CategoriesScreen = ({navigation}) => {
     navigation.navigate('CategorieItems');
   }
 
+
   const renderItem = (item,subItem) => {
+    if (typeof item?.category_id === 'string' && item.category_id.startsWith('search-')) {
+      return (
+        <TouchableOpacity 
+          style={styles.itemContainer}
+          onPress={() => handleSearchResultPress(subItem)}
+        >
+          <Text numberOfLines={1} style={styles.itemName}>
+            {subItem.sub_category_name}
+          </Text>
+          <View style={styles.itemCard}>
+            <Image 
+              source={{uri: subItem.sub_category_image}} 
+              style={styles.itemImage} 
+              resizeMode="cover"
+            />
+          </View>
+        </TouchableOpacity>
+      );
+    }
+    
     return (
       <TouchableOpacity onPress={() => handleNavigation(item,subItem)} style={styles.itemContainer}>
         <Text numberOfLines={1} style={styles.itemName}>
@@ -118,6 +189,36 @@ const CategoriesScreen = ({navigation}) => {
     </View>
   );
 
+  const renderSearchResult = ({item}) => (
+    <TouchableOpacity 
+      style={styles.searchResultItem}
+      onPress={() => handleSearchResultPress(item)}
+    >
+      <Image
+        source={{uri: item.search_image}}
+        style={styles.searchResultImage}
+        resizeMode="cover"
+      />
+      <View style={{paddingHorizontal: responsiveWidth(2)}}>
+        <Text style={styles.searchResultTitle} numberOfLines={1}>
+          {item.search_text}
+        </Text>
+        {/* <Text style={styles.searchResultType}>
+          {item?.search_table?.replace(/_/g, ' ')?.replace(/z food /gi, '') || 'Item'}
+        </Text> */}
+      </View>
+    </TouchableOpacity>
+  );
+
+  const handleSearchResultPress = async (result) => {
+    // Handle navigation based on search result type
+    console.log("Search result pressed:", result);
+    const response = await dispatch(getResultFullData({resultData:result}));
+
+    console.log(result,"ressult>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LLLLLLLLLLL",response)
+    // Example: navigation.navigate('SearchResultDetail', {result});
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -129,18 +230,35 @@ const CategoriesScreen = ({navigation}) => {
         colors={['#065E2C', '#F7F2F2']}
         style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
-          <CategoryInactive color="#fff" />
-          <Text style={styles.headerTitle}>Categories</Text>
+          {route.params?.isFromHome ? (
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            </TouchableOpacity>
+          ):  <CategoryInactive color="#fff" />}
+          <Text style={styles.headerTitle}>All Categories</Text>
         </View>
         <View style={styles.searchContainer}>
-          <TextInput
-            placeholderTextColor="#666666"
-            placeholder="Search for your favorites"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <Icon name="search" size={24} color="gray" />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholderTextColor="#666666"
+              placeholder="Search for your favorites"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+            <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <MaterialIcons name="close" size={20} color="#666" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </LinearGradient>
 
@@ -149,18 +267,62 @@ const CategoriesScreen = ({navigation}) => {
           <ActivityIndicator size="large" color="#065E2C" />
         </View>
       ) : (
-        <FlatList
-          data={filteredCategories}
-          renderItem={renderCategory}
-          keyExtractor={item => item.category_id}
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No categories found</Text>
+        <>
+          {searchQuery.trim() ? (
+            <View style={styles.searchResultsContainer}>
+              {/* Search Results Section */}
+              {globalSearchResults?.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Search Results</Text>
+                  <View>
+
+                  <FlatList
+                    horizontal
+                    data={globalSearchResults}
+                    renderItem={renderSearchResult}
+                    keyExtractor={item => item.search_id.toString()}
+                    showsHorizontalScrollIndicator={false}
+                    style={{paddingHorizontal: responsiveWidth(4)}}
+                    contentContainerStyle={styles.searchResultsList}
+                    />
+                    </View>
+                </>
+              )}
+
+              {/* Filtered Categories Section */}
+              {filteredCategories.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Matching Categories</Text>
+                  <FlatList
+                    data={filteredCategories}
+                    renderItem={renderCategory}
+                    keyExtractor={item => item.category_id}
+                    contentContainerStyle={[styles.categoriesList,!route?.params?.isFromHome&&{paddingBottom: 40}]}
+                    showsVerticalScrollIndicator={false}
+                  />
+                </>
+              )}
+
+              {/* Empty State */}
+              {globalSearchResults?.length === 0 && filteredCategories.length === 0 && (
+                <View style={styles.emptySearchContainer}>
+                  <MaterialIcons name="search-off" size={40} color="#ccc" />
+                  <Text style={styles.emptySearchText}>
+                    No results found for "{searchQuery}"
+                  </Text>
+                </View>
+              )}
             </View>
+          ) : (
+            <FlatList
+              data={filteredCategories}
+              renderItem={renderCategory}
+              keyExtractor={item => item.category_id}
+              contentContainerStyle={[styles.categoriesList,!route?.params?.isFromHome&&{paddingBottom: 40}]}
+              showsVerticalScrollIndicator={false}
+            />
           )}
-        />
+        </>
       )}
     </KeyboardAvoidingView>
   );
@@ -172,14 +334,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   gradientContainer: {
-    paddingTop: 10,
+    paddingBottom: 20,
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: responsiveWidth(5),
+    paddingTop: responsiveHeight(5),
     gap: 10,
-    marginTop: responsiveHeight(5),
-    marginLeft: responsiveWidth(5),
+  },
+  backButton: {
+    padding: 5,
   },
   headerTitle: {
     color: '#fff',
@@ -190,18 +355,38 @@ const styles = StyleSheet.create({
     marginTop: 15,
     backgroundColor: '#fff',
     borderRadius: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
     height: 56,
     paddingHorizontal: 10,
     marginHorizontal: responsiveWidth(3),
     marginVertical: responsiveHeight(3),
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    flex: 1,
   },
   searchInput: {
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
     flex: 1,
+    paddingLeft: 40,
+    paddingRight: 35,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
   },
   scrollViewContent: {
     paddingHorizontal: responsiveWidth(4),
@@ -265,10 +450,67 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
+  searchResultsContainer: {
+    flex: 1,
+    marginTop: responsiveHeight(2),
+    // padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
+    marginHorizontal: responsiveWidth(4),
+  },
+  searchResultsList: {
+    paddingBottom: 16,
+  },
+  searchResultItem: {
+    width: 200,
+    marginRight: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    // padding: 12,
+    paddingBottom: 12,
+    elevation: 2,
+  },
+  searchResultImage: {
+    width: '100%',
+    height: 120,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    marginBottom: 8,
+  },
+  searchResultTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#313131',
+    marginBottom: 4,
+  },
+  searchResultType: {
+    fontSize: 12,
+    color: '#666',
+    textTransform: 'capitalize',
+  },
+  categoriesList: {
+    paddingHorizontal: 16,
+    // paddingBottom: 24,
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptySearchContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 50,
+  },
+  emptySearchText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 10,
   },
 });
 

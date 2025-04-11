@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Linking,
   BackHandler,
   RefreshControl,
+  Alert,
+  TextInput,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -19,55 +21,97 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import HeaderPick2 from './tabassets/HeaderPick2';
-import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import MapView, {Marker, PROVIDER_GOOGLE, Polyline} from 'react-native-maps';
 // import { getOrderDetails } from '../../redux/reducers/addressSlice';
-import { useDispatch } from 'react-redux';
-import { getOrderDetails, getOrders } from '../../redux/reducers/daddy';
+import {useDispatch} from 'react-redux';
+import {getOrderDetails, getOrders} from '../../redux/reducers/daddy';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import CustomModal from '../../components/CustomModal';
+import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
+import { getMessaging } from '@react-native-firebase/messaging';
 
-const OrderDetailsScreen = ({ navigation, route }) => {
+const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
-  const dispatch = useDispatch()
-  const [subOrderData, setSubOrderData] = useState([])
+  const dispatch = useDispatch();
+  const [subOrderData, setSubOrderData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const getOrderData = async () => {
-    const response = await dispatch(getOrders({orderId:route.params?.orderDetails?.id}));
-    if(response.payload?.data) {
+    const response = await dispatch(
+      getOrders({orderId: route.params?.orderDetails?.id}),
+    );
+    if (response.payload?.data) {
       setOrderDetails(response.payload.data[0]);
     }
-  }
+  };
 
   const fetchOrderItems = async () => {
-    if(!orderDetails?.id) return;
-    const response = await dispatch(getOrderDetails({ orderId: orderDetails.id }));
-    if(response.payload?.data) {
+    if (!orderDetails?.id) return;
+    const response = await dispatch(
+      getOrderDetails({orderId: orderDetails.id}),
+    );
+    if (response.payload?.data) {
       setSubOrderData(response.payload.data);
     }
-  }
+  };
 
   useEffect(() => {
-    getOrderData();  
+    getOrderData();
   }, [route.params?.orderDetails?.id]);
 
   useEffect(() => {
     fetchOrderItems();
   }, [orderDetails]);
 
-  
+  useEffect(() => {
+    const backAction = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const backHandler = route.params?.fromOrderSuccess
+      ? BackHandler.addEventListener('hardwareBackPress', backAction)
+      : null;
+
+    return () => backHandler && backHandler.remove();
+  }, [route.params]);
+
+  // Add status mapping
+  const STATUS_MAP = {
+    0: 'Order Placed',
+    1: 'Order Accepted',
+    2: 'Preparing Your Order',
+    3: 'Order Completed',
+    4: 'Order Cancelled by You',
+    5: 'Order Rejected by Restaurant',
+    6: 'Order Not Received',
+    7: 'Waiting for Payment',
+    8: 'Delivery Partner Assigned',
+  };
+
+  // Update orderData status
   const orderData = {
     restaurant: {
-      name: orderDetails?.shop_name, 
+      name: orderDetails?.shop_name,
       orderTime: orderDetails?.order_time,
       image: orderDetails?.shop_image,
     },
-    status: orderDetails?.order_status === 0 ? 'Order is being prepared' : 'Order delivered', // Update based on order status
+    status: STATUS_MAP[orderDetails?.order_status] || 'Unknown Status',
     estimatedTime: orderDetails?.slot_timings, // Use slot timings for estimated delivery
     deliveryAgent: {
-      
-      name: orderDetails?.delivery_boy_array ? orderDetails?.delivery_boy_array[0]?.delivery_boy_name: 'N/A',
+      name: orderDetails?.delivery_boy_array
+        ? orderDetails?.delivery_boy_array[0]?.delivery_boy_name
+        : 'N/A',
       status: 'On the way to pick order', // You can update this based on your logic
-      phone: orderDetails?.delivery_boy_array ? orderDetails?.delivery_boy_array[0]?.delivery_boy_mobile_number : 'N/A',
+      phone: orderDetails?.delivery_boy_array
+        ? orderDetails?.delivery_boy_array[0]?.delivery_boy_mobile_number
+        : 'N/A',
     },
     delivery: {
       type: 'Home', // You can update this if needed
@@ -81,7 +125,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       savings: orderDetails?.total_saving_amount, // Updated savings
       couponDiscount: orderDetails?.coupon_amount, // Updated coupon discount
       couponCode: '', // You can update this if needed
-      subtotal: (orderDetails?.grand_total - orderDetails?.delivery_charges) || 0, // Calculate subtotal if needed
+      subtotal: orderDetails?.grand_total - orderDetails?.delivery_charges || 0, // Calculate subtotal if needed
       gst: 0, // You can update this if needed
       deliveryCharge: orderDetails?.delivery_charges, // Updated delivery charge
       total: orderDetails?.grand_total, // Updated grand total
@@ -105,31 +149,33 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   // Safely parse delivery_boy_array
   try {
     // Log the delivery_boy_array to see its content
-    console.log("Delivery Boy Array:", orderDetails?.delivery_boy_array);
 
     // Check if the delivery_boy_array is a valid string
     let deliveryBoys = orderDetails?.delivery_boy_array;
 
     // Handle the case where delivery_boy_array is improperly formatted
     if (deliveryBoys === "'0'" || deliveryBoys === "'[]'" || !deliveryBoys) {
-        deliveryBoys = '[]'; // Set to an empty array
+      deliveryBoys = '[]'; // Set to an empty array
     }
 
     // Parse the delivery_boy_array
-    deliveryBoys = deliveryBoys && typeof deliveryBoys === 'string' 
-        ? JSON.parse(deliveryBoys.replace(/'/g, '"')) // Replace single quotes with double quotes
+    deliveryBoys =
+      deliveryBoys && typeof deliveryBoys === 'string'
+        ? JSON.parse(deliveryBoys.replace(/'/g, '"'))
         : [];
 
-    // Update orderData with parsed delivery boys
+
     if (Array.isArray(deliveryBoys) && deliveryBoys.length > 0) {
-        orderData.deliveryAgent.name = deliveryBoys[0]?.delivery_boy_name || 'N/A';
-        orderData.deliveryAgent.phone = deliveryBoys[0]?.delivery_boy_mobile_number || 'N/A';
+      orderData.deliveryAgent.name =
+        deliveryBoys[0]?.delivery_boy_name || 'N/A';
+      orderData.deliveryAgent.phone =
+        deliveryBoys[0]?.delivery_boy_mobile_number || 'N/A';
     } else {
-        orderData.deliveryAgent.name = 'N/A';
-        orderData.deliveryAgent.phone = 'N/A';
+      orderData.deliveryAgent.name = 'N/A';
+      orderData.deliveryAgent.phone = 'N/A';
     }
   } catch (error) {
-    console.error("Error parsing delivery_boy_array:", error);
+    console.error('Error parsing delivery_boy_array:', error);
     // Keep default values for delivery agent
     orderData.deliveryAgent.name = 'N/A';
     orderData.deliveryAgent.phone = 'N/A';
@@ -142,29 +188,24 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const handleCallRestaurant = () => {
     Linking.openURL(`tel:${orderData.shop_phone_number}`);
   };
-  
-
-  
 
   const handleBackPress = () => {
     navigation.reset({
       index: 0,
-      routes: [{ name: 'BottomNavigation' }],
+      routes: [{name: 'BottomNavigation'}],
     });
   };
 
-  useEffect(() => {
-    const backAction = () => {
-      handleBackPress();
-      return true; // Prevent default back action
-    };
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     handleBackPress();
+  //     return true; // Prevent default back action
+  //   };
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
-    return () => backHandler.remove(); // Cleanup the event listener
-  }, []);
-
-
+  //   return () =>backHandler && backHandler.remove(); // Cleanup the event listener
+  // }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -173,24 +214,76 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     setRefreshing(false);
   };
 
+  const handleCancelOrder = async () => {
+    try {
+      await dispatch(cancelOrder({orderId: orderDetails.id}));
+      route.params?.fromOrderSuccess ? handleBackPress()  :navigation.goBack();
+      setShowCancelModal(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to cancel order');
+      setShowCancelModal(false);
+    }
+  };
 
+  const handleSubmitReview = async () => {
+    try {
+      if (rating === 0) {
+        setShowRatingModal(true);
+        return;
+      }
+      await dispatch(
+        submitReview({
+          shopId: orderDetails?.shop_id,
+          orderId: route.params?.orderDetails?.id,
+          rating,
+          comment,
+        }),
+      );
+      setShowSuccessModal(true);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit review');
+    }
+  };
+
+  useEffect(()=>{
+    getMessaging().onMessage(async (remoteMessage) => {
+      onRefresh()
+    })
+  },[])
+
+  console.log("orderData.restaurant",orderDetails?.order_date)
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#065E2C" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={()=>navigation.goBack()}
-        >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() =>
+            route.params?.fromOrderSuccess
+              ? handleBackPress()
+              : navigation.goBack()
+          }>
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Order Details</Text>
+        <View>
+          <Text style={styles.title}>Order Details</Text>
+          {orderDetails?.order_id && (
+            <Text style={styles.orderId}>
+              Order ID: #{orderDetails.order_id} / {orderDetails?.id}
+            </Text>
+          )}
+        </View>
       </View>
 
-      <ScrollView style={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         {/* Map View */}
         {/* <View style={styles.mapContainer}>
           <MapView
@@ -237,49 +330,70 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         {/* Restaurant Info */}
         <View style={styles.restaurantInfo}>
           <Image
-            source={{ uri: orderData.restaurant.image }}
+            source={{uri: orderData.restaurant.image}}
             style={styles.restaurantImage}
           />
           <View style={styles.restaurantDetails}>
-            <Text style={styles.restaurantName}>{orderData.restaurant.name}</Text>
-            <Text style={styles.orderTime}>Ordered At {orderData.restaurant.orderTime}</Text>
+            <Text style={styles.restaurantName}>
+              {orderData.restaurant.name}
+            </Text>
+            <Text style={styles.orderTime}>
+              Ordered At:- {orderDetails?.order_date} {orderData.restaurant.orderTime}
+            </Text>
           </View>
-          <TouchableOpacity onPress={handleCallRestaurant} style={styles.callButton}>
+          <TouchableOpacity
+            onPress={handleCallRestaurant}
+            style={styles.callButton}>
             <MaterialIcons name="call" size={24} color="#065E2C" />
           </TouchableOpacity>
         </View>
 
         {/* Order Status */}
-        <View style={styles.statusContainer}>
+        <View
+          style={[
+            styles.statusContainer,
+            orderDetails?.order_status === 4 && styles.cancelledStatus,
+            orderDetails?.order_status === 5 && styles.rejectedStatus,
+          ]}>
           <View style={styles.statusHeader}>
             <Text style={styles.statusText}>{orderData.status}</Text>
             <View style={styles.estimatedTime}>
-              <Text style={styles.estimatedTimeValue}>{orderData.estimatedTime}</Text>
-              <Text style={styles.estimatedTimeLabel}>ESTIMATED{'\n'}DELIVERY TIME</Text>
+              <Text style={styles.estimatedTimeValue}>
+                {orderDetails?.customer_otp}
+              </Text>
+              {/* <Text style={styles.estimatedTimeLabel}>ESTIMATED{'\n'}DELIVERY TIME</Text> */}
             </View>
           </View>
         </View>
 
         {/* Delivery Agent */}
-        <View style={styles.agentContainer}>
-          <View style={styles.agentHeader}>
-            <Text style={styles.sectionTitle}>Delivery Agent</Text>
-            <TouchableOpacity onPress={handleCallDriver} style={styles.callAgentButton}>
-              <MaterialIcons name="call" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.agentInfo}>
-            <View style={styles.agentDetails}>
-              <Text style={styles.agentName}>{orderData.deliveryAgent.name}</Text>
-              <Text style={styles.agentStatus}>{orderData.deliveryAgent.status}</Text>
+        {orderDetails?.order_status >= 8 && (
+          <View style={styles.agentContainer}>
+            <View style={styles.agentHeader}>
+              <Text style={styles.sectionTitle}>Delivery Agent</Text>
+              <TouchableOpacity
+                onPress={handleCallDriver}
+                style={styles.callAgentButton}>
+                <MaterialIcons name="call" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.agentInfo}>
+              <View style={styles.agentDetails}>
+                <Text style={styles.agentName}>
+                  {orderData.deliveryAgent.name}
+                </Text>
+                <Text style={styles.agentStatus}>
+                  {orderData.deliveryAgent.status}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Cart Items */}
         <View style={styles.cartSection}>
           <Text style={styles.sectionTitle}>Cart Items</Text>
-          {subOrderData?.map((item) => (
+          {subOrderData?.map(item => (
             <View key={item.id}>
               <View style={styles.cartItem}>
                 <View style={styles.itemDetails}>
@@ -289,13 +403,17 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                 </View>
                 <View style={styles.quantityInfo}>
                   <Text style={styles.quantity}>x{item.sub_item_count}</Text>
-                  <Text style={styles.itemTotal}>₹{item.item_total_amount}</Text>
+                  <Text style={styles.itemTotal}>
+                    ₹{item.item_total_amount}
+                  </Text>
                 </View>
               </View>
               <View style={styles.dottedLineContainer}>
-                {Array(20).fill(0).map((_, index) => (
-                  <View key={index} style={styles.dot} />
-                ))}
+                {Array(20)
+                  .fill(0)
+                  .map((_, index) => (
+                    <View key={index} style={styles.dot} />
+                  ))}
               </View>
             </View>
           ))}
@@ -306,9 +424,9 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           <Text style={styles.sectionTitle}>Delivery Details</Text>
           <View style={styles.addressCard}>
             <View style={styles.addressSection}>
-              <MaterialIcons name="home" size={24} color="#666" />
+              {/* <MaterialIcons name="home" size={24} color="#666" /> */}
               <View style={styles.addressInfo}>
-                <Text style={styles.addressType}>Home</Text>
+                {/* <Text style={styles.addressType}>Home</Text> */}
                 <Text style={styles.addressText}>
                   {orderData.delivery.address}
                   {'\n'}
@@ -316,18 +434,24 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                 </Text>
               </View>
             </View>
-            <View style={styles.dottedLineContainer}>
-              {Array(20).fill(0).map((_, index) => (
-                <View key={index} style={styles.dot} />
-              ))}
-            </View>
-            <View style={styles.contactSection}>
+            {/* <View style={styles.dottedLineContainer}>
+              {Array(20)
+                .fill(0)
+                .map((_, index) => (
+                  <View key={index} style={styles.dot} />
+                ))}
+            </View> */}
+            {/* <View style={styles.contactSection}>
               <MaterialIcons name="person" size={24} color="#666" />
               <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>{orderData.delivery.name}</Text>
-                <Text style={styles.contactPhone}>{orderData.delivery.phone}</Text>
+                <Text style={styles.contactName}>
+                  {orderData.delivery.name}
+                </Text>
+                <Text style={styles.contactPhone}>
+                  {orderData.delivery.phone}
+                </Text>
               </View>
-            </View>
+            </View> */}
           </View>
         </View>
 
@@ -341,31 +465,45 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             </View>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Savings</Text>
-              <Text style={styles.savingsValue}>₹{orderData.billing.savings}</Text>
+              <Text style={styles.savingsValue}>
+                ₹{orderData.billing.savings}
+              </Text>
             </View>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Coupon Discount</Text>
-              <Text style={styles.savingsValue}>₹{orderData.billing.couponDiscount}</Text>
+              <Text style={styles.savingsValue}>
+                ₹{orderData.billing.couponDiscount}
+              </Text>
             </View>
-            <Text style={styles.couponCode}>"{orderData.billing.couponCode}"</Text>
+            <Text style={styles.couponCode}>
+              "{orderData.billing.couponCode}"
+            </Text>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Total</Text>
-              <Text style={styles.savingsValue}>₹{orderData.billing.total}</Text>
+              <Text style={styles.savingsValue}>
+                ₹{orderData.billing.total}
+              </Text>
             </View>
             <View style={styles.dottedLineContainer}>
-              {Array(20).fill(0).map((_, index) => (
-                <View key={index} style={styles.dot} />
-              ))}
+              {Array(20)
+                .fill(0)
+                .map((_, index) => (
+                  <View key={index} style={styles.dot} />
+                ))}
             </View>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Delivery Charge</Text>
-              <Text style={styles.billValue}>₹{orderData.billing.deliveryCharge}</Text>
+              <Text style={styles.billValue}>
+                ₹{orderData.billing.deliveryCharge}
+              </Text>
             </View>
             <Text style={styles.gstNote}>(GST Included)</Text>
             <View style={styles.dottedLineContainer}>
-              {Array(20).fill(0).map((_, index) => (
-                <View key={index} style={styles.dot} />
-              ))}
+              {Array(20)
+                .fill(0)
+                .map((_, index) => (
+                  <View key={index} style={styles.dot} />
+                ))}
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>TOTAL</Text>
@@ -373,7 +511,79 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             </View>
           </View>
         </View>
+
+        {/* Cancel button - only show for cancelable statuses */}
+        {orderDetails?.order_status === 0 && (
+          <View style={styles.actionButtonContainer}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowCancelModal(true)}>
+              <Text style={styles.cancelButtonText}>Cancel Order</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {orderDetails?.order_status === 3 && (
+          <View style={styles.reviewSection}>
+            <Text style={styles.sectionTitle}>Rate Your Experience</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                  <FontAwesome5
+                    name="star"
+                    solid={star <= rating}
+                    size={30}
+                    color={star <= rating ? '#FFD700' : '#E0E0E0'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write your review..."
+              multiline
+              numberOfLines={4}
+              value={comment}
+              onChangeText={setComment}
+            />
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmitReview}>
+              <Text style={styles.submitButtonText}>Submit Review</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
+
+      <CustomModal
+        visible={showCancelModal}
+        title="Confirm Cancellation"
+        message="Are you sure you want to cancel this order?"
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep Order"
+        onConfirm={handleCancelOrder}
+        onCancel={() => setShowCancelModal(false)}
+      />
+
+      <CustomModal
+        visible={showSuccessModal}
+        title="Thank You!"
+        message="Your review has been submitted successfully."
+        confirmText="OK"
+        cancelText=""
+        onConfirm={() => setShowSuccessModal(false)}
+        showCancel={false}
+      />
+
+      <CustomModal
+        visible={showRatingModal}
+        title="Rating Required"
+        message="Please select at least one star before submitting"
+        confirmText="OK"
+        cancelText=""
+        onConfirm={() => setShowRatingModal(false)}
+        showCancel={false}
+      />
     </View>
   );
 };
@@ -393,12 +603,18 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: responsiveWidth(7),
+    marginBottom: responsiveHeight(2),
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-    marginLeft: responsiveWidth(3),
+  },
+  orderId: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.8,
+    marginTop: 4,
   },
   content: {
     flex: 1,
@@ -670,6 +886,59 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginHorizontal: 5,
   },
+  actionButtonContainer: {
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  cancelButton: {
+    backgroundColor: '#E63B3B',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  reviewSection: {
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginVertical: 15,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#065E2C',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  cancelledStatus: {
+    backgroundColor: '#FFE5E5',
+    borderColor: '#FF0000',
+  },
+  rejectedStatus: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFC107',
+  },
 });
 
-export default OrderDetailsScreen; 
+export default OrderDetailsScreen;

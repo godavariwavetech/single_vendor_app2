@@ -52,7 +52,7 @@ const OnboardingScreen = ({ navigation }) => {
         if (requestResult === RESULTS.GRANTED) {
           getLocation();
         } else {
-          Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
+          // Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
         }
       }
     } catch (error) {
