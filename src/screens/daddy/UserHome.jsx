@@ -43,13 +43,14 @@ import NetInfo from '@react-native-community/netinfo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Skeleton from './Skeleton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 export default function UserHome({navigation}) {
   const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
     serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
     const {customerId,locationName,orderOfferAmount} =
     useSelector(state => state.Auth);
-    const {isNetworkConnected,onloadComponents} = useSelector(state => state.address);
+  const {isNetworkConnected,onloadComponents} = useSelector(state => state.address);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -71,11 +72,11 @@ useEffect(() => {
 }, [isNetworkConnected]);
 
   // Calculate isLoading from Redux loading states
-  let isLoading = (
+  const isLoading = (
     loading.addressCheck || 
     isLoadingLocation || 
     loading.categories || 
-    loading.banners
+    loading.banners 
   );
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
@@ -137,6 +138,7 @@ useEffect(() => {
       }
     );
   }, [dispatch, userAddress]);
+
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
@@ -348,14 +350,16 @@ useEffect(() => {
   };
 
   const handleBannerPress = (banner) => {
-    const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
-    if(item.length > 0){
-      navigation.navigate('RestaurantScreen', {
-        shopId: item.shop_id,
-        shopItem: item.shop_items_tb_nm,
-        item,
-      })
-    }
+     navigation.navigate('BannerRestaurantScreen',{highlightItemId:4})
+    // const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
+    // if(item.length > 0){
+    //   navigation.navigate('RestaurantScreen', {
+    //     shopId: item.shop_id,
+    //     shopItem: item.shop_items_tb_nm,
+    //     item,
+    //     highlightItemId: 14
+    //   })
+    // }
   };
 
   // Handle network connection changes
@@ -384,9 +388,6 @@ useEffect(() => {
     });
     return () => unsubscribe();
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
-
-
-  console.log("+++++++++++++++>>>>>>>>>>>>>>CATEGOIRIES",categories)
 
 
   return (
@@ -435,8 +436,11 @@ useEffect(() => {
                     </View>
                   </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')} style={styles.supportButton}>
-                <Icon name="support-agent" size={30} color="grey" />
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Notifications')} 
+                style={styles.supportButton}
+              >
+                <FontAwesome6 name="bell" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -589,6 +593,7 @@ useEffect(() => {
                                 shopId: item.shop_id,
                                 shopItem: item.shop_items_tb_nm,
                                 item,
+                                highlightItemId: 15
                               });
                             }
                           }}
@@ -697,8 +702,8 @@ const styles = StyleSheet.create({
   supportButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#fff',
-    borderRadius: 50,
+    backgroundColor: '#065E2C20',
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

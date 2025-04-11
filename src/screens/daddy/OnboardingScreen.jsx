@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   ImageBackground,
   Alert,
+  PanResponder,
 } from 'react-native';
 import { responsiveHeight } from 'react-native-responsive-dimensions';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -36,11 +37,8 @@ const onboardingData = [
 
 const OnboardingScreen = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(currentIndex);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
 
   const requestLocationPermission = async () => {
     try {
@@ -77,26 +75,72 @@ const OnboardingScreen = ({ navigation }) => {
 
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex(prev => {
+        const newIndex = prev + 1;
+        currentIndexRef.current = newIndex;
+        return newIndex;
+      });
     } else {
       navigation.replace('Register');
     }
   };
 
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (e, gestureState) => {
+        const { dx } = gestureState;
+        const latestIndex = currentIndexRef.current;
+        console.log("Current index:", latestIndex);
+        
+        if (Math.abs(dx) > 50) {
+          if (dx > 50) { // Right swipe
+            if (latestIndex > 0) {
+              setCurrentIndex(prev => {
+                const newIndex = prev - 1;
+                currentIndexRef.current = newIndex;
+                return newIndex;
+              });
+            }
+          } else { // Left swipe
+            if (latestIndex < onboardingData.length - 1) {
+              setCurrentIndex(prev => {
+                const newIndex = prev + 1;
+                currentIndexRef.current = newIndex;
+                return newIndex;
+              });
+            } else {
+              navigation.replace('Register');
+            }
+          }
+        }
+      }
+    })
+  ).current;
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      {...panResponder.panHandlers}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
-      <TouchableOpacity 
-        style={styles.skipButton}
-        onPress={() => navigation.replace('Register')}
-      >
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+      {currentIndex < onboardingData.length - 1 && (
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={() => navigation.replace('Register')}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.contentContainer}>
         <Image
-         source={ onboardingData[currentIndex].image}
+         source={onboardingData[currentIndex]?.image}
           style={[styles.image,{marginBottom:responsiveHeight(currentIndex===0? 13 :17)}]}
           resizeMode="contain"
         />
@@ -107,10 +151,10 @@ const OnboardingScreen = ({ navigation }) => {
         resizeMode="contain"
         >
  <Text style={styles.title}>
-            {onboardingData[currentIndex].title}  
+            {onboardingData[currentIndex]?.title}  
           </Text>
           <Text style={styles.description}>
-            {onboardingData[currentIndex].description}
+            {onboardingData[currentIndex]?.description}
           </Text>
           <TouchableOpacity 
             style={[styles.nextButton,{}]}
@@ -120,6 +164,18 @@ const OnboardingScreen = ({ navigation }) => {
           </TouchableOpacity>
         </ImageBackground>
       </View>
+{/*       
+      <View style={styles.pagination}>
+        {onboardingData.map((_, index) => (
+          <View 
+            key={index}
+            style={[
+              styles.paginationDot,
+              index === currentIndex && styles.activeDot
+            ]}
+          />
+        ))}
+      </View> */}
     </View>
   );
 };
@@ -136,11 +192,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#065E2C20',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
   },
   skipText: {
     fontSize: 16,
-    color: '#000000',
-    marginRight: 5,
+    color: '#065E2C',
+    fontWeight: '600',
   },
   contentContainer: {
     flex: 1,
@@ -176,6 +236,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     bottom:responsiveHeight(6),
     position: 'absolute',
+  },
+  pagination: {
+    position: 'absolute',
+    bottom: responsiveHeight(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    width: 20,
+    backgroundColor: '#065E2C',
   },
 });
 

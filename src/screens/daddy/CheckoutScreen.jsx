@@ -443,7 +443,7 @@ const CheckoutScreen = ({navigation, route}) => {
         {/* Delivery Details */}
         <View style={[styles.detailsCard]}>
           <Text style={styles.cardTitle}>Delivery Details</Text>
-          <View style={styles.address}>
+          <TouchableOpacity  onPress={() => navigation.navigate('AddressList', {isFromCart: true})} style={styles.address}>
             <View style={styles.addressSection}>
               <MaterialIcons name="home" size={24} color="#666" />
               <View style={styles.addressDetails}>
@@ -501,7 +501,7 @@ const CheckoutScreen = ({navigation, route}) => {
                 }
               />
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Apply Coupons */}

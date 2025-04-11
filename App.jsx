@@ -15,6 +15,7 @@ import CustomModal from './src/components/CustomModal';
 import NetInfo from '@react-native-community/netinfo';
 import { setIsNetworkConnected } from './src/redux/reducers/addressSlice';
 import { useDispatch } from 'react-redux';
+import BannerRestaurantScreen from './src/screens/daddy/BannerRestaurantScreen';
 const NetworkStatusBanner = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [slideAnim] = useState(new Animated.Value(-50));
@@ -139,6 +140,7 @@ const App = () => {
       <NavigationContainer>
         <View style={{ flex: 1 }}>
           <NetworkStatusBanner />
+          {/* <BannerRestaurantScreen  /> */}
           <AppNavigation />
           <CustomModal
             visible={showUpdateModal}
@@ -155,3 +157,6 @@ const App = () => {
 };
 
 export default App;
+
+
+// https://api.localdaddy.in

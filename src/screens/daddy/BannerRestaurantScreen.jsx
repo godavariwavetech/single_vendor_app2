@@ -24,45 +24,50 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import Entypo from 'react-native-vector-icons/Entypo';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-// import * as Animatable from 'react-native-animatable';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, getItemsList, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { setRestaurnatDetails } from '../../redux/reducers/auth';
-import { globalSearch } from '../../redux/reducers/addressSlice';
+import { globalSearch, indiviadualShop } from '../../redux/reducers/addressSlice';
 
 
-const RestaurantScreen = ({navigation,route}) => {
-  const [visible,setVisible] = useState(false)
+const BannerRestaurantScreen = ({navigation,route}) => {
   const [translateY] = useState(new Animated.Value(100));
-  const [cart, setCart] = useState({});
   const dispatch = useDispatch();
-  const {restaurantItems,itemsFilter,cartItems,cartRestaurant,subCategories} = useSelector(state=>state.Dashboard) 
+  const {restaurantItems,cartItems,cartRestaurant} = useSelector(state=>state.Dashboard) 
   const [filterType, setFilterType] = useState("All");
   const [filteredData, setFilterData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState(['All']);
   const pan = useRef(new Animated.ValueXY({ x: responsiveWidth(100) - 88, y: responsiveHeight(100) - 138 })).current;
-  const [menuVisible, setMenuVisible] = useState(false);
   const [draggableMenuVisible, setDraggableMenuVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showPopularItems, setShowPopularItems] = useState(false);
-  const [showOffers, setShowOffers] = useState(false);
-  const [showReviews, setShowReviews] = useState(false);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const timeoutRef = useRef();
-  const { globalSearchResults } = useSelector(state => state.address);
   const [highlightedItemId, setHighlightedItemId] = useState(null);
   const scaleAnims = useRef(new Map()).current;
   const [renderedItems, setRenderedItems] = useState(new Set());
+  const [restaurantData, setRestaurantData] = useState(null);
+  const {location,locationId} = useSelector(state=>state.Auth)
+  // const [bottomGap,setBottomGap] = useState(0)
+  const bottomGap = new Animated.Value(0);
 
-  // Restore original mergedFilters
+
+  console.log("called")
+
+const fetchRestaurantData = async() =>{
+  const response = await dispatch(indiviadualShop({shopId:25}));
+  console.log(response,"++++++++++++++++>>>>>>>>>>>>>>>response")
+  setRestaurantData(response.payload.data[0][0]);
+  console.log(response.payload.data[0][0],"++++++++++++++++>>>>>>>>>>>>>>>response")
+}
+
+useEffect(()=>{
+  fetchRestaurantData()
+},[location])
+
   const mergedFilters = [
     { filter_name: 'All', id: 'all' },
     ...[...new Set((restaurantItems || [])
@@ -76,8 +81,14 @@ const RestaurantScreen = ({navigation,route}) => {
 
   const getItems = async() =>{
     try {
+        console.log(restaurantData?.shop_items_tb_nm,"++++++++++++++++>>>>>>>>>>>>>>>restaurantData",restaurantData?.shop_id)
       setIsLoading(true);
-      const response = await dispatch(getItemsList({shopId:route.params.shopId,shopItem:route.params.shopItem}))
+
+      const response = await dispatch(getItemsList({
+        shopId:restaurantData?.shop_id,
+        shopItem:restaurantData?.shop_items_tb_nm
+    }))
+      console.log("+++++++++++++++>>>>>>>>>>>>>>resposee",response)
       setFilterData(response.payload.data)
     } catch (error) {
       console.error('Error loading items:', error);
@@ -85,37 +96,6 @@ const RestaurantScreen = ({navigation,route}) => {
       setIsLoading(false);
     }
   }
-
-  const handleSearch = (text) => {
-    setSearchQuery(text);
-    clearTimeout(timeoutRef.current);
-    
-    if (text.trim()) {
-      timeoutRef.current = setTimeout(() => {
-        dispatch(globalSearch({ searchText: text }));
-      }, 500);
-    }
-  };
-
-  const handleMenuAction = (action) => {
-    switch(action) {
-      case 'favorites':
-        // Add to favorites functionality
-        break;
-      case 'share':
-        // Share restaurant functionality
-        break;
-      case 'report':
-        // Report issue functionality
-        break;
-      case 'info':
-        // Show restaurant info
-        break;
-      default:
-        break;
-    }
-    setMenuVisible(false);
-  };
 
   const handleFilter = (selected) => {
     if (selected.type === 'subcategory') {
@@ -134,21 +114,16 @@ const RestaurantScreen = ({navigation,route}) => {
 
   useEffect(() => {
     if (!restaurantItems) return;
-    
     const filtered = restaurantItems.filter(item => {
-      // 1. Check search match
       const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             item.item_description?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // 2. Check Veg/Non Veg filter
       const matchesFilters = activeFilters.includes('All') || 
                             activeFilters.includes(item.filter_one);
 
-      // 3. Check subcategory menu selection
       const matchesMenu = filterType === 'All' || 
                          item.sub_category_name === filterType;
 
-      // Combine all conditions
       return matchesSearch && matchesFilters && matchesMenu;
     });
     
@@ -156,12 +131,12 @@ const RestaurantScreen = ({navigation,route}) => {
   }, [searchQuery, activeFilters, restaurantItems, filterType]);
 
   useEffect(()=>{
-    route.params &&  getItems()
-  },[route.params])
+    restaurantData &&  getItems()
+  },[restaurantData])
 
   useEffect(() => {
-    if (route.params?.highlightItemId) {
-      const itemId = route.params.highlightItemId;
+    if (route?.params?.highlightItemId) {
+      const itemId = route?.params.highlightItemId;
       setHighlightedItemId(itemId);
       
       if (!scaleAnims.has(itemId)) {
@@ -182,22 +157,21 @@ const RestaurantScreen = ({navigation,route}) => {
         clearTimeout(timer);
       };
     }
-  }, [route.params]);
+  }, [route?.params]);
 
   const handleAddToCart = (item) => {
-    if (cartItems.length === 0 || cartRestaurant == route.params.shopId) {
+    console.log(cartRestaurant,restaurantData)
+    if (cartItems.length === 0 || cartRestaurant == restaurantData?.shop_id) {
       addItem(item);
-      dispatch(setRestaurnatDetails(route.params.item))
+      dispatch(setRestaurnatDetails(restaurantData))
     } else {
-      // If different restaurant, show replace modal
       setSelectedItem(item);
       setShowReplaceModal(true);
     }
   };
 
   const handleReplaceCart = () => {
-    // Clear existing cart and add new item
-    dispatch(setCartRestaurant(route.params.shopId));
+    dispatch(setCartRestaurant(restaurantData?.shopId));
     dispatch(addToCart(selectedItem));
     setShowReplaceModal(false);
     setSelectedItem(null);
@@ -208,51 +182,36 @@ const RestaurantScreen = ({navigation,route}) => {
     setSelectedItem(null);
   };
 
-  const handleIncrease = (itemId) => {
-    setCart((prevCart) => ({
-      ...prevCart,
-      [itemId]: prevCart[itemId] + 1, 
-    }));
-  };
-
-  const handleDecrease = (itemId) => {
-    setCart((prevCart) => {
-      const updatedCart = { ...prevCart };
-      if (updatedCart[itemId] > 1) {
-        updatedCart[itemId] -= 1; 
-      } else {
-        delete updatedCart[itemId];
-      }
-      return updatedCart;
-    });
-  };
-
   const startAnim = () =>{
-    setVisible(true)
-    Animated.timing(translateY, {
-      toValue: 0,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(()=>{
-
-    });
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bottomGap, {
+        toValue: responsiveHeight(10),
+        duration: 500,
+        useNativeDriver: true,
+      }),
+  ]).start();
   }
 
   const stopAnim = () =>{
-    
+    Animated.parallel([
     Animated.timing(translateY, {
       toValue: 100,
       duration: 500,
       useNativeDriver: true,
-    }).start(()=>{
-      setVisible(false)
-    });
+    }),
+    Animated.timing(bottomGap, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }),
+  ]).start();
   }
-
-
-
   const addItem = (item) =>{
-    // dispatch(setCartRestaurant())
     dispatch(addToCart(item))
   }
 
@@ -277,15 +236,12 @@ const RestaurantScreen = ({navigation,route}) => {
         { dx: pan.x, dy: pan.y }
       ], { useNativeDriver: false }),
       onPanResponderRelease: () => {
-        console.log('PanResponder Release:', pan.x._value, pan.y._value);
         pan.flattenOffset();
       }
     })
   ).current;
 
-  const toggleMenu = () => {
-    setMenuVisible(!menuVisible);
-  };
+  console.log(translateY,"+++++++++++++++++TRSNAANANNAANAN")
 
   const handleDraggableMenuAction = (subCategory) => {
     if (subCategory.sub_category_name === 'All') {
@@ -300,9 +256,6 @@ const RestaurantScreen = ({navigation,route}) => {
     }
     setDraggableMenuVisible(false);
   };
-
-
-  // console.log(subCategories,"route.?.item")
 
   useEffect(() => {
     return () => {
@@ -384,8 +337,6 @@ const RestaurantScreen = ({navigation,route}) => {
       >
         <View 
           style={[styles.card, item.active_status === "1" && styles.unavailableCard]}
-          // onPress={() => item.active_status === "1" ? null : handleAddToCart(item)}
-          // disabled={item.active_status === "1"}
         >
           {item.active_status === "1" && (
             <View style={styles.unavailableOverlay}>
@@ -449,7 +400,7 @@ const RestaurantScreen = ({navigation,route}) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" translucent />
       <ImageBackground
-        source={{ uri: route.params?.item?.shop_image }}
+        source={{ uri:restaurantData?.shop_image }}
         style={styles.imageBackground}>
         <View style={styles.imageOverlay}>
           <View style={styles.headerRow}>
@@ -462,26 +413,14 @@ const RestaurantScreen = ({navigation,route}) => {
               />
             </TouchableOpacity>
             <View style={styles.header}>
-              <Text style={styles.title}>{route.params?.item?.shop_name}</Text>
-              <Text style={styles.subtitle}>{route.params?.item?.shop_address}</Text>
+              <Text style={styles.title}>{restaurantData?.shop_name}</Text>
+              <Text style={styles.subtitle}>{restaurantData?.shop_address}</Text>
               <View style={styles.ratingContainer}>
                 <Icon name="star" size={18} color="gold" />
-                <Text style={styles.rating}>{route.params?.item?.shop_rating}</Text>
+                <Text style={styles.rating}>{restaurantData?.shop_rating}</Text>
               </View>
             </View>
             <View style={styles.headerIcons}>
-              {/* <TouchableOpacity 
-                style={styles.iconButton}
-                onPress={() => handleMenuAction('favorites')}
-              >
-                <EvilIcons name="heart" color={'#000'} size={15} />
-              </TouchableOpacity> */}
-              {/* <TouchableOpacity 
-                style={styles.iconButton}
-                onPress={() => setMenuVisible(!menuVisible)}
-              >
-                <Entypo name="dots-three-vertical" color="#313131" size={7} />
-              </TouchableOpacity> */}
             </View>
           </View>
 
@@ -512,39 +451,6 @@ const RestaurantScreen = ({navigation,route}) => {
         </View>
       </ImageBackground>
 
-      {/* {menuVisible && (
-        <View style={styles.menuOverlay}>
-          <TouchableOpacity 
-            style={styles.menuOption}
-            onPress={() => handleMenuAction('favorites')}
-          >
-            <Icon name="favorite" size={24} color="#065E2C" />
-            <Text style={styles.menuOptionText}>Add to Favorites</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.menuOption}
-            onPress={() => handleMenuAction('share')}
-          >
-            <Icon name="share" size={24} color="#065E2C" />
-            <Text style={styles.menuOptionText}>Share Restaurant</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.menuOption}
-            onPress={() => handleMenuAction('report')}
-          >
-            <Icon name="report-problem" size={24} color="#065E2C" />
-            <Text style={styles.menuOptionText}>Report an Issue</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.menuOption}
-            onPress={() => handleMenuAction('info')}
-          >
-            <Icon name="info" size={24} color="#065E2C" />
-            <Text style={styles.menuOptionText}>Restaurant Info</Text>
-          </TouchableOpacity>
-        </View>
-      )} */}
-
       <View>
         {renderFilters()}
       </View>
@@ -560,14 +466,18 @@ const RestaurantScreen = ({navigation,route}) => {
           <Text style={styles.noItemsSubText}>We couldn't find any items matching your search</Text>
         </View>
       ) : (
+        <Animated.View style={{flex:1,paddingBottom:bottomGap}}>
+
         <FlatList
           data={filteredData}
           keyExtractor={item => item.id}
           numColumns={2}
-          style={styles.itemList}
+          style={[styles.itemList]}
           columnWrapperStyle={styles.columnWrapper}
+
           renderItem={renderItem}
         />
+        </Animated.View>
       )}
 
       <Animated.View 
@@ -639,7 +549,7 @@ const RestaurantScreen = ({navigation,route}) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Replace Cart Items?</Text>
             <Text style={styles.modalText}>
-              Your cart contains items from a different restaurant. Would you like to replace them with items from {route.params?.item?.shop_name}?
+              Your cart contains items from a different restaurant. Would you like to replace them with items from {restaurantData?.shop_name}?
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -732,7 +642,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   filterText: { fontSize: 16, fontWeight: '500' },
-  itemList: { paddingHorizontal: responsiveWidth(5), paddingVertical: responsiveHeight(2), flex: 1 },
+  itemList: { paddingHorizontal: responsiveWidth(5), paddingBottom: responsiveHeight(5), flex: 1 },
   columnWrapper: { gap: responsiveWidth(3.5), justifyContent: 'space-between' },
   card: {
     backgroundColor: '#fff',
@@ -1018,4 +928,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RestaurantScreen;
+export default BannerRestaurantScreen;

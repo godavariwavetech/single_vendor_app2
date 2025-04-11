@@ -61,7 +61,32 @@ export const globalSearch = createAsyncThunk(
 )
 
 
-
+export const indiviadualShop = createAsyncThunk(
+  "indiviadualShop",
+  async(
+    {shopId},
+    {getState, rejectWithValue, fulfillWithValue}
+  ) => {
+    console.log("shopId individual shop",shopId,locationId,location)
+    const {location,locationId} = getState().Auth;
+    const response = await api.post(endpoints.GET_SHOPS,{
+      "shop_latitude":  17.0005,
+      "shop_longitude": 81.8040,
+      "location_id": 1,
+      "category_id": 1,
+      "sub_category_id":0,
+      "shop_id": shopId
+    })
+    console.log("response>>>>>>>>>>>",response)
+    if (response) { 
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  }
+)
 const addressSlice = createSlice({
   name: 'address',
   initialState: {

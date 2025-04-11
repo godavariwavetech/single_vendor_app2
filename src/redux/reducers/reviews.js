@@ -87,6 +87,26 @@ export const submitAppReview = createAsyncThunk(
     },
   );
 
+  export const getNotifications = createAsyncThunk(
+    'getNotifications',
+    async (
+      _,
+      {getState, rejectWithValue, fulfillWithValue},
+    ) => {
+      const {locationId} = await getState().Auth;
+      const response = await api.post(endpoints.GET_NOTIFICATIONS,{
+        "location_id":locationId
+    });
+      if (response) {
+        if (response.data) {
+          return fulfillWithValue(response.data);
+        } else {
+          return rejectWithValue('Something went wrong!');
+        }
+      }
+    },
+  );
+
 const initialState = {
   loading: false,
   message: null,
