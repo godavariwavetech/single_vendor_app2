@@ -350,16 +350,16 @@ useEffect(() => {
   };
 
   const handleBannerPress = (banner) => {
-     navigation.navigate('BannerRestaurantScreen',{highlightItemId:9})
-    // const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
-    // if(item.length > 0){
-    //   navigation.navigate('RestaurantScreen', {
-    //     shopId: item.shop_id,
-    //     shopItem: item.shop_items_tb_nm,
-    //     item,
-    //     highlightItemId: 14
-    //   })
-    // }
+    //  navigation.navigate('BannerRestaurantScreen',{highlightItemId:9})
+    const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
+    if(item.length > 0){
+      navigation.navigate('RestaurantScreen', {
+        shopId: item.shop_id,
+        shopItem: item.shop_items_tb_nm,
+        item,
+        highlightItemId: 14
+      })
+    }
   };
 
   // Handle network connection changes
