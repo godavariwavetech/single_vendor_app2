@@ -1,4 +1,5 @@
 export const baseURL = 'https://developementapi.freshozapcart.com/'; 
+// export const baseURL = 'https://api.localdaddy.in/'; 
 
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',

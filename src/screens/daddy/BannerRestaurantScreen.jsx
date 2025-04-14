@@ -46,14 +46,15 @@ const BannerRestaurantScreen = ({navigation,route}) => {
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const timeoutRef = useRef();
-  const [highlightedItemId, setHighlightedItemId] = useState(null);
-  const scaleAnims = useRef(new Map()).current;
-  const [renderedItems, setRenderedItems] = useState(new Set());
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [restaurantData, setRestaurantData] = useState(null);
   const {location,locationId} = useSelector(state=>state.Auth)
   // const [bottomGap,setBottomGap] = useState(0)
   const bottomGap = new Animated.Value(0);
   const flatListRef = useRef(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
 
   console.log("called")
@@ -68,6 +69,8 @@ const fetchRestaurantData = async() =>{
 useEffect(()=>{
   fetchRestaurantData()
 },[location])
+
+console.log(showToast,"++++++++++Yoast offer")
 
   const mergedFilters = [
     { filter_name: 'All', id: 'all' },
@@ -135,41 +138,63 @@ useEffect(()=>{
     restaurantData &&  getItems()
   },[restaurantData])
 
+  const showToastMessage = (message, itemId) => {
+    toastAnim.setValue(0);
+    progressAnim.setValue(0);
+    
+    setToastMessage(message);
+    setShowToast(true);
+    
+    // Scroll to item
+    const index = filteredData.findIndex(item => item.id === itemId);
+    if (index !== -1 && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index,
+          viewOffset: 100,
+          animated: true
+        });
+      }, 500); // Delay to allow toast animation
+    }
+
+    Animated.timing(toastAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 4000,
+      useNativeDriver: false,
+    }).start();
+  };
+
   useEffect(() => {
     if (route?.params?.highlightItemId) {
-      const itemId = route?.params.highlightItemId;
-      setHighlightedItemId(itemId);
+      const itemId = route.params.highlightItemId;
+      const item = filteredData.find(item => item.id === itemId);
       
-      if (!scaleAnims.has(itemId)) {
-        scaleAnims.set(itemId, new Animated.Value(1));
+      if (item) {
+        showToastMessage({
+          name: item.item_name,
+          offer: `${item.discount_percentage}%` || "20%",
+          original: item.actual_price,
+          discounted: item.selling_price,
+        }, itemId);
       }
-
-      const index = filteredData.findIndex(item => item.id === itemId);
-      if (index !== -1 && flatListRef.current && filteredData.length > 0 && index < filteredData.length) {
-        requestAnimationFrame(() => {
-          flatListRef.current?.scrollToIndex({
-            index,
-            viewOffset: 100,
-            animated: true
-          });
-        });
-      }
-
-      const timer = setTimeout(() => {
-        setHighlightedItemId(null);
-        setRenderedItems(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(itemId);
-          return newSet;
-        });
-        scaleAnims.get(itemId)?.setValue(1);
-      }, 2000);
-      
-      return () => {
-        clearTimeout(timer);
-      };
     }
   }, [route?.params, filteredData]);
+
+  useEffect(() => {
+    if (showToast) {
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [showToast]);
 
   const handleAddToCart = (item) => {
     console.log(cartRestaurant,restaurantData)
@@ -314,39 +339,8 @@ useEffect(()=>{
   );
 
   const renderItem = ({ item }) => {
-    const isHighlighted = item.id === highlightedItemId;
-    const scaleAnim = scaleAnims.get(item.id) || new Animated.Value(1);
-    
     return (
-      <Animated.View 
-        style={[
-          styles.itemContainer,
-          isHighlighted && styles.highlightedItem,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
-        onLayout={() => {
-          if (isHighlighted && !renderedItems.has(item.id)) {
-            setRenderedItems(prev => new Set(prev).add(item.id));
-            scaleAnim.stopAnimation();
-            requestAnimationFrame(() => {
-              Animated.sequence([
-                Animated.spring(scaleAnim, {
-                  toValue: 1.1,
-                  stiffness: 100,
-                  damping: 7,
-                  useNativeDriver: true,
-                }),
-                Animated.spring(scaleAnim, {
-                  toValue: 1,
-                  stiffness: 200,
-                  damping: 10,
-                  useNativeDriver: true,
-                }),
-              ]).start();
-            });
-          }
-        }}
-      >
+      <View style={styles.itemContainer}>
         <View 
           style={[styles.card, item.active_status === "1" && styles.unavailableCard]}
         >
@@ -398,15 +392,9 @@ useEffect(()=>{
             )}
           </View>
         </View>
-      </Animated.View>
+      </View>
     );
   };
-
-  useEffect(() => {
-    return () => {
-      scaleAnims.forEach(anim => anim.stopAnimation());
-    };
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -488,12 +476,14 @@ useEffect(()=>{
           style={[styles.itemList]}
           columnWrapperStyle={styles.columnWrapper}
           renderItem={renderItem}
-          onScrollToIndexFailed={({ index, highestMeasuredFrameIndex }) => {
-            if (highestMeasuredFrameIndex >= 0) {
-              flatListRef.current?.scrollToIndex({ index: highestMeasuredFrameIndex });
-            } else if (filteredData.length > 0) {
-              flatListRef.current?.scrollToEnd();
-            }
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            flatListRef.current?.scrollToOffset({
+              offset: index * averageItemLength,
+              animated: true
+            });
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({ index, animated: true });
+            }, 100);
           }}
         />
         </Animated.View>
@@ -587,6 +577,45 @@ useEffect(()=>{
           </View>
         </View>
       </Modal>
+
+      {showToast && (
+        <Animated.View style={[styles.toastContainer, {
+          opacity: toastAnim,
+          transform: [{
+            translateY: toastAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-20, 0]
+            })
+          }]
+        }]}>
+          <View style={styles.toastContent}>
+            <MaterialIcons name="local-offer" size={24} color="#fff" />
+            
+            <View style={styles.toastTextContainer}>
+              <Text style={styles.toastTitle}>{toastMessage.name}</Text>
+              <Text style={styles.toastDetails}>
+                {toastMessage.offer} OFF • 
+                <Text style={styles.originalPrice}> ₹{toastMessage.original}</Text>
+                {' → '}
+                <Text style={styles.discountedPrice}>₹{toastMessage.discounted}</Text>
+              </Text>
+            </View>
+            
+            <TouchableOpacity 
+              onPress={() => {
+                Animated.timing(toastAnim, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start(() => setShowToast(false));
+              }}
+              style={styles.closeButton}
+            >
+              <MaterialIcons name="close" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
 
     </View>
   );
@@ -941,9 +970,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  highlightedItem: {
-    backgroundColor: 'rgba(6, 94, 44, 0.1)',
-    borderRadius: 8,
+  toastContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 15,
+    right: 15,
+    backgroundColor: '#065E2C',
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: 'column',
+    elevation: 5,
+    zIndex: 9999,
+  },
+  toastContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toastTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  toastTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  toastDetails: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  toastTime: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+  },
+  closeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  progressBar: {
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+  },
+  testButton: {
+    position: 'absolute',
+    top: 100,
+    zIndex: 9999,
+    backgroundColor: 'red',
+    padding: 10,
+  },
+  originalPrice: {
+    textDecorationLine: 'line-through',
+    color: 'rgba(255,255,255,0.6)',
+    marginRight: 4,
+  },
+  discountedPrice: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
 
