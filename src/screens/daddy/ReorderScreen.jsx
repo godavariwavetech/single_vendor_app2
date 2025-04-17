@@ -34,6 +34,7 @@ const ReorderScreen = ({navigation}) => {
     try {
       setInitialLoading(true);
       const response = await dispatch(getOrders({orderId:0}));
+
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
@@ -117,11 +118,13 @@ const ReorderScreen = ({navigation}) => {
     }
   };
 
+  
   const filteredOrders = orders?.filter(order => 
     globalSearchResults?.some(result => result.shop_name === order.shop_name) ||
     order.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  console.log(filteredOrders&& filteredOrders[0],"++++++++++++++++++++<><>ITEMS")
+  
   const onRefresh = async () => {
     setRefreshing(true);
     await dispatch(getOrders({orderId:0})); // Fetch orders again
@@ -174,26 +177,60 @@ const ReorderScreen = ({navigation}) => {
     );
   }, [cartItems, cartRestaurant]);
 
+  // Add this constant near the top of the file
+  const STATUS_MAP = {
+    0: 'Order Placed',
+    1: 'Order Accepted',
+    2: 'Order On The Way',
+    3: 'Order Completed',
+    4: 'Order Cancelled by You',
+    5: 'Order Rejected by Restaurant',
+    6: 'Order Not Received',
+    7: 'Waiting for Payment',
+    8: 'Delivery Partner Assigned',
+  };
+  
+  // Add this function to get status color
+  const getStatusColor = (status) => {
+    const colorMap = {
+      0: '#C3A710', // Order Placed - Yellow
+      1: '#065E2C', // Order Accepted - Green
+      2: '#065E2C', // Preparing - Green
+      3: '#065E2C', // Completed - Green
+      4: '#FF4B4B', // Cancelled - Red
+      5: '#FF4B4B', // Rejected - Red
+      6: '#FF4B4B', // Not Received - Red
+      7: '#C3A710', // Waiting Payment - Yellow
+      8: '#065E2C', // Delivery Assigned - Green
+    };
+    return colorMap[status] || '#666'; // Default gray
+  };
+  
+  // Update the renderRestaurantCard function to include status
   const renderRestaurantCard = useCallback(({ item }) => {
-    const isExpanded = expandedRestaurants[item.id];
-    const items = orderItems[item.id] || [];
     const isLoading = loading[item.id];
-
+  
     return (
       <View style={styles.card}>
+        <View style={{flexDirection:"row",justifyContent:"space-between",alignItems:"center"}}>
         <Text style={styles.date}>{item.order_date}</Text>
+         <Text style={[styles.statusText, {color: getStatusColor(item.order_status)}]}>
+                {STATUS_MAP[item.order_status]}
+        </Text>
+        </View>
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7}}>
-          <Image source={{uri: item.shop_image}} style={{width: 58, height: 58, borderRadius: 8}} />
+          <Image source={{uri: item.shop_image}} style={{width: 68, height: 68, borderRadius: 8}} />
           <View style={styles.restaurantInfo}>
             <Text style={styles.restaurantName}>{item.shop_name}</Text>
+            <Text style={[styles.details,{fontSize:10}]}>{item?.order_id} / {item?.id}</Text>
             <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={styles.details}> ₹ {item.grand_total}</Text>
+              <Text style={styles.details}>₹ {item.grand_total}</Text>
             </View>
             <Text style={styles.details}>{item.location_name}</Text>
           </View>
         </View>
 
-        {!isExpanded ? (
+      (
           <TouchableOpacity 
             style={styles.viewDetailsButton}
             onPress={() => {
@@ -202,39 +239,9 @@ const ReorderScreen = ({navigation}) => {
             }}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
               <Text style={styles.viewDetailsButtonText}>View Order Details</Text>
-            )}
           </TouchableOpacity>
-        ) : (
-          <>
-            <View style={[styles.dottedLineContainer, {width: responsiveWidth(80), alignSelf: "center", alignItems: "center", justifyContent: "center", overflow: "hidden", marginTop: 10}]}>
-              {Array(20).fill(0).map((_, index) => (
-                <View key={index} style={styles.dot} />
-              ))}
-            </View>
-            <FlatList
-              data={items}
-              renderItem={renderMenuItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false}
-              removeClippedSubviews={true}
-              maxToRenderPerBatch={5}
-              windowSize={5}
-              initialNumToRender={2}
-              ListFooterComponent={
-                <TouchableOpacity 
-                  style={styles.hideDetailsButton}
-                  onPress={() => toggleExpand(item.id)}
-                >
-                  <Text style={styles.hideDetailsButtonText}>Hide Details</Text>
-                </TouchableOpacity>
-              }
-            />
-          </>
-        )}
+        ) 
       </View>
     );
   }, [expandedRestaurants, orderItems, loading, renderMenuItem, toggleExpand, fetchOrderItems, navigation]);
@@ -416,7 +423,8 @@ const styles = StyleSheet.create({
   },
   date: { 
     fontSize: 12, 
-    color: '#888' 
+    color: '#888',
+    textAlign:"left" 
   },
   restaurantInfo: { 
     marginVertical: 10 ,
@@ -614,6 +622,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
 });
 
-export default ReorderScreen; 
+export default ReorderScreen;

@@ -13,7 +13,6 @@ import {
   PanResponder,
   ActivityIndicator,
   Modal,
-  LayoutAnimation,
 } from 'react-native';
 import {
   responsiveFontSize,
@@ -24,43 +23,33 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import Entypo from 'react-native-vector-icons/Entypo';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-// import * as Animatable from 'react-native-animatable';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, getItemsList, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { setRestaurnatDetails } from '../../redux/reducers/auth';
-import { globalSearch } from '../../redux/reducers/addressSlice';
 
 
 const RestaurantScreen = ({navigation,route}) => {
-  const [visible,setVisible] = useState(false)
   const [translateY] = useState(new Animated.Value(100));
-  const [cart, setCart] = useState({});
   const dispatch = useDispatch();
-  const {restaurantItems,itemsFilter,cartItems,cartRestaurant,subCategories} = useSelector(state=>state.Dashboard) 
+  const {restaurantItems,cartItems,cartRestaurant} = useSelector(state=>state.Dashboard) 
   const [filterType, setFilterType] = useState("All");
   const [filteredData, setFilterData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeFilters, setActiveFilters] = useState(['All']);
+  const [activeFilters, setActiveFilters] = useState( route.params?.selectedFilter ? [route.params.selectedFilter] : ['All']);
   const pan = useRef(new Animated.ValueXY({ x: responsiveWidth(100) - 88, y: responsiveHeight(100) - 138 })).current;
-  const [menuVisible, setMenuVisible] = useState(false);
   const [draggableMenuVisible, setDraggableMenuVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showPopularItems, setShowPopularItems] = useState(false);
-  const [showOffers, setShowOffers] = useState(false);
-  const [showReviews, setShowReviews] = useState(false);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const timeoutRef = useRef();
-  const { globalSearchResults } = useSelector(state => state.address);
   const [highlightedItemId, setHighlightedItemId] = useState(null);
   const scaleAnims = useRef(new Map()).current;
   const [renderedItems, setRenderedItems] = useState(new Set());
+  const [initialFilter, setSetInitialFilter] = useState(true);
+   const bottomGap = new Animated.Value(0);
+  const flatListRef = useRef(null);
 
   // Restore original mergedFilters
   const mergedFilters = [
@@ -79,6 +68,7 @@ const RestaurantScreen = ({navigation,route}) => {
       setIsLoading(true);
       const response = await dispatch(getItemsList({shopId:route.params.shopId,shopItem:route.params.shopItem}))
       setFilterData(response.payload.data)
+      route?.params?.selectedFilter && setSetInitialFilter(!initialFilter)
     } catch (error) {
       console.error('Error loading items:', error);
     } finally {
@@ -86,74 +76,37 @@ const RestaurantScreen = ({navigation,route}) => {
     }
   }
 
-  const handleSearch = (text) => {
-    setSearchQuery(text);
-    clearTimeout(timeoutRef.current);
-    
-    if (text.trim()) {
-      timeoutRef.current = setTimeout(() => {
-        dispatch(globalSearch({ searchText: text }));
-      }, 500);
-    }
-  };
-
-  const handleMenuAction = (action) => {
-    switch(action) {
-      case 'favorites':
-        // Add to favorites functionality
-        break;
-      case 'share':
-        // Share restaurant functionality
-        break;
-      case 'report':
-        // Report issue functionality
-        break;
-      case 'info':
-        // Show restaurant info
-        break;
-      default:
-        break;
-    }
-    setMenuVisible(false);
-  };
-
   const handleFilter = (selected) => {
     if (selected.type === 'subcategory') {
       setActiveSubCategoryFilter(selected.filter_name === 'All' ? 'All' : selected.filter_name);
     } else {
-      if (selected.filter_name === 'All') {
-        setActiveFilters(['All']);
-        return;
-      }
-      const newFilters = activeFilters.includes(selected.filter_name) 
-        ? activeFilters.filter(f => f !== selected.filter_name)
-        : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
-      setActiveFilters(newFilters);
+
+
+    setActiveFilters([selected.filter_name]);
+      // if (selected.filter_name === 'All') {
+      //   setActiveFilters(['All']);
+      //   return;
+      // }
+      // const newFilters = activeFilters.includes(selected.filter_name) 
+      //   ? activeFilters.filter(f => f !== selected.filter_name)
+      //   : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
+      // setActiveFilters(newFilters);
     }
   };
 
   useEffect(() => {
     if (!restaurantItems) return;
-    
     const filtered = restaurantItems.filter(item => {
-      // 1. Check search match
       const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             item.item_description?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // 2. Check Veg/Non Veg filter
-      const matchesFilters = activeFilters.includes('All') || 
-                            activeFilters.includes(item.filter_one);
-
-      // 3. Check subcategory menu selection
+      const matchesFilters = activeFilters[0] === 'All' || 
+                            item.filter_one === activeFilters[0];
       const matchesMenu = filterType === 'All' || 
                          item.sub_category_name === filterType;
-
-      // Combine all conditions
       return matchesSearch && matchesFilters && matchesMenu;
     });
-    
     setFilterData(filtered);
-  }, [searchQuery, activeFilters, restaurantItems, filterType]);
+  }, [searchQuery, activeFilters, restaurantItems, filterType,initialFilter]);
 
   useEffect(()=>{
     route.params &&  getItems()
@@ -189,14 +142,12 @@ const RestaurantScreen = ({navigation,route}) => {
       addItem(item);
       dispatch(setRestaurnatDetails(route.params.item))
     } else {
-      // If different restaurant, show replace modal
       setSelectedItem(item);
       setShowReplaceModal(true);
     }
   };
 
   const handleReplaceCart = () => {
-    // Clear existing cart and add new item
     dispatch(setCartRestaurant(route.params.shopId));
     dispatch(addToCart(selectedItem));
     setShowReplaceModal(false);
@@ -208,45 +159,27 @@ const RestaurantScreen = ({navigation,route}) => {
     setSelectedItem(null);
   };
 
-  const handleIncrease = (itemId) => {
-    setCart((prevCart) => ({
-      ...prevCart,
-      [itemId]: prevCart[itemId] + 1, 
-    }));
-  };
-
-  const handleDecrease = (itemId) => {
-    setCart((prevCart) => {
-      const updatedCart = { ...prevCart };
-      if (updatedCart[itemId] > 1) {
-        updatedCart[itemId] -= 1; 
-      } else {
-        delete updatedCart[itemId];
-      }
-      return updatedCart;
-    });
-  };
 
   const startAnim = () =>{
-    setVisible(true)
-    Animated.timing(translateY, {
-      toValue: 0,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(()=>{
-
-    });
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bottomGap, {
+        toValue: responsiveHeight(10),
+        duration: 500,
+        useNativeDriver: true,
+      }),
+  ]).start();
   }
-
   const stopAnim = () =>{
-    
     Animated.timing(translateY, {
       toValue: 100,
       duration: 500,
       useNativeDriver: true,
-    }).start(()=>{
-      setVisible(false)
-    });
+    }).start();
   }
 
 
@@ -283,10 +216,6 @@ const RestaurantScreen = ({navigation,route}) => {
     })
   ).current;
 
-  const toggleMenu = () => {
-    setMenuVisible(!menuVisible);
-  };
-
   const handleDraggableMenuAction = (subCategory) => {
     if (subCategory.sub_category_name === 'All') {
       setFilterType('All');
@@ -321,7 +250,6 @@ const RestaurantScreen = ({navigation,route}) => {
         const isActive = item.type === 'subcategory' 
           ? item.filter_name === activeSubCategoryFilter
           : activeFilters.includes(item.filter_name);
-
         return (
           <TouchableOpacity
             onPress={() => handleFilter(item)}
@@ -333,8 +261,8 @@ const RestaurantScreen = ({navigation,route}) => {
               }
             ]}
           >
-            {item.type !== 'subcategory' && (
-              <HeaderPick2 color={
+            {(item.type !== 'subcategory' ) && (
+             item.id!=="all" &&  <HeaderPick2 color={
                 item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
                 item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
               } />
@@ -412,7 +340,12 @@ const RestaurantScreen = ({navigation,route}) => {
           </View>
 
           <View style={styles.itemFooter}>
-            <Text style={styles.price}>₹{item.selling_price}</Text>
+              <Text style={styles.price}>₹{item.selling_price}</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              {item.actual_price !== item.selling_price && (
+                <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:14}]}>₹{item.actual_price}</Text>
+              )}
+            </View>
             {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
               <View style={styles.counterContainer}>
                 <TouchableOpacity onPress={() => decreaseItem(item)}>
@@ -560,14 +493,27 @@ const RestaurantScreen = ({navigation,route}) => {
           <Text style={styles.noItemsSubText}>We couldn't find any items matching your search</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredData}
-          keyExtractor={item => item.id}
-          numColumns={2}
-          style={styles.itemList}
-          columnWrapperStyle={styles.columnWrapper}
-          renderItem={renderItem}
-        />
+        <Animated.View style={{flex:1,paddingBottom:bottomGap}}>
+       
+               <FlatList
+                 ref={flatListRef}
+                 data={filteredData}
+                 keyExtractor={item => item.id}
+                 numColumns={2}
+                 style={[styles.itemList]}
+                 columnWrapperStyle={styles.columnWrapper}
+                 renderItem={renderItem}
+                 onScrollToIndexFailed={({ index, averageItemLength }) => {
+                   flatListRef.current?.scrollToOffset({
+                     offset: index * averageItemLength,
+                     animated: true
+                   });
+                   setTimeout(() => {
+                     flatListRef.current?.scrollToIndex({ index, animated: true });
+                   }, 100);
+                 }}
+               />
+               </Animated.View>
       )}
 
       <Animated.View 
@@ -621,13 +567,13 @@ const RestaurantScreen = ({navigation,route}) => {
         )}
       </Animated.View>
 
-      {true && <Animated.View
+      <Animated.View
         style={styles.cartSummary(translateY)}
       >
         <TouchableOpacity onPress={() => navigation.navigate("CartScreen",{isFromRestaurant:true})}>          
-          <Text style={styles.cartSummaryText}>{Object.keys(cartItems).length} Items added to cart <AntDesign name="right" color="green" size={17} /> </Text>
+          <Text style={styles.cartSummaryText}>{cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0)} Items added to cart <AntDesign name="right" color="green" size={17} /> </Text>
         </TouchableOpacity>
-      </Animated.View>}
+      </Animated.View>
 
       <Modal
         visible={showReplaceModal}
@@ -732,7 +678,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   filterText: { fontSize: 16, fontWeight: '500' },
-  itemList: { paddingHorizontal: responsiveWidth(5), paddingVertical: responsiveHeight(2), flex: 1 },
+  itemList: { paddingHorizontal: responsiveWidth(5), paddingBottom: responsiveHeight(5), flex: 1 },
   columnWrapper: { gap: responsiveWidth(3.5), justifyContent: 'space-between' },
   card: {
     backgroundColor: '#fff',
@@ -872,18 +818,18 @@ const styles = StyleSheet.create({
   cartSummary: (translateY) => ({
     position: "absolute",
     width: "100%",
-    height: 75,
+    height: 45,
     bottom: 0,
     backgroundColor: "#FFF8CF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    // padding: 20,
     alignItems: "center",
     elevation: 5,
     zIndex: 10,
     transform: [{ translateY: translateY }],
   }),
-  cartSummaryText: { fontSize: 18, fontWeight: "bold" },
+  cartSummaryText: { fontSize: 18, fontWeight: "bold",marginTop: 7, color: "#065E2C"  },
   cartSummarySubText: { fontSize: 14, color: "gray", marginVertical: 5 },
   menuOverlay: {
     position: 'absolute',

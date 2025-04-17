@@ -23,6 +23,13 @@ target 'localdaddy' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # # Add Firebase pods
+  # pod 'Firebase/Core'
+  # pod 'Firebase/Auth'
+  # pod 'Firebase/Firestore'
+  # pod 'Firebase/Messaging'
+  # pod 'Firebase/Storage'
+
   target 'localdaddyTests' do
     inherit! :complete
     # Pods for testing

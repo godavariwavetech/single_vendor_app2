@@ -12,120 +12,22 @@ import {
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import BiryaniCategory from './tabassets/BiryaniCategory';
 import HeaderPick1 from './tabassets/HeaderPick1';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import HeaderPick3 from './tabassets/HeaderPick3';
 import Seller from './tabassets/Seller';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
-import Entypo from "react-native-vector-icons/Entypo"
 import { useDispatch, useSelector } from 'react-redux';
 import { getRestaurants } from '../../redux/reducers/daddy';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const restaurants = [
-  {
-    id: '1',
-    name: 'Vantalakka Biriyani',
-    image:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_cR_lCMXmgj2I9k807VNZxLN4xLmUFknXZA&s', // Replace with real image URL
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'Street Food, Shake, Beverages',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '2',
-    name: 'Naidu Gari Kunda Biryani',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh4heBKn8mMJz00VVuP1hl2Qd7IVegxGisJw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'Fried Rice, Chinese, Italian',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-  {
-    id: '3',
-    name: 'Helapuri Restaurant-Diamond ...',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7XSuh-M_6J74T6jsGBGGwfPrIIoMPe-cFaw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, Chinese, Biry...',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '4',
-    name: 'Real Deepa Punjabi Dhaba',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFP_eRBTJIPb2PdOV89xZy6A_3nEGTIIFn2w&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, South Indian...',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-  {
-    id: '5',
-    name: 'Helapuri Restaurant-Diamond ...',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7XSuh-M_6J74T6jsGBGGwfPrIIoMPe-cFaw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, Chinese, Biry...',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '6',
-    name: 'Real Deepa Punjabi Dhaba',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFP_eRBTJIPb2PdOV89xZy6A_3nEGTIIFn2w&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, South Indian...',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-];
-
-const headerBar = [
-  {
-    id: 1,
-    name: 'Filter',
-    icon: HeaderPick1,
-  },
-  {
-    id: 2,
-    name: 'Veg',
-    icon: HeaderPick2,
-  },
-  {
-    id: 3,
-    name: 'Non-Veg',
-    icon: HeaderPick2,
-  },
-  {
-    id: 4,
-    name: 'Best Seller',
-    icon: Seller,
-  },
-  {
-    id: 5,
-    name: '+Rating',
-    icon: HeaderPick3,
-  },
-];
-
 export default function CategorieItems({navigation,route}) {
   const dispatch = useDispatch()
   const {restaurants,activeCategoryIndex,activeSubCategory} = useSelector(state=>state.Dashboard)
   const [filterData,setFilterData] = useState([]);
-  const [activeFilter,setActiveFilter] = useState(0)
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const timeoutRef = useRef();
@@ -135,14 +37,10 @@ export default function CategorieItems({navigation,route}) {
   const handleFilter = (selected) => {
     if (selected.filter_name === 'All') {
       setActiveFilters(['All']);
-      return;
+    } else {
+      // For single selection, just set the active filter to the selected one
+      setActiveFilters([selected.filter_name]);
     }
-
-    const newFilters = activeFilters.includes(selected.filter_name) 
-      ? activeFilters.filter(f => f !== selected.filter_name)
-      : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
-
-    setActiveFilters(newFilters);
   };
 
   const getFilters = async () =>{
@@ -162,8 +60,6 @@ export default function CategorieItems({navigation,route}) {
       setIsLoading(false);
     }
   }
-
-  console.log(activeSubCategory,"++++++++++++++ACTIVESUB CATEGORY")
 
   useFocusEffect(useCallback(()=>{
     getFilters()
@@ -249,19 +145,33 @@ export default function CategorieItems({navigation,route}) {
         showsVerticalScrollIndicator={false}
         keyExtractor={item => item.id}
         renderItem={({item}) => {
+          console.log(item.shop_active_status)
           return (
-            <TouchableOpacity onPress={()=>navigation.navigate("RestaurantScreen",{shopId:item.shop_id,shopItem:item.shop_items_tb_nm,item})} >
-              <View style={styles.card}>
-                <View>
-                  <Image source={{uri: item.shop_image}} style={styles.image} />
-
-                  {/* <TouchableOpacity
-                    style={styles.heartButton}>
-                    <EvilIcons name="heart" color={'#EC0000'} size={10} />
-                  </TouchableOpacity> */}
-                </View>
+            <TouchableOpacity 
+              onPress={()=>navigation.navigate("RestaurantScreen",{
+                shopId:item.shop_id,
+                shopItem:item.shop_items_tb_nm,
+                item,
+                selectedFilter: activeFilters[0] === 'All' ? null : activeFilters[0]
+              })}
+              disabled={item.shop_active_status === "1"} // Disable if unavailable
+            >
+              <View style={[styles.card, item.shop_active_status === "1" && styles.unavailableCard]}>
+                {item.active_status === "0" && (
+                  <View style={styles.unavailableOverlay}>
+                    <Text style={styles.unavailableText}>Currently Unavailable</Text>
+                  </View>
+                )}
+                
+                <Image 
+                  source={{uri: item.shop_image}} 
+                  style={[styles.image, item.shop_active_status === "1" && styles.unavailableImage]}
+                />
+                
                 <View style={styles.details}>
-                  <Text style={styles.name}>{item.shop_name}</Text>
+                  <Text style={[styles.name, item.shop_active_status === "1" && styles.unavailableText]}>
+                    {item.shop_name}
+                  </Text>
                   <View style={styles.ratingContainer}>
                     <MaterialCommunityIcons name="star-circle" color="#07772F" />
                     <Text style={styles.rating}> {item.shop_rating}</Text>
@@ -269,24 +179,19 @@ export default function CategorieItems({navigation,route}) {
                       {'\u25CF'} {item.time}
                     </Text>
                   </View>
-                  <Text style={styles.location}>{item.shop_address}</Text>
+                  <Text style={styles.location}>{item.shop_address} / {item?.distance.toFixed(2)} KM</Text>
                   {item.special_offer_name !== '' && (
                     <View style={styles.offerContainer}>
                       <Text style={styles.offer}>{item.special_offer_name}</Text>
                     </View>
                   )}
                 </View>
-                {/* <TouchableOpacity style={styles.moreButton}>
-                  <Entypo name="dots-three-vertical" color="#313131" size={7} />
-                </TouchableOpacity> */}
               </View>
-
+        
               <View style={styles.dottedLineContainer}>
-                {Array(20)
-                  .fill(0)
-                  .map((_, index) => (
-                    <View key={index} style={styles.dot} />
-                  ))}
+                {Array(20).fill(0).map((_, index) => (
+                  <View key={index} style={styles.dot} />
+                ))}
               </View>
             </TouchableOpacity>
           );
@@ -316,10 +221,10 @@ export default function CategorieItems({navigation,route}) {
               }
             ]}
           >
-            <HeaderPick2 color={
+           {item.filter_name!="All" && <HeaderPick2 color={
               item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
               item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
-            } />
+            } />}
             <Text style={[styles.filterText, { color: isActive ? "#fff" : '#313131' }]}>
               {item.filter_name}
             </Text>
@@ -589,4 +494,27 @@ const styles = StyleSheet.create({
     padding: 5,
     zIndex: 1,
   },
+  unavailableCard: {
+    opacity: 0.6,
+    backgroundColor: '#f5f5f5'
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    zIndex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10
+  },
+  unavailableText: {
+    color: '#888',
+    fontWeight: 'bold'
+  },
+  unavailableImage: {
+    opacity: 0.5
+  }
 });

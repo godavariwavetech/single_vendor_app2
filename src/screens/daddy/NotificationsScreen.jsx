@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, RefreshControl, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -16,7 +16,7 @@ const NotificationsScreen = ({ navigation }) => {
     setRefreshing(true);
     try {
       const response = await dispatch(getNotifications());
-      setNotifications(response.payload.data);
+      setNotifications(response.payload?.data);
     } catch (error) {
       console.error('Error refreshing notifications:', error);
     }
@@ -29,7 +29,7 @@ const NotificationsScreen = ({ navigation }) => {
         setLoading(true);
         try {
           const response = await dispatch(getNotifications());
-          setNotifications(response.payload.data);
+          setNotifications(response.payload?.data);
         } catch (error) {
           console.error('Error fetching notifications:', error);
         }

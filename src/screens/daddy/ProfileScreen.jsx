@@ -28,7 +28,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 // import { logout } from '../../redux/reducers/daddy';
 import CustomModal from '../../components/CustomModal';
-import {actionLogout} from '../../redux/reducers/auth';
+import {actionLogout, deleteAccount} from '../../redux/reducers/auth';
 import {clearCart, getOrders} from '../../redux/reducers/daddy';
 import VersionCheck from 'react-native-version-check';
 
@@ -43,6 +43,8 @@ const ProfileScreen = () => {
   const [orders, setOrders] = useState([]);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const getOrdersData = async () => {
     try {
@@ -64,7 +66,6 @@ const ProfileScreen = () => {
     const getVersion = async () => {
       try {
         const version = await VersionCheck.getCurrentVersion();
-        console.log('>>>>>>>>>>>>>>>>MNMNMNMMNMNM', version);
         setAppVersion(version);
       } catch (error) {
         console.log('Error getting app version:', error);
@@ -76,7 +77,7 @@ const ProfileScreen = () => {
   const STATUS_MAP = {
     0: 'Order Placed',
     1: 'Order Accepted',
-    2: 'Preparing Your Order',
+    2: 'Order On The Way',
     3: 'Order Completed',
     4: 'Order Cancelled by You',
     5: 'Order Rejected by Restaurant',
@@ -114,10 +115,6 @@ const ProfileScreen = () => {
     } finally {
       setShowUpdateModal(false);
     }
-  };
-
-  const handleLogout = () => {
-    setLogoutModalVisible(true);
   };
 
   const handleConfirmLogout = () => {
@@ -206,6 +203,26 @@ const ProfileScreen = () => {
     </View>
   );
 
+  const handleDeleteAccount = async () => {
+    try {
+      dispatch(deleteAccount())
+      // return
+      setIsLoading(true);
+      await dispatch(deleteAccount())
+      setDeleteModalVisible(false);
+      dispatch(actionLogout());
+      dispatch(clearCart());
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Login'}],
+      });
+    } catch (error) {
+      console.error('Error deleting account:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const menuItems = [
     {
       id: '1',
@@ -233,7 +250,7 @@ const ProfileScreen = () => {
     },
     {
       id: '4',
-      title: 'Give Feedback',
+      title: 'App Feedback',
       icon: (
         <MaterialCommunityIcons
           name="card-bulleted-outline"
@@ -300,9 +317,14 @@ const ProfileScreen = () => {
           ),
           onPress: () => navigation.navigate('Register1', {isFromCart: true}),
         },
+        {
+          id: '10',
+          title: 'Delete Account',
+          icon: <MaterialCommunityIcons name="delete" size={24} color="#FF4B4B" />,
+          onPress: () => setDeleteModalVisible(true),
+        },
   ];
 
-  console.log(orders,"+++++++++++++++++>>>>ORDERS")
 
   return (
     <View style={styles.container}>
@@ -338,11 +360,11 @@ const ProfileScreen = () => {
         contentContainerStyle={styles.scrollViewContent}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading}
+            refreshing={refreshing}
             onRefresh={async () => {
-              setIsLoading(true);
+              setRefreshing(true);
               await getOrdersData();
-              setIsLoading(false);
+              setRefreshing(false);
             }}
           />
         }>
@@ -352,17 +374,19 @@ const ProfileScreen = () => {
             <Text style={styles.viewAll}>View All</Text>
           </TouchableOpacity>
         </View>
-        {isLoading ? (
+        {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#065E2C" />
           </View>
         ) : orders.length > 0 ? (
+          <View >
           <FlatList
             data={orders}
             renderItem={renderOrder}
             keyExtractor={item => item?.order_id}
             contentContainerStyle={styles.listContainer}
           />
+            </View>
         ) : (
           <View style={styles.noOrdersContainer}>
             <MaterialCommunityIcons name="food-off" size={50} color="#A3A3A3" />
@@ -407,7 +431,7 @@ const ProfileScreen = () => {
       <CustomModal
         visible={logoutModalVisible}
         title="Logout"
-        message="Are you sure you want to logout?"
+        message="Are you sure do you want to logout?"
         onConfirm={handleConfirmLogout}
         onCancel={() => setLogoutModalVisible(false)}
         confirmText="Logout"
@@ -422,6 +446,18 @@ const ProfileScreen = () => {
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}
         cancelText="Later"
+      />
+      
+      {/* Add this modal for delete confirmation */}
+      <CustomModal
+        visible={deleteModalVisible}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setDeleteModalVisible(false)}
+        cancelText="Cancel"
+        confirmButtonColor="#FF4B4B" // Red color for delete action
       />
     </View>
   );
@@ -449,13 +485,15 @@ const styles = StyleSheet.create({
   viewAll: {color: '#065E2C', fontWeight: 'bold'},
   orderCard: {
     backgroundColor: '#fff',
-    margin: 10,
-    paddingHorizontal: 5,
+    marginHorizontal: 10,
+    paddingHorizontal: 10,
     borderRadius: 8,
-    //  elevation: 3
+    paddingVertical: 15,
+    elevation: 3,
+    width: responsiveWidth(95) - 20
   },
-  orderId: {fontSize: 14, fontWeight: '500', color: '#3D3D3D'},
-  orderStatus: {color: '#065E2C', fontWeight: '600', fontSize: 14},
+  orderId: {fontSize: 14, fontWeight: '500', color: '#3D3D3D', width: responsiveWidth(40)},
+  orderStatus: {color: '#065E2C', fontWeight: '600', fontSize: 14, width: responsiveWidth(40), textAlign: 'right'},
   orderDetails: {
     fontSize: 12,
     color: '#3D3D3D',

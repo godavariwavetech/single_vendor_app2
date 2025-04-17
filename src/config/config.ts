@@ -1,5 +1,5 @@
-export const baseURL = 'https://developementapi.freshozapcart.com/'; 
-// export const baseURL = 'https://api.localdaddy.in/'; 
+// export const baseURL = 'https://developementapi.freshozapcart.com/'; 
+export const baseURL = 'https://api.localdaddy.in/'; 
 
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',
@@ -35,5 +35,6 @@ export const endpoints = {
   GENERATE_ORDER_ID:'public_app/generateorderid',
   UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails',
   GET_RESULT_FULL_DATA:'public_app/searchitemsfull',
-  GET_NOTIFICATIONS:'public_app/notificationslist'
+  GET_NOTIFICATIONS:'public_app/notificationslist',
+  DELETE_ACCOUNT:'public_app/deleteaccount'
 };

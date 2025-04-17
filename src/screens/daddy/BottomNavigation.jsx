@@ -1,13 +1,6 @@
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {NavigationContainer} from '@react-navigation/native';
-import {View, Text, Image, Pressable, Platform, StyleSheet} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {tab1} from './tabassets';
-import {
-  responsiveHeight,
-  responsiveWidth,
-} from 'react-native-responsive-dimensions';
+import {View, Text, Pressable, Platform, StyleSheet} from 'react-native';
 import User from './User';
 import HomeSvg from './HomeSvg';
 import Reorder from './Reorder';
@@ -64,7 +57,7 @@ export default function BottomNavigation() {
                   {cartItems.length > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>
-                        {cartItems.length}
+                        {cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0)}
                       </Text>
                     </View>
                   )}

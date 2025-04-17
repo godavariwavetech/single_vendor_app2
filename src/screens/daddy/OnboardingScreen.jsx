@@ -17,6 +17,7 @@ import Geolocation from '@react-native-community/geolocation';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { useDispatch } from 'react-redux';
 import { setLocation } from '../../redux/reducers/auth'; // Update with your actual path
+import { Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,19 +43,25 @@ const OnboardingScreen = ({ navigation }) => {
 
   const requestLocationPermission = async () => {
     try {
-      const result = await check(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+      const permission = Platform.OS === 'ios' 
+        ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+        : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+
+      const result = await check(permission);
+
       if (result === RESULTS.GRANTED) {
         getLocation();
       } else {
-        const requestResult = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+        const requestResult = await request(permission);
         if (requestResult === RESULTS.GRANTED) {
           getLocation();
         } else {
-          // Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
+        //  console
         }
       }
     } catch (error) {
       console.warn(error);
+      Alert.alert('Error', 'Failed to request location permission');
     }
   };
 
@@ -256,4 +263,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OnboardingScreen; 
+export default OnboardingScreen;

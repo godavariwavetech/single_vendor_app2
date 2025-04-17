@@ -32,7 +32,7 @@ export const submitReview = createAsyncThunk(
       shop_id: shopId,
       order_id: orderId,
       rating,
-      comment,
+      comment
     });
     if (response) {
       if (response.data) {
