@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,32 +8,34 @@ import {
   ScrollView,
   ActivityIndicator,
   Keyboard,
-  Dimensions,
-  Platform,
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import { useDispatch, useSelector } from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
-import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
-import { checkAddressExistence, setSelectedServiceLocation } from '../../redux/reducers/daddy';
-// import { GOOGLE_MAPS_API_KEY } from '@env';
-import { useFocusEffect } from '@react-navigation/native';
+import {
+  responsiveHeight,
+  responsiveWidth,
+} from 'react-native-responsive-dimensions';
+import {checkAddressExistence} from '../../redux/reducers/daddy';
+import {useFocusEffect} from '@react-navigation/native';
 import CustomModal from '../../components/CustomModal';
-import { setLocation, setLocationName, setLocationId } from '../../redux/reducers/auth';
-
-const { width, height } = Dimensions.get('window');
+import {
+  setLocation,
+  setLocationName,
+  setLocationId,
+} from '../../redux/reducers/auth';
 
 const DEFAULT_REGION = {
-  latitude:  16.9979679,
+  latitude: 16.9979679,
   longitude: 81.797932,
   latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421
+  longitudeDelta: 0.0421,
 };
 
-const SelectServiceFromLocation = ({ navigation, route }) => {
+const SelectServiceFromLocation = ({navigation, route}) => {
   const mapRef = useRef(null);
   const dispatch = useDispatch();
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -48,20 +50,23 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCheckingAddress, setIsCheckingAddress] = useState(false);
+  const [cartItemsError,setCartItemsError] = useState(false);
 
-  const { loading } = useSelector(state => state.Dashboard);
-  const { location: storedLocation, locationName, locationId } = useSelector(state => state.Auth);
+  const {location: storedLocation, locationId} = useSelector(
+    state => state.Auth,
+  );
+  const {cartItems} = useSelector(state => state.Dashboard);
 
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`,
       );
       const data = await response.json();
       if (data.results && data.results.length > 0) {
         const addr = data.results[0].formatted_address;
-        const cityComponent = data.results[0].address_components.find(component => 
-          component.types.includes('locality')
+        const cityComponent = data.results[0].address_components.find(
+          component => component.types.includes('locality'),
         );
         setCity(cityComponent?.long_name || '');
         setAddress(addr);
@@ -74,18 +79,15 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     }
   };
 
-  
-
-  useEffect(()=>{
+  useEffect(() => {
     const newRegion = {
       latitude: route?.params?.selectedAddress?.customer_latitude,
-      longitude:  route?.params?.selectedAddress?.customer_longitude,
+      longitude: route?.params?.selectedAddress?.customer_longitude,
       latitudeDelta: 0.005,
       longitudeDelta: 0.005,
     };
-    console.log(">>>>>>>>>>>>>>>CALLING",route.params)
     setRegion(newRegion);
-  },[ route?.params?.selectedAddress])
+  }, [route?.params?.selectedAddress]);
 
   const getCurrentLocation = useCallback(async () => {
     setIsLoadingLocation(true);
@@ -94,7 +96,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         Geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: false,
           timeout: 15000,
-          maximumAge: 10000
+          maximumAge: 10000,
         });
       });
 
@@ -108,12 +110,9 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       setRegion(newRegion);
       mapRef.current?.animateToRegion(newRegion, 1000);
       await getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
-      
-      // Update Redux with new current location
       dispatch(setLocation(newRegion));
       dispatch(setLocationName(address));
-      dispatch(setLocationId(null)); // Reset ID since it's not a saved location
-
+      dispatch(setLocationId(null));
     } catch (error) {
       console.error('Error getting location:', error);
     } finally {
@@ -121,15 +120,11 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     }
   }, [dispatch]);
 
-  const handleSearch = useCallback((text) => {
+  const handleSearch = useCallback(text => {
     setSearchQuery(text);
-    
-    // Clear previous timeout
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
-
-    // Only show results when typing
     if (text.length > 0) {
       setShowResults(true);
     } else {
@@ -137,22 +132,18 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       setSearchResults([]);
       return;
     }
-
-    // console.log(route.params,"+++++++++++++++MMMNMMNNMNN")
-
-
-
-    // Set new timeout for API call
     searchTimeout.current = setTimeout(async () => {
       try {
         const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c&components=country:in`
+          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+            text,
+          )}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c&components=country:in`,
         );
-        
+
         if (!response.ok) throw new Error('Network response was not ok');
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'OK') {
           setSearchResults(data.predictions);
         } else {
@@ -181,17 +172,17 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         setSearchResults([]);
         setShowResults(false);
       };
-    }, [])
+    }, []),
   );
 
-  const handlePlaceSelect = async (placeId) => {
+  const handlePlaceSelect = async placeId => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`,
       );
       const data = await response.json();
       const location = data.result.geometry.location;
-      
+
       const newRegion = {
         latitude: location.lat,
         longitude: location.lng,
@@ -209,9 +200,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       console.error('Place details error:', error);
     }
   };
-
-  const handleRegionChange = async (newRegion) => {
-    // Only update if the region actually changed
+  const handleRegionChange = async newRegion => {
     if (
       newRegion.latitude !== region?.latitude ||
       newRegion.longitude !== region?.longitude
@@ -224,11 +213,11 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
-      () => setIsKeyboardVisible(true)
+      () => setIsKeyboardVisible(true),
     );
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
-      () => setIsKeyboardVisible(false)
+      () => setIsKeyboardVisible(false),
     );
 
     return () => {
@@ -237,29 +226,35 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     };
   }, []);
 
-
-  const handleConfirmLocation = async() => {
+  const handleConfirmLocation = async () => {
     try {
       setIsCheckingAddress(true);
-      const response = await dispatch(checkAddressExistence({
-        latitude: parseFloat(region.latitude),
-        longitude: parseFloat(region.longitude)
-      }));
-      
-      if(response.payload.data.length > 0){
-        dispatch(setLocation({
+      const response = await dispatch(
+        checkAddressExistence({
           latitude: parseFloat(region.latitude),
           longitude: parseFloat(region.longitude),
-          latitudeDelta: region.latitudeDelta,
-          longitudeDelta: region.longitudeDelta
-        }));
-        dispatch(setLocationName(response.payload.data[0].location_name))
-        dispatch(setLocationId(response.payload.data[0].id))
-        navigation.goBack()
-      }else{
-        setShowServiceModal(true)
+        }),
+      );
+
+      if (response.payload.data.length > 0) {
+        if (response.payload.data[0].id != locationId && cartItems.length > 0) {
+          setCartItemsError(true);
+          return;
+        }
+        dispatch(
+          setLocation({
+            latitude: parseFloat(region.latitude),
+            longitude: parseFloat(region.longitude),
+            latitudeDelta: region.latitudeDelta,
+            longitudeDelta: region.longitudeDelta,
+          }),
+        );
+        dispatch(setLocationName(response.payload.data[0].location_name));
+        dispatch(setLocationId(response.payload.data[0].id));
+        navigation.goBack();
+      } else {
+        setShowServiceModal(true);
       }
-      
     } catch (error) {
       console.error('Location confirmation error:', error);
     } finally {
@@ -267,15 +262,15 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     }
   };
 
-  console.log("region>>>>>>>>>>>>>>>>>",region)
-
   useEffect(() => {
     if (storedLocation) {
       const validRegion = {
         latitude: parseFloat(storedLocation.latitude),
         longitude: parseFloat(storedLocation.longitude),
-        latitudeDelta: storedLocation.latitudeDelta || DEFAULT_REGION.latitudeDelta,
-        longitudeDelta: storedLocation.longitudeDelta || DEFAULT_REGION.longitudeDelta
+        latitudeDelta:
+          storedLocation.latitudeDelta || DEFAULT_REGION.latitudeDelta,
+        longitudeDelta:
+          storedLocation.longitudeDelta || DEFAULT_REGION.longitudeDelta,
       };
       setRegion(validRegion);
       mapRef.current?.animateToRegion(validRegion, 1000);
@@ -283,123 +278,139 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     }
   }, [getCurrentLocation, storedLocation]);
 
-  console.log(region,"REGION")
-
   return (
     <View style={styles.container}>
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}>
+          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+        </TouchableOpacity>
         <Text style={styles.title}>Select Service Location</Text>
-    </View>
-
-    <View style={styles.mapContainer}>
-  { region &&   <MapView
-        key={`map-${region.latitude}-${region.longitude}`}
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={styles.map}
-        region={region}
-        initialRegion={region}
-        onPanDrag={() => setIsDragging(true)}
-        onRegionChangeComplete={(newRegion) => {
-          if (isDragging) {
-            handleRegionChange(newRegion);
-            setIsDragging(false);
-          }
-        }}
-        showsMyLocationButton={false}
-        moveOnMarkerPress={false}
-        // key={}
-      />}
-      <View style={styles.markerOverlay}>
-        <View style={styles.markerContainer}>
-            <MaterialIcons name="location-on" size={40} color="#065E2C" />
-        </View>
       </View>
-      <TouchableOpacity 
-          style={[styles.currentLocationButton, isLoadingLocation && styles.currentLocationButtonLoading,isKeyboardVisible && {bottom:20}]}
-        onPress={getCurrentLocation}
-        disabled={isLoadingLocation}
-      >
-        {isLoadingLocation ? (
-          <ActivityIndicator color="#065E2C" size="small" />
-        ) : (
-          <>
-            <MaterialIcons name="my-location" size={24} color="#065E2C" />
-            <Text style={styles.currentLocationText}>use current location</Text>
-          </>
-        )}
-      </TouchableOpacity>
-    </View>
 
-    <View style={styles.searchContainer}>
-      <View style={styles.searchInputContainer}>
-        <AntDesign name="search1" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          placeholder="Search for Area/Location"
-          style={styles.searchInput}
-          placeholderTextColor="#666"
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity 
-            style={styles.clearButton}
-            onPress={() => {
-              setSearchQuery('');
-              setSearchResults([]);
-              setShowResults(false);
+      <View style={styles.mapContainer}>
+        {region && (
+          <MapView
+            key={`map-${region.latitude}-${region.longitude}`}
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            region={region}
+            initialRegion={region}
+            onPanDrag={() => setIsDragging(true)}
+            onRegionChangeComplete={newRegion => {
+              if (isDragging) {
+                handleRegionChange(newRegion);
+                setIsDragging(false);
+              }
             }}
-          >
-            <AntDesign name="close" size={20} color="#7A7A7A"/>
-          </TouchableOpacity>
+            showsMyLocationButton={false}
+            moveOnMarkerPress={false}
+          />
+        )}
+        <View style={styles.markerOverlay}>
+          <View style={styles.markerContainer}>
+            <MaterialIcons name="location-on" size={40} color="#065E2C" />
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.currentLocationButton,
+            isLoadingLocation && styles.currentLocationButtonLoading,
+            isKeyboardVisible && {bottom: 20},
+          ]}
+          onPress={getCurrentLocation}
+          disabled={isLoadingLocation}>
+          {isLoadingLocation ? (
+            <ActivityIndicator color="#065E2C" size="small" />
+          ) : (
+            <>
+              <MaterialIcons name="my-location" size={24} color="#065E2C" />
+              <Text style={styles.currentLocationText}>
+                use current location
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <AntDesign
+            name="search1"
+            size={20}
+            color="#666"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            placeholder="Search for Area/Location"
+            style={styles.searchInput}
+            placeholderTextColor="#666"
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+                setShowResults(false);
+              }}>
+              <AntDesign name="close" size={20} color="#7A7A7A" />
+            </TouchableOpacity>
+          )}
+        </View>
+        {showResults && searchResults.length > 0 && (
+          <View style={styles.searchResultsContainer}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {searchResults.map(result => (
+                <TouchableOpacity
+                  key={result.place_id}
+                  style={styles.searchResultItem}
+                  onPress={() => handlePlaceSelect(result.place_id)}>
+                  <MaterialIcons name="location-on" size={20} color="#065E2C" />
+                  <View style={styles.searchResultText}>
+                    <Text style={styles.searchResultMain}>
+                      {result.structured_formatting?.main_text}
+                    </Text>
+                    <Text style={styles.searchResultSecondary}>
+                      {result.structured_formatting?.secondary_text}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         )}
       </View>
-      {showResults && searchResults.length > 0 && (
-        <View style={styles.searchResultsContainer}>
-            <ScrollView keyboardShouldPersistTaps="handled">
-            {searchResults.map((result) => (
-              <TouchableOpacity
-                key={result.place_id}
-                style={styles.searchResultItem}
-                onPress={() => handlePlaceSelect(result.place_id)}
-              >
-                <MaterialIcons name="location-on" size={20} color="#065E2C" />
-                <View style={styles.searchResultText}>
-                    <Text style={styles.searchResultMain}>{result.structured_formatting?.main_text}</Text>
-                    <Text style={styles.searchResultSecondary}>{result.structured_formatting?.secondary_text}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
 
-    {!isKeyboardVisible && (
-      <View style={styles.bottomContainer}>
-        <View style={styles.locationInfo}>
+      {!isKeyboardVisible && (
+        <View style={styles.bottomContainer}>
+          <View style={styles.locationInfo}>
             <MaterialIcons name="location-on" size={24} color="#065E2C" />
             <View style={styles.locationDetails}>
-              <Text style={styles.locationTitle}>{city || 'Select Location'}</Text>
-              <Text style={styles.locationSubtitle} numberOfLines={1}>{address}</Text>
+              <Text style={styles.locationTitle}>
+                {city || 'Select Location'}
+              </Text>
+              <Text style={styles.locationSubtitle} numberOfLines={1}>
+                {address}
+              </Text>
+            </View>
           </View>
-          </View>
-        <TouchableOpacity 
+          <TouchableOpacity
             style={styles.confirmButton}
             onPress={handleConfirmLocation}
-            disabled={isCheckingAddress}
-          >
+            disabled={isCheckingAddress}>
             {isCheckingAddress ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.confirmButtonText}>Confirm Location</Text>
             )}
-        </TouchableOpacity>
-      </View>
-    )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <CustomModal
         visible={showServiceModal}
@@ -413,7 +424,19 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         confirmText="Browse Areas"
         cancelText="Try Again"
       />
-  </View>
+
+      <CustomModal
+        visible={cartItemsError}
+        title="Switch Location?"
+        message="You have items in your cart. Please clear your cart to change the location."
+        onConfirm={() => {
+          setCartItemsError(false);
+        }}
+        onCancel={() => setCartItemsError(false)}
+        confirmText="okay"
+        cancelText=""
+      />
+    </View>
   );
 };
 
@@ -491,8 +514,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     elevation: 3,
-    borderWidth:1,
-    borderColor:"#065E2C"
+    borderWidth: 1,
+    borderColor: '#065E2C',
   },
   searchIcon: {
     marginRight: 10,

@@ -5,14 +5,12 @@ import {
   StyleSheet,
   StatusBar,
   Image,
-  TouchableOpacity,
   BackHandler,
 } from 'react-native';
 import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../redux/reducers/daddy';
 import { removeCoupon } from '../../redux/reducers/coupons';
@@ -20,23 +18,14 @@ import { removeCoupon } from '../../redux/reducers/coupons';
 const OrderSuccessScreen = ({ navigation, route }) => {
   const {selectedAddress} = useSelector(state => state.address);
   const dispatch = useDispatch();
-  
 
-  const handleNavigate = () => {
-    navigation.replace('OrderDetails')
-  }
-
-  useEffect(()=>{
-    
+  useEffect(()=>{ 
     setTimeout(()=>{
       handleBackPress()
       dispatch(clearCart())
       dispatch(removeCoupon())
     },500)
   },[])
-
-
-  console.log(route?.params,"+++++++++++>>>>>RESPONSE")
 
   const handleBackPress = () => {
     navigation.navigate('OrderDetails',{fromOrderSuccess:true,orderDetails:route?.params?.response});
@@ -45,12 +34,12 @@ const OrderSuccessScreen = ({ navigation, route }) => {
   useEffect(() => {
     const backAction = () => {
       handleBackPress();
-      return true; // Prevent default back action
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
-    return () => backHandler.remove(); // Cleanup the event listener
+    return () => backHandler.remove(); 
   }, []);
 
 

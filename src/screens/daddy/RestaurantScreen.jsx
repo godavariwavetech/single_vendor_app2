@@ -340,11 +340,14 @@ const RestaurantScreen = ({navigation,route}) => {
           </View>
 
           <View style={styles.itemFooter}>
-              <Text style={styles.price}>₹{item.selling_price}</Text>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+            <View>
+            <View style={{flexDirection: 'row',justifyContent:"flex-start"}}>
               {item.actual_price !== item.selling_price && (
-                <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:14}]}>₹{item.actual_price}</Text>
+                <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:10,textAlign:"left"}]}>₹{item.actual_price}</Text>
               )}
+              </View>
+
+              <Text style={styles.price}>₹{item.selling_price}</Text>
             </View>
             {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
               <View style={styles.counterContainer}>

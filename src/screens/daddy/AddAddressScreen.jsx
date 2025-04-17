@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,7 +22,7 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
@@ -69,7 +68,6 @@ const AddAddressScreen = ({navigation, route}) => {
     cancelText: null,
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const {userDetails} = useSelector(state => state.address);
 
   const showCustomModal = useCallback(
     (
@@ -318,13 +316,24 @@ const AddAddressScreen = ({navigation, route}) => {
     };
   }, []);
 
+  const [inputErrors, setInputErrors] = useState({
+    name: false,
+    contact: false,
+    doorNo: false,
+    pincode: false,
+    landmark: false,
+  });
   const validateInputs = useCallback(() => {
-    if (!name || !contact || !doorNo || !pincode || !landmark) {
-      showCustomModal('Validation Error', 'All fields are required.');
-      return false;
-    }
-    if (!/^[6-9]\d{9}$/.test(contact)) {
-      showCustomModal('Validation Error', 'Contact number must be a valid Indian mobile number starting with 6, 7, 8 or 9.');
+    let errors = {
+      name: !name,
+      contact: !/^[6-9]\d{9}$/.test(contact),
+      doorNo: !doorNo,
+      pincode: !pincode,
+      landmark: !landmark,
+    };
+    setInputErrors(errors);
+    if (errors.name || errors.contact || errors.doorNo || errors.pincode || errors.landmark) {
+      showCustomModal('Validation Error', 'All fields are required and must be valid.');
       return false;
     }
     return true;
@@ -739,13 +748,15 @@ const AddAddressScreen = ({navigation, route}) => {
                     <Text style={styles.label}>Name</Text>
                     <Text style={styles.requiredAsterisk}>*</Text>
                   </View>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer,inputErrors.name && {borderColor: 'red'}]}>
                     <TextInput
-                      placeholder="Enter your name"
-                      placeholderTextColor={'#666'}
-                      style={styles.input}
+                      placeholder="Name"
+                      style={[styles.input, ]}
                       value={name}
                       onChangeText={setName}
+                      keyboardType="default"
+                      placeholderTextColor="#666"
+                      maxLength={50}
                     />
                     <TouchableOpacity
                       style={styles.clearButton}
@@ -757,14 +768,15 @@ const AddAddressScreen = ({navigation, route}) => {
                     <Text style={styles.label}>Contact number</Text>
                     <Text style={styles.requiredAsterisk}>*</Text>
                   </View>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer,inputErrors.contact && {borderColor: 'red'}]}>
                     <TextInput
-                      placeholder="Enter contact number"
-                      placeholderTextColor={'#666'}
-                      style={styles.input}
+                      placeholder="Contact Number"
+                      style={[styles.input]}
                       value={contact}
                       onChangeText={setContact}
                       keyboardType="phone-pad"
+                      placeholderTextColor="#666"
+                      maxLength={10}
                     />
                     <TouchableOpacity
                       style={styles.clearButton}
@@ -776,13 +788,15 @@ const AddAddressScreen = ({navigation, route}) => {
                     <Text style={styles.label}>Door no/Flat no/Building</Text>
                     <Text style={styles.requiredAsterisk}>*</Text>
                   </View>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer,inputErrors.doorNo && {borderColor: 'red'}]}>
                     <TextInput
                       placeholder="Enter address"
                       placeholderTextColor={'#666'}
                       style={styles.input}
                       value={doorNo}
                       onChangeText={setDoorNo}
+                      keyboardType="default"
+                      maxLength={100}
                     />
                     <TouchableOpacity
                       style={styles.clearButton}
@@ -795,14 +809,15 @@ const AddAddressScreen = ({navigation, route}) => {
                     <Text style={styles.requiredAsterisk}>*</Text>
                   </View>
                   {/* <Text style={styles.label}>Pincode</Text> */}
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer,inputErrors.pincode && {borderColor: 'red'}]}>
                     <TextInput
                       placeholder="Enter pincode"
                       placeholderTextColor={'#666'}
                       style={styles.input}
                       value={pincode}
                       onChangeText={setPincode}
-                      keyboardType="numeric"
+                      keyboardType="number-pad"
+                      maxLength={6}
                     />
                     <TouchableOpacity
                       style={styles.clearButton}
@@ -816,13 +831,15 @@ const AddAddressScreen = ({navigation, route}) => {
                   </View>
                   
                   {/* <Text style={styles.label}>Nearby Landmark</Text> */}
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer,inputErrors.landmark && {borderColor: 'red'}]}>
                     <TextInput
                       placeholder="Enter landmark"
                       placeholderTextColor={'#666'}
                       style={styles.input}
                       value={landmark}
                       onChangeText={setLandmark}
+                      keyboardType="default"
+                      maxLength={100}
                     />
                     <TouchableOpacity
                       style={styles.clearButton}
