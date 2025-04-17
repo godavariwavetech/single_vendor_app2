@@ -94,7 +94,6 @@ const CartScreen = ({navigation,route}) => {
 
   const renderCartItem = ({item}) => {
     const eachPrice = Number(item.selling_price) * Number(item.quantity);
-    const eachActualPrice = Number(item.actual_price) * Number(item.quantity);
     
     return (
       <View>

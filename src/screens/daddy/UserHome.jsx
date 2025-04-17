@@ -59,7 +59,6 @@ export default function UserHome({navigation}) {
   const [searchQuery, setSearchQuery] = useState('');
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
   const [initialNetLoad, setInitialNetLoad] = useState(false);
@@ -130,6 +129,7 @@ useEffect(() => {
       error => {
         console.error('Error getting location:', error);
         setIsLoadingLocation(false);
+        networkStatusRef.current && navigation.replace('ServicesAvailable', { permissionDenied: true });
       },
       {
         enableHighAccuracy: false,

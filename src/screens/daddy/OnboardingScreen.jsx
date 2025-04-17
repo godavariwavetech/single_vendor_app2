@@ -11,7 +11,7 @@ import {
   Alert,
   PanResponder,
 } from 'react-native';
-import { responsiveHeight } from 'react-native-responsive-dimensions';
+import { responsiveFontSize, responsiveHeight } from 'react-native-responsive-dimensions';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from '@react-native-community/geolocation';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: responsiveFontSize(2.8),
     fontWeight: '700',
     color: '#000000',
     textAlign: 'center',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   description: {
-    fontSize: 16,
+    fontSize: responsiveFontSize(2,2),
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
