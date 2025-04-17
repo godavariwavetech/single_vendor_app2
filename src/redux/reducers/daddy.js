@@ -224,6 +224,7 @@ export const getItemsList = createAsyncThunk(
       {shopId,shopItem},
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
+    console.log("shopId",shopId,"shopItem",shopItem)
       const response = await api.post(endpoints.GET_ITEMS_LIST,{
        "shop_id": shopId,
        "shop_items_tb_nm":shopItem
@@ -597,7 +598,6 @@ export const Dashboard = createSlice({
     builder.addCase(getRestaurants.fulfilled, (state, action) => {
       state.loading.restaurants = false;
       state.message = null;
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<",action.payload.data)
       state.restaurants = action.payload.data[0];
       state.itemsFilter = action.payload.data[1];
     });

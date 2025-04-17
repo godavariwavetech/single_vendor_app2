@@ -1,21 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Linking } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useDispatch } from'react-redux';
+import { getChargesList } from '../../redux/reducers/addressSlice';
 
 const SupportScreen = ({ navigation }) => {
+  const dispatch = useDispatch(); 
+  const [contactInfo, setContactInfo] = useState();
+
+  const getContact = async () => {
+    try {
+      const res = await dispatch(getChargesList());
+      if(res.payload.data[0]){
+        setContactInfo(res.payload.data[0]);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(()=>{
+    getContact()
+  },[])
+    
   const handleCall = () => {
-    Linking.openURL('tel:+8074709926');
+    Linking.openURL(`tel:${contactInfo?.contact_number}`);
   };
 
   const handleEmail = () => {
-    Linking.openURL('mailto:localdaddyweb@gmail.com');
+    Linking.openURL(`mailto:${contactInfo?.mail_id}`);
   };
 
   const handleWhatsApp = () => {
-    Linking.openURL('https://wa.me/918074709926');
+    Linking.openURL(`https://wa.me/${contactInfo?.contact_number}`);
   };
 
   return (

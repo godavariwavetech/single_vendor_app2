@@ -6,20 +6,16 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Pressable,
   FlatList,
   StatusBar,
   Modal,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import HeaderPick2 from './tabassets/HeaderPick2';
@@ -150,7 +146,10 @@ const CheckoutScreen = ({navigation, route}) => {
           <View style={styles.itemDetails}>
             <HeaderPick2 />
             <Text style={styles.foodName}>{item.item_name}</Text>
-            <Text style={styles.foodPrice}>₹ {item.selling_price}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
+              <Text style={styles.sellingPrice}>₹{item.selling_price}</Text>
+            </View>
           </View>
           <View>
             <View style={styles.quantityContainer}>
@@ -228,7 +227,7 @@ const CheckoutScreen = ({navigation, route}) => {
         category_id: cartItems[0]?.category_id,
         sub_category_id: cartItems[0]?.sub_category_id,
         admin_percentage: 10,
-        item_count: cartItems.length,
+        item_count: cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0),
         total_amount: totalSellingPrice,
         total_saving_amount: totalSavings,
         coupon_amount: couponDiscount,
@@ -292,14 +291,14 @@ const CheckoutScreen = ({navigation, route}) => {
       const pacedResponse=await dispatch(placeOrder({orderDetails: payload}));
 
       if(!pacedResponse.payload) return
-        const orderIdResponse=await dispatch(generateOrderId({orderAmount: 100}));
+        const orderIdResponse=await dispatch(generateOrderId({orderAmount: Number(grandTotal)*100}));
       const options = {
         description: 'Order Payment',
         image: '',
         currency: 'INR',
-        key: 'rzp_live_tZgZCC254NtRmU',
+        key: 'rzp_test_QNQ6xyfpco3YGe',
         order_id:orderIdResponse.payload.id,
-        amount: 100,
+        amount: Number(grandTotal)*100,
         name: 'Local Daddy',
         prefill: {
           // email: "test@gmail.com",
@@ -407,6 +406,7 @@ const CheckoutScreen = ({navigation, route}) => {
       </View>
 
       {/* Savings Banner */}
+      <ScrollView style={styles.content}>
       <View style={styles.savingsBanner}>
         <MaterialCommunityIcons
           name="brightness-percent"
@@ -420,8 +420,6 @@ const CheckoutScreen = ({navigation, route}) => {
           </Text>
         )}
       </View>
-
-      <ScrollView style={styles.content}>
         {/* Cart Items */}
         <Text style={styles.sectionTitle}>Cart Items</Text>
         <FlatList
@@ -443,7 +441,7 @@ const CheckoutScreen = ({navigation, route}) => {
         {/* Delivery Details */}
         <View style={[styles.detailsCard]}>
           <Text style={styles.cardTitle}>Delivery Details</Text>
-          <View style={styles.address}>
+          <TouchableOpacity  onPress={() => navigation.navigate('AddressList', {isFromCart: true})} style={styles.address}>
             <View style={styles.addressSection}>
               <MaterialIcons name="home" size={24} color="#666" />
               <View style={styles.addressDetails}>
@@ -501,7 +499,7 @@ const CheckoutScreen = ({navigation, route}) => {
                 }
               />
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Apply Coupons */}
@@ -1041,7 +1039,8 @@ const styles = StyleSheet.create({
     borderColor: '#065E2C',
     borderRadius: 8,
     gap: 8,
-    marginVertical: responsiveHeight(2),
+    marginTop: responsiveHeight(2),
+    // marginVertical: responsiveHeight(2),
   },
   headerTop: {
     flexDirection: 'row',
@@ -1145,6 +1144,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#065E2C',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actualPrice: {
+    fontSize: 14,
+    color: '#666',
+    textDecorationLine: 'line-through',
+  },
+  sellingPrice: {
+    fontSize: 16,
+    color: '#065E2C',
+    fontWeight: '700',
+    textAlign:"left"
   },
 });
 

@@ -26,6 +26,8 @@ import LocationSelectionScreen from '../screens/daddy/LocationSelectionScreen';
 import RefundPolicyScreen from '../screens/daddy/RefundPolicyScreen';
 import AboutUsScreen from '../screens/daddy/AboutUsScreen';
 import CategoriesScreen from '../screens/daddy/CategoriesScreen';
+import NotificationsScreen from '../screens/daddy/NotificationsScreen';
+import BannerRestaurantScreen from '../screens/daddy/BannerRestaurantScreen';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
@@ -70,6 +72,16 @@ export default function RentalNavigation() {
         cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
         gestureDirection: 'vertical',
       }}
+    />
+    <Stack.Screen 
+      name="Notifications" 
+      component={NotificationsScreen} 
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen 
+      name="BannerRestaurantScreen" 
+      component={BannerRestaurantScreen} 
+      options={{ headerShown: false }}
     />
  </Stack.Navigator>
   )

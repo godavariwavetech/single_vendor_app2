@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -59,8 +59,13 @@ const RefundPolicyScreen = () => {
         <Text style={styles.sectionTitle}>5. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For refund-related queries:{"\n"}
-          Email: localdaddyweb@gmail.com{"\n"}
-          Phone: 80747 09926
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:localdaddyweb@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: localdaddyweb@gmail.com</Text>
+          </TouchableOpacity>{"\n"}
+          <TouchableOpacity onPress={() => Linking.openURL('tel:8074709926')}>
+            <Text style={[styles.link, styles.bold]}>Phone: 80747 09926</Text>
+          </TouchableOpacity>{"\n"}
+          <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text>
         </Text>
       </ScrollView>
     </View>
@@ -116,6 +121,14 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E0E0E0',
     marginVertical: 15
+  },
+  bold: {
+    fontWeight: '700',
+    color: '#000'
+  },
+  link: {
+    color: '#065E2C',
+    textDecorationLine: 'underline',
   }
 });
 

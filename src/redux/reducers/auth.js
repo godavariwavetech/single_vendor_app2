@@ -4,19 +4,19 @@ import {endpoints} from '../../config/config';
 
 const initialState = {
   message: null,
-  loading:false,
+  loading: false,
   token: null,
   userRole: 1,
   optCode: '',
   mobileNumber: '',
   isLogged: false,
-  customerId:null,
-  location:null,
-  locationName:null,
-  locationId:null,
-shouldNavigate: false,
-reaturantDetails:null,
-orderOfferAmount:0
+  customerId: null,
+  location: null,
+  locationName: null,
+  locationId: null,
+  shouldNavigate: false,
+  reaturantDetails: null,
+  orderOfferAmount: 0,
 };
 
 export const verifyMobile = createAsyncThunk(
@@ -26,13 +26,9 @@ export const verifyMobile = createAsyncThunk(
       mobile: mobileNumber,
     };
     // const response = await api.post(endpoints.VERIFY_MOBILE, data);
-    const response={
-     data:{ data:[{
-      }],
-      status:true
-    
-    }
-    }
+    const response = {
+      data: {data: [{}], status: true},
+    };
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);
@@ -43,18 +39,17 @@ export const verifyMobile = createAsyncThunk(
   },
 );
 
-
 export const addCustomer = createAsyncThunk(
-  "addCustomer",
-  async(
-    {mobileNumber,otp},
-    {getState, rejectWithValue, fulfillWithValue}
-  ) =>{
-    const data={
-        "customer_mobile_number": mobileNumber,
-         "customer_otp": otp
-    }
-    const response = await api.post(endpoints.VERIFY_CUSTOMER_OTP,data);
+  'addCustomer',
+  async (
+    {mobileNumber, otp},
+    {getState, rejectWithValue, fulfillWithValue},
+  ) => {
+    const data = {
+      customer_mobile_number: mobileNumber,
+      customer_otp: otp,
+    };
+    const response = await api.post(endpoints.VERIFY_CUSTOMER_OTP, data);
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);
@@ -62,17 +57,13 @@ export const addCustomer = createAsyncThunk(
         return rejectWithValue('Something went wrong!');
       }
     }
-  }
-)
-
+  },
+);
 
 export const loginAction = createAsyncThunk(
   'loginAction',
-  async (
-    {enteredOtp},
-    {getState, rejectWithValue, fulfillWithValue},
-  ) => {
-    const {mobileNumber} = getState().Auth
+  async ({enteredOtp}, {getState, rejectWithValue, fulfillWithValue}) => {
+    const {mobileNumber} = getState().Auth;
     const data = {
       mobile: mobileNumber,
       otp: enteredOtp,
@@ -90,7 +81,10 @@ export const loginAction = createAsyncThunk(
 
 export const verifyCustomerMobile = createAsyncThunk(
   'verifyCustomerMobile',
-  async ({customer_mobile_number}, {getState, rejectWithValue, fulfillWithValue}) => {
+  async (
+    {customer_mobile_number},
+    {getState, rejectWithValue, fulfillWithValue},
+  ) => {
     const data = {
       customer_mobile_number,
     };
@@ -109,7 +103,10 @@ export const verifyCustomerMobile = createAsyncThunk(
 
 export const verifyCustomerOTP = createAsyncThunk(
   'verifyCustomerOTP',
-  async ({customer_mobile_number, customer_otp}, {getState, rejectWithValue, fulfillWithValue}) => {
+  async (
+    {customer_mobile_number, customer_otp},
+    {getState, rejectWithValue, fulfillWithValue},
+  ) => {
     const data = {
       customer_mobile_number,
       customer_otp,
@@ -127,36 +124,52 @@ export const verifyCustomerOTP = createAsyncThunk(
   },
 );
 
+export const deleteAccount = createAsyncThunk(
+  'deleteAccount',
+  async (_, {getState, rejectWithValue, fulfillWithValue}) => {
+    const {customerId} = getState().Auth;
+    const response = await api.post(endpoints.DELETE_ACCOUNT, {
+        "customer_id":customerId
+    });
+    if (response) {
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  },
+);
+
 export const AuthSlice = createSlice({
   name: 'authlice',
   initialState,
   reducers: {
     actionLogout: state => {
       state.token = null;
-      state.customerId=null;
+      state.customerId = null;
     },
     actionLogin: state => {
       state.token = 'sample token';
     },
-    setMobile:(state,action)=>{
-      state.mobileNumber=action.payload
+    setMobile: (state, action) => {
+      state.mobileNumber = action.payload;
     },
-    setInitial:state=>{
-      state.loading=false,
-      state.message=null
+    setInitial: state => {
+      (state.loading = false), (state.message = null);
     },
     setLocation: (state, action) => {
       state.location = action.payload;
     },
     setLocationName: (state, action) => {
-      console.log("calling setLocationName",action.payload)
+      console.log('calling setLocationName', action.payload);
       state.locationName = action.payload;
     },
     setLocationId: (state, action) => {
-      console.log("calling setLocationId",action.payload)
+      console.log('calling setLocationId', action.payload);
       state.locationId = action.payload;
     },
-    clearNavigationFlag: (state) => {
+    clearNavigationFlag: state => {
       state.shouldNavigate = false;
     },
     setRestaurnatDetails: (state, action) => {
@@ -164,7 +177,7 @@ export const AuthSlice = createSlice({
     },
     setOrderOfferAmount: (state, action) => {
       state.orderOfferAmount = action.payload;
-    }
+    },
   },
   extraReducers: builder => {
     builder.addCase(loginAction.pending, (state, action) => {
@@ -174,7 +187,7 @@ export const AuthSlice = createSlice({
     builder.addCase(loginAction.fulfilled, (state, action) => {
       state.loading = false;
       state.message = null;
-      if(action.payload.token){
+      if (action.payload.token) {
         state.token = action.payload.token;
         state.isLogged = true;
         state.shouldNavigate = true;
@@ -192,7 +205,7 @@ export const AuthSlice = createSlice({
     builder.addCase(verifyMobile.fulfilled, (state, action) => {
       state.loading = false;
       state.message = null;
-      console.log(">>>>>>>OTP",action.payload?.data[0]?.otp)
+      console.log('>>>>>>>OTP', action.payload?.data[0]?.otp);
       if (action.payload?.data[0]?.mobile) {
         state.mobileNumber = action.payload?.data[0]?.mobile;
       }
@@ -237,8 +250,6 @@ export const AuthSlice = createSlice({
       state.message = action.payload || 'Please try again!';
     });
 
-    
-
     builder.addCase(addCustomer.pending, (state, action) => {
       state.loading.categories = true;
       state.message = null;
@@ -252,12 +263,20 @@ export const AuthSlice = createSlice({
       state.loading.categories = false;
       state.message = 'Please try again!';
     });
-
-
-  
   },
 });
 
-export const {actionLogout, actionLogin, setMobile, setInitial,setLocation,setLocationName,setLocationId, clearNavigationFlag,setRestaurnatDetails,setOrderOfferAmount} = AuthSlice.actions;
+export const {
+  actionLogout,
+  actionLogin,
+  setMobile,
+  setInitial,
+  setLocation,
+  setLocationName,
+  setLocationId,
+  clearNavigationFlag,
+  setRestaurnatDetails,
+  setOrderOfferAmount,
+} = AuthSlice.actions;
 
 export default AuthSlice.reducer;

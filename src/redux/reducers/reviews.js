@@ -32,7 +32,7 @@ export const submitReview = createAsyncThunk(
       shop_id: shopId,
       order_id: orderId,
       rating,
-      comment,
+      comment
     });
     if (response) {
       if (response.data) {
@@ -77,6 +77,26 @@ export const submitAppReview = createAsyncThunk(
     ) => {
         console.log("called here")
       const response = await api.post(endpoints.GET_RESULT_FULL_DATA,resultData);
+      if (response) {
+        if (response.data) {
+          return fulfillWithValue(response.data);
+        } else {
+          return rejectWithValue('Something went wrong!');
+        }
+      }
+    },
+  );
+
+  export const getNotifications = createAsyncThunk(
+    'getNotifications',
+    async (
+      _,
+      {getState, rejectWithValue, fulfillWithValue},
+    ) => {
+      const {locationId} = await getState().Auth;
+      const response = await api.post(endpoints.GET_NOTIFICATIONS,{
+        "location_id":locationId
+    });
       if (response) {
         if (response.data) {
           return fulfillWithValue(response.data);

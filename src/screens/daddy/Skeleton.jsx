@@ -5,7 +5,6 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder'
 export default function Skeleton() {
   return (
     <SkeletonPlaceholder>
-    {/* Location Skeleton */}
     <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" padding={15}>
       <SkeletonPlaceholder.Item width={30} height={30} borderRadius={15} />
       <SkeletonPlaceholder.Item marginLeft={10}>
@@ -14,7 +13,6 @@ export default function Skeleton() {
       </SkeletonPlaceholder.Item>
     </SkeletonPlaceholder.Item>
 
-    {/* Search Bar Skeleton */}
     <SkeletonPlaceholder.Item 
       height={50} 
       borderRadius={8} 
@@ -22,7 +20,6 @@ export default function Skeleton() {
       marginBottom={20}
     />
 
-    {/* Banners Skeleton */}
     <SkeletonPlaceholder.Item
       height={120}
       borderRadius={8}
@@ -30,7 +27,6 @@ export default function Skeleton() {
       marginBottom={20}
     />
 
-    {/* Categories Skeleton */}
     <SkeletonPlaceholder.Item
       flexDirection="row"
       justifyContent="space-between"
@@ -47,7 +43,6 @@ export default function Skeleton() {
       ))}
     </SkeletonPlaceholder.Item>
 
-    {/* Restaurants Skeleton */}
     <SkeletonPlaceholder.Item paddingHorizontal={15}>
       {[1,2,3].map((_, i) => (
         <SkeletonPlaceholder.Item

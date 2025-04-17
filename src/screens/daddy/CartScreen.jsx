@@ -14,7 +14,6 @@ import {
   Modal,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useDispatch, useSelector} from 'react-redux';
@@ -24,7 +23,6 @@ import {
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import LinearGradient from 'react-native-linear-gradient';
-import CategoryInactive from './tabassets/CategoryInactive';
 import CartInactive from './tabassets/CartInactive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
@@ -53,14 +51,6 @@ const CartScreen = ({navigation,route}) => {
     globalSearchResults?.some(result => result.item_name === item.item_name) ||
     item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleCheckout = () => {
-    if (!customerId) {
-      setShowLoginModal(true);
-      return;
-    }
-    navigation.navigate('Checkout');
-  };
 
   const handleAddToCart = (item) => {
     dispatch(addToCart(item));
@@ -103,8 +93,9 @@ const CartScreen = ({navigation,route}) => {
   };
 
   const renderCartItem = ({item}) => {
-    const eachPrice =
-      Number(item.selling_price||item.actualitem_price) * Number(item.quantity);
+    const eachPrice = Number(item.selling_price) * Number(item.quantity);
+    const eachActualPrice = Number(item.actual_price) * Number(item.quantity);
+    
     return (
       <View>
         <View style={styles.cartItem}>
@@ -115,9 +106,11 @@ const CartScreen = ({navigation,route}) => {
           <View style={styles.itemDetails}>
             <HeaderPick2 />
             <Text style={styles.foodName}>{item.item_name}</Text>
-            <Text style={styles.foodPrice}>
-              ₹ {item.selling_price||item.actualitem_price}
-            </Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
+              <Text style={styles.sellingPrice}>₹{item.selling_price}</Text>
+           
+            </View>
           </View>
           <View>
             <View style={styles.quantityContainer}>
@@ -284,6 +277,7 @@ const CartScreen = ({navigation,route}) => {
   );
 };
 
+// Add these new styles to your StyleSheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -598,6 +592,22 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     color: '#A3A3A3',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actualPrice: {
+    fontSize: 14,
+    color: '#666',
+    textDecorationLine: 'line-through',
+  },
+  sellingPrice: {
+    fontSize: 16,
+    color: '#065E2C',
+    fontWeight: '700',
+    textAlign:"left"
   },
 });
 
