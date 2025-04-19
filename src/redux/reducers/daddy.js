@@ -319,16 +319,16 @@ export const getAddressList = createAsyncThunk(
 export const setAddressList = createAsyncThunk(
   "setAddressList",
   async(
-      {addressType,address,customer_latitude,customer_longitude,customer_name,customer_mobile_number},
+      {addressType,address,customer_latitude,customer_longitude,customer_name,customer_mobile_number,location_id},
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
-    const {customerId,locationId} = getState().Auth;
+    const {customerId} = getState().Auth;
     const data={
         "address_type":addressType,
         "full_address": address,
         "customer_latitude": customer_latitude,
         "customer_longitude": customer_longitude,
-        "location_id": locationId,
+        "location_id": location_id,
         "customer_id": customerId,
          "customer_name":customer_name,
         "customer_mobile_number": customer_mobile_number

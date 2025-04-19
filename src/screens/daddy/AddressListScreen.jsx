@@ -38,7 +38,7 @@ const AddressListScreen = ({ navigation, route }) => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const  [toggleValue,setToggleValue] = useState(false)
   const [refreshing, setRefreshing] = useState(false);
-  const { customerId,reaturantDetails } = useSelector(state => state.Auth);
+  const { customerId, reaturantDetails, locationId } = useSelector(state => state.Auth);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isCheckingAddress, setIsCheckingAddress] = useState(false);
@@ -46,6 +46,8 @@ const AddressListScreen = ({ navigation, route }) => {
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
+
+  console.log(addressList,"+++++++++++++++++++VVV")
 
   const handleSelectAddress = async (address) => {
     try {
@@ -137,7 +139,7 @@ const AddressListScreen = ({ navigation, route }) => {
     <TouchableOpacity 
       style={styles.addressCard} 
       onPress={() => handleSelectAddress(item)}
-      disabled={isCheckingAddress}
+      disabled={isCheckingAddress|| !isFromCart}
     >
       <View style={styles.addressHeader}>
         <Text style={styles.addressType}>{item.address_type}</Text>
@@ -196,7 +198,7 @@ const AddressListScreen = ({ navigation, route }) => {
           </View>
         ) : (
           <FlatList
-            data={addressList}
+            data={isFromCart ? addressList.filter(address => address.location_id === locationId) : addressList}
             renderItem={renderAddress}
             keyExtractor={item => item?.id?.toString()}
             contentContainerStyle={[
@@ -469,4 +471,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddressListScreen; 
+export default AddressListScreen;

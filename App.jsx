@@ -12,6 +12,7 @@ import CustomModal from './src/components/CustomModal';
 import NetInfo from '@react-native-community/netinfo';
 import { setIsNetworkConnected } from './src/redux/reducers/addressSlice';
 import { useDispatch } from 'react-redux';
+import OnboardingScreen from './src/screens/daddy/OnboardingScreen';
 const NetworkStatusBanner = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [slideAnim] = useState(new Animated.Value(-50));

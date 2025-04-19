@@ -69,7 +69,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
 
 
   const fetchRestaurantData = async () => {
-    console.log(route?.params?.shopId,"+++++++++++++++>>>>>>>>>>>>>ROUTE")
     if (!route?.params?.shopId) return;
     const response = await dispatch(
       indiviadualShop({shopId: route?.params?.shopId}),
@@ -95,11 +94,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
 
   const getItems = async () => {
     try {
-      console.log(
-        restaurantData?.shop_items_tb_nm,
-        '++++++++++++++++>>>>>>>>>>>>>>>restaurantData',
-        restaurantData?.shop_id,
-      );
       setIsLoading(true);
 
       const response = await dispatch(
@@ -108,7 +102,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
           shopItem: restaurantData?.shop_items_tb_nm,
         }),
       );
-      console.log('+++++++++++++++>>>>>>>>>>>>>>resposee', response);
       setFilterData(response.payload.data);
     } catch (error) {
       console.error('Error loading items:', error);
