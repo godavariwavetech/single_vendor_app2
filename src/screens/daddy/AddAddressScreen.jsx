@@ -23,7 +23,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import {useDispatch} from 'react-redux';
-import {setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
+import {checkAddressExistence, setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import CustomModal from '../../components/CustomModal';
@@ -58,6 +58,7 @@ const AddAddressScreen = ({navigation, route}) => {
   const [showResults, setShowResults] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const searchTimeout = useRef(null);
+  const [areaAvailable,setAreaAvailable] = useState(true)
   const [customModal, setCustomModal] = useState({
     visible: false,
     title: '',
@@ -68,6 +69,7 @@ const AddAddressScreen = ({navigation, route}) => {
     cancelText: null,
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const showCustomModal = useCallback(
     (
@@ -339,11 +341,6 @@ const AddAddressScreen = ({navigation, route}) => {
     return true;
   }, [name, contact, doorNo, pincode, landmark]);
 
-  const saveUserLocation = values => {
-    dispatch(updateUserAddress(values));
-    navigation.goBack();
-  };
-
   const handleSave = useCallback(() => {
     if (validateInputs()) {
       setModalVisible(false);
@@ -366,53 +363,48 @@ const AddAddressScreen = ({navigation, route}) => {
   }, []);
 
   const addAddress = useCallback(async () => {
-    const addressData = {
-      addressType: selectedType,
-      address: doorNo,
-      customer_latitude: markerPosition.latitude.toString(),
-      customer_longitude: markerPosition.longitude.toString(),
-      customer_name: name,
-      customer_mobile_number: contact,
-      pincode,
-      landmark,
-      city,
-      state,
-      full_address: address,
-    };
-
-    if (route.params?.address) {
-      // Update existing address
-      dispatch(
-        setAddressList({
-          ...addressData,
-          id: route.params.address.id,
+    setIsSaving(true);
+    try {
+      const response = await dispatch(
+        checkAddressExistence({
+          latitude:  markerPosition.latitude.toString(),
+          longitude: markerPosition.longitude.toString(),
         }),
       );
-    } else {
-      // Add new address
-      console.log(
-        {
+       if (response?.payload?.data?.length > 0) {
+        const addressData = {
           addressType: selectedType,
           address: doorNo,
-          customer_latitude: markerPosition.latitude,
-          customer_longitude: markerPosition.longitude,
+          location_id:response.payload.data[0].id,
+          customer_latitude: markerPosition.latitude.toString(),
+          customer_longitude: markerPosition.longitude.toString(),
           customer_name: name,
           customer_mobile_number: contact,
-        },
-        '++++++++++++++++IAOIOAIOIAOIAOIO',
-      );
-      await dispatch(
-        setAddressList({
-          addressType: selectedType,
-          address: doorNo,
-          customer_latitude: markerPosition.latitude,
-          customer_longitude: markerPosition.longitude,
-          customer_name: name,
-          customer_mobile_number: contact,
-        }),
-      );
+          pincode,
+          landmark,
+          city,
+          state,
+          full_address: address,
+        };
+        if (route.params?.address) {
+          dispatch(
+            setAddressList({
+              ...addressData,
+              id: route.params.address.id,
+            }),
+          );
+        } else {
+          await dispatch(
+            setAddressList(addressData),
+          );
+        }
+        navigation.goBack();
+       } else {
+        setAreaAvailable(false)
+       }
+    } finally {
+      setIsSaving(false);
     }
-    navigation.goBack();
   }, [
     dispatch,
     selectedType,
@@ -662,8 +654,14 @@ const AddAddressScreen = ({navigation, route}) => {
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setModalVisible(true)}>
-            <Text style={styles.addButtonText}>Add More Details</Text>
+            onPress={() => setModalVisible(true)}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.addButtonText}>Add More Details</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -878,6 +876,20 @@ const AddAddressScreen = ({navigation, route}) => {
         confirmText={customModal.confirmText}
         cancelText={customModal.cancelText}
       />
+
+        <CustomModal
+        visible={!areaAvailable}
+        title={"Location is not available"}
+        message={"The selected location is not available for delivery. Please select a different location."}
+        onConfirm={() => {
+          setAreaAvailable(true)
+        }}
+        onCancel={() => {
+         setAreaAvailable(true)
+        }}
+        confirmText={"Okay"}
+        cancelText=''
+      />
     </View>
   );
 };
@@ -1074,6 +1086,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: responsiveHeight(2),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   addButtonText: {
     color: '#fff',

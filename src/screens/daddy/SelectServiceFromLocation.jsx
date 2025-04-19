@@ -19,7 +19,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import {checkAddressExistence} from '../../redux/reducers/daddy';
+import {checkAddressExistence, clearCart} from '../../redux/reducers/daddy';
 import {useFocusEffect} from '@react-navigation/native';
 import CustomModal from '../../components/CustomModal';
 import {
@@ -50,7 +50,8 @@ const SelectServiceFromLocation = ({navigation, route}) => {
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCheckingAddress, setIsCheckingAddress] = useState(false);
-  const [cartItemsError,setCartItemsError] = useState(false);
+  const [cartItemsError,setCartItemsError] = useState(false);  
+  const [locationResponse,setLocationResponse] = useState({});
 
   const {location: storedLocation, locationId} = useSelector(
     state => state.Auth,
@@ -237,6 +238,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
       );
 
       if (response.payload.data.length > 0) {
+        setLocationResponse(response)
         if (response.payload.data[0].id != locationId && cartItems.length > 0) {
           setCartItemsError(true);
           return;
@@ -277,6 +279,23 @@ const SelectServiceFromLocation = ({navigation, route}) => {
       getAddressFromCoordinates(validRegion.latitude, validRegion.longitude);
     }
   }, [getCurrentLocation, storedLocation]);
+
+
+  const removeCartItems = () =>{
+    dispatch(clearCart())
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>PPPLPLPLL",locationResponse)
+    dispatch(
+      setLocation({
+        latitude: parseFloat(region.latitude),
+        longitude: parseFloat(region.longitude),
+        latitudeDelta: region.latitudeDelta,
+        longitudeDelta: region.longitudeDelta,
+      }),
+    );
+    dispatch(setLocationName(locationResponse.payload.data[0].location_name));
+    dispatch(setLocationId(locationResponse.payload.data[0].id));
+    navigation.goBack();
+  }
 
   return (
     <View style={styles.container}>
@@ -430,11 +449,11 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         title="Switch Location?"
         message="You have items in your cart. Please clear your cart to change the location."
         onConfirm={() => {
-          setCartItemsError(false);
+          removeCartItems()
         }}
         onCancel={() => setCartItemsError(false)}
-        confirmText="okay"
-        cancelText=""
+        confirmText="Clear Cart"
+        cancelText="Cancel"
       />
     </View>
   );
