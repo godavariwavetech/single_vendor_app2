@@ -24,6 +24,7 @@ import ReorderScreen from './ReorderScreen';
 import ProfileScreen from './ProfileScreen';
 import CategoriesScreen from './CategoriesScreen';
 import { useSelector } from 'react-redux';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,19 +49,19 @@ export default function BottomNavigation() {
           tabBarIcon: ({focused, color, size}) => {
             let iconName;
             if (route.name === 'Home') {
-              iconName = focused ? <HomeSvg color={'#065E2C'} /> : <HomeInactive />;
+              iconName = focused ? <HomeSvg color={commonStyles.btnColor} /> : <HomeInactive />;
             } else if (route.name === 'Reorder') {
-              iconName = focused ? <ReorderInactive color={'#065E2C'}/> : <Reorder />;
+              iconName = focused ? <ReorderInactive color={commonStyles.btnColor}/> : <Reorder />;
             } else if (route.name === 'Categories') {
               iconName = focused ? (
-                <CategoryInactive color={'#065E2C'}/>
+                <CategoryInactive color={commonStyles.btnColor}/>
               ) : (
                 <Categoreis/>
               );
             } else if (route.name === 'Cart') {
               iconName = (
                 <View>
-                  {focused ? <CartInactive color={'#065E2C'}/> : <Cart />}
+                  {focused ? <CartInactive color={commonStyles.btnColor}/> : <Cart />}
                   {cartItems.length > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>
@@ -75,7 +76,7 @@ export default function BottomNavigation() {
             }
             return iconName;
           },
-          tabBarActiveTintColor: 'green',
+          tabBarActiveTintColor: commonStyles.btnColor,
           tabBarInactiveTintColor: 'gray',
           tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
           tabBarStyle: {
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btnColor,
     borderRadius: 10,
     minWidth: 20,
     height: 20,

@@ -28,6 +28,7 @@ import { getRestaurants } from '../../redux/reducers/daddy';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const restaurants = [
   {
@@ -154,7 +155,7 @@ export default function CategorieItems({navigation,route}) {
       }));
       
       setFilterData(getResponse.payload.data[1] || []);
-      
+      console.log(getResponse.payload.data,'reeeeee')
     } catch (error) {
       console.error('Error fetching data:', error);
       setFilterData([]);
@@ -200,9 +201,19 @@ export default function CategorieItems({navigation,route}) {
 
       return matchesSearch && matchesFilters;
     });
-
+console.log(filtered,'filter')
     setFilteredRestaurants(filtered);
   }, [searchQuery, restaurants, activeFilters, filterData]);
+
+  const calculateDeliveryTime = (distance) => {
+    if (distance < 3) {
+      return '15-20 mins';
+    } else if (distance < 5) {
+      return '20-30 mins';
+    } else {
+      return '30-45 mins';
+    }
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -226,7 +237,7 @@ export default function CategorieItems({navigation,route}) {
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#065E2C" />
+          <ActivityIndicator size="large" color={commonStyles.btnColor} />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       );
@@ -247,7 +258,7 @@ export default function CategorieItems({navigation,route}) {
       <FlatList
         data={filteredRestaurants}
         showsVerticalScrollIndicator={false}
-        keyExtractor={item => item.id}
+        keyExtractor={(item,index) => index.toString()}
         renderItem={({item}) => {
           return (
             <TouchableOpacity onPress={()=>navigation.navigate("RestaurantScreen",{shopId:item.shop_id,shopItem:item.shop_items_tb_nm,item})} >
@@ -263,13 +274,21 @@ export default function CategorieItems({navigation,route}) {
                 <View style={styles.details}>
                   <Text style={styles.name}>{item.shop_name}</Text>
                   <View style={styles.ratingContainer}>
-                    <MaterialCommunityIcons name="star-circle" color="#07772F" />
-                    <Text style={styles.rating}> {item.shop_rating}</Text>
+                    <MaterialCommunityIcons name="star-circle" color={commonStyles.btnColor} />
+                    <Text style={styles.rating}>{item?.shop_rating}</Text>
                     <Text style={styles.rating}>
-                      {'\u25CF'} {item.time}
+                      {'\u25CF'} {calculateDeliveryTime(item?.distance)}   {/*  {item.time} */}
                     </Text>
                   </View>
-                  <Text style={styles.location}>{item.shop_address}</Text>
+                  <View style={styles.ratingContainer}>
+                    <Text style={styles.location}>{item.shop_address}</Text>
+                    <Text style={{width:4,height:4,borderRadius:20,backgroundColor:'#828282'}} />
+                    <Text style={styles.location}>{item?.distance.toFixed(1)} km</Text>
+                    {/* <View style={{}}>
+                    <Text style={{width:5,height:5,borderRadius:20,backgroundColor:'gray'}} />
+                    </View> */}
+                    {/* <Text>hghd</Text> */}
+                  </View>
                   {item.special_offer_name !== '' && (
                     <View style={styles.offerContainer}>
                       <Text style={styles.offer}>{item.special_offer_name}</Text>
@@ -312,7 +331,7 @@ export default function CategorieItems({navigation,route}) {
               styles.filterButton,
               {
                 borderColor: isActive ? "#0EAF50" : '#8F8F8F',
-                backgroundColor: isActive ? "#0EAF50" : '#fff',
+                backgroundColor: isActive ?  "#0EAF50" : '#fff',
               }
             ]}
           >
@@ -340,12 +359,13 @@ export default function CategorieItems({navigation,route}) {
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={()=>navigation.goBack()}>
-              <Feather
+              {/* <Feather
                 name="arrow-left"
                 color={'#000'}
                 size={20}
                 style={styles.backButton}
-              />
+              /> */}
+              <AntDesign name="arrowleft" size={22} color="#000"  style={styles.backButton}  />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>
               {activeSubCategory?.sub_category_name}
@@ -454,7 +474,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: "#065E2C",
+    color: commonStyles.btnColor,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -480,9 +500,9 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   image: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+    width: 110,
+    height: 100,
+    borderRadius: 8,
   },
   heartButton: {
     position: 'absolute',
@@ -547,16 +567,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   dot: {
-    width: 7,
-    height: 2,
+    width: 5,
+    height: 1.5,
     backgroundColor: '#D8D8D8',
     borderRadius: 5,
-    marginHorizontal: 5,
+    marginHorizontal: 5.5,
   },
   searchContainer: {
     backgroundColor: '#fff',
-    borderRadius: 15,
-    height: 56,
+    borderRadius: 10,
+    height: 50,
     marginHorizontal: responsiveWidth(5),
     elevation: 2,
   },

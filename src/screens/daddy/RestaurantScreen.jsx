@@ -32,6 +32,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, getItemsList, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { setRestaurnatDetails } from '../../redux/reducers/auth';
 import { globalSearch } from '../../redux/reducers/addressSlice';
+import StarRating from '../../components/StarRating';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 
 const RestaurantScreen = ({navigation,route}) => {
@@ -73,7 +75,8 @@ const RestaurantScreen = ({navigation,route}) => {
     try {
       setIsLoading(true);
       const response = await dispatch(getItemsList({shopId:route.params.shopId,shopItem:route.params.shopItem}))
-      setFilterData(response.payload.data)
+      setFilterData(response.payload.data);
+      // console.log(response.payload.data,'payload')
     } catch (error) {
       console.error('Error loading items:', error);
     } finally {
@@ -151,8 +154,19 @@ const RestaurantScreen = ({navigation,route}) => {
   }, [searchQuery, activeFilters, restaurantItems, filterType]);
 
   useEffect(()=>{
-    route.params &&  getItems()
+    route.params &&  getItems();
+    console.log(route.params?.item,'routes')
   },[route.params])
+
+  const calculateDeliveryTime = (distance) => {
+    if (distance < 3) {
+      return '15-20 mins';
+    } else if (distance < 5) {
+      return '20-30 mins';
+    } else {
+      return '30-45 mins';
+    }
+  };
 
   const handleAddToCart = (item) => {
     if (cartItems.length === 0 || cartRestaurant == route.params.shopId) {
@@ -336,10 +350,13 @@ const RestaurantScreen = ({navigation,route}) => {
             </TouchableOpacity>
             <View style={styles.header}>
               <Text style={styles.title}>{route.params?.item?.shop_name}</Text>
-              <Text style={styles.subtitle}>{route.params?.item?.shop_address}</Text>
-              <View style={styles.ratingContainer}>
+              <Text style={styles.subtitle}> {calculateDeliveryTime(route.params?.item?.distance.toFixed(1))} | {route.params?.item?.distance.toFixed(1)} km | {route.params?.item?.shop_address}</Text>
+              {/* <View style={styles.ratingContainer}>
                 <Icon name="star" size={18} color="gold" />
                 <Text style={styles.rating}>{route.params?.item?.shop_rating}</Text>
+              </View> */}
+              <View style={{backgroundColor:'rgba(238, 235, 204, 0.20)',padding:4,borderRadius:4,width:95}}>
+                <StarRating rating={route.params?.item?.shop_rating} width={15} gap={4} />
               </View>
             </View>
             <View style={styles.headerIcons}>
@@ -477,11 +494,11 @@ const RestaurantScreen = ({navigation,route}) => {
                   {indexValue !== -1 ? (
                     <View style={styles.counterContainer}>
                       <TouchableOpacity onPress={() => decreaseItem(item)}>
-                        <AntDesign name="minus" size={18} color="#065E2C" />
+                        <AntDesign name="minus" size={18} color={commonStyles.btnColor} />
                       </TouchableOpacity>
                       <Text style={styles.counterText}>{cartItems[indexValue].quantity}</Text>
                       <TouchableOpacity onPress={() => handleAddToCart(item)}>
-                        <AntDesign name="plus" size={18} color="#065E2C" />
+                        <AntDesign name="plus" size={18} color={commonStyles.btnColor} />
                       </TouchableOpacity>
                     </View>
                   ) : (
@@ -510,7 +527,7 @@ const RestaurantScreen = ({navigation,route}) => {
           onPress={() => setDraggableMenuVisible(!draggableMenuVisible)}
         >
           <Text style={styles.menuText}>Menu</Text>
-          <FontAwesome6 name="book-bookmark" color="#065E2C" size={30} />
+          <FontAwesome6 name="book-bookmark" color={commonStyles.btnColor} size={30} />
         </TouchableOpacity>
 
         {draggableMenuVisible && (
@@ -606,7 +623,7 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
   backIcon: { marginTop: 5 },
-  header: { width: responsiveWidth(70), paddingVertical: 10, paddingHorizontal: responsiveWidth(1), alignSelf: 'flex-start' },
+  header: { width: responsiveWidth(70), paddingVertical: 10, paddingHorizontal: responsiveWidth(2), alignSelf: 'flex-start',gap:8 },
   title: { fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#fff', width: responsiveWidth(35) },
   subtitle: { fontSize: 14, color: '#F5F5F5', fontWeight: '500' },
   ratingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
@@ -617,7 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 12,
     padding: 5,
     marginVertical: 10,
     height: 48,
@@ -676,7 +693,7 @@ const styles = StyleSheet.create({
   },
   image: { 
     width: responsiveWidth(40), 
-    height: responsiveHeight(15), 
+    height: responsiveHeight(17), 
     borderRadius: 12,
     resizeMode: 'cover'
   },
@@ -707,7 +724,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     marginTop: 2,
   },
-  itemRating: { color: '#000' },
+  itemRating: { color: '#000',fontSize:14,fontWeight:'700',marginHorizontal:1 },
   itemReviewCount: { color: '#3D3D3D', fontWeight: '400', fontSize: 12 },
   itemFooter: {
     flexDirection: 'row',
@@ -717,7 +734,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     marginTop: 5,
   },
-  price: { fontSize: 17, fontWeight: '700', color: '#065E2C' },
+  price: { fontSize: 17, fontWeight: '700', color: commonStyles.btnColor },
   counterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -725,18 +742,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: "#065E2C",
+    borderColor: commonStyles.btnColor,
   },
-  counterText: { color: '#065E2C', fontSize: 16, fontWeight: '700', marginHorizontal: 10 },
+  counterText: { color: commonStyles.btnColor, fontSize: 16, fontWeight: '700', marginHorizontal: 10 },
   addButton: {
     backgroundColor: '#fff',
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#065E2C',
+    borderColor: commonStyles.btnColor,
   },
-  addButtonText: { color: '#065E2C', fontWeight: '700', fontSize: 14 },
+  addButtonText: { color: commonStyles.btnColor, fontWeight: '700', fontSize: 14 },
   draggableMenu: {
     position: 'absolute',
     backgroundColor: 'white',
@@ -750,13 +767,13 @@ const styles = StyleSheet.create({
     left: 20,
     bottom: 40,
   },
-  menuText: { fontSize: 12, fontWeight: 700, color: "#065E2C" },
+  menuText: { fontSize: 12, fontWeight: 700, color:commonStyles.btnColor },
   menuButton: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fffbe5',
     borderRadius: 10,
-    padding: 10,
+     padding: 10,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",width:'100%'
   },
   menuContent: {
     position: 'absolute',

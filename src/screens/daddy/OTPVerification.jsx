@@ -26,6 +26,7 @@ import {useDispatch} from 'react-redux';
 import { actionLogin, addCustomer, verifyCustomerMobile, verifyCustomerOTP } from '../../redux/reducers/auth';
 import Geolocation from '@react-native-community/geolocation';
 import { checkAddressExistence} from '../../redux/reducers/daddy';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 export default function OTPVerification({navigation,route}) {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -246,7 +247,7 @@ export default function OTPVerification({navigation,route}) {
 
   const maskPhoneNumber = number => {
     if (!number) return '';
-    return number.replace(/(\d{2})\d{5}(\d{3})/, '$1*****$2');
+    return number.replace(/(\d{1})\d{7}(\d{2})/, '$1*****$2');
   };
 
   const resendOtpHandler = () => {
@@ -261,31 +262,31 @@ export default function OTPVerification({navigation,route}) {
       <View style={styles.main}>
         <StatusBar translucent hidden />
         <ImageBackground
-          source={require('./tabassets/authbg.png')}
+          // source={require('./tabassets/authbg.png')}
           resizeMode="stretch"
           style={{
             width: responsiveWidth(100),
             height: responsiveHeight(30),
-            backgroundColor: '#065E2C',
+            backgroundColor: commonStyles.mainColor,
             justifyContent:"flex-end"
           }}>
-          <Text style={{color:"#FFF",fontSize:32,fontWeight:"700",botttom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>Verification</Text>
+          <Text style={{fontSize:32,fontWeight:"700",botttom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>Verification</Text>
         </ImageBackground>
         <View
           style={{
             flex: 1,
-            backgroundColor: '#fff',
+            backgroundColor: '#fffbe5',
             transform: [{translateY: -responsiveHeight(4.5)}],
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingHorizontal: responsiveWidth(5),
-            paddingVertical: responsiveHeight(3),
+            paddingVertical: responsiveHeight(4),
           }}>
           <Text
             style={{
               color: '#3D3D3D',
               textAlign: 'center',
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: '500',
             }}>
             Enter the verification code we just sent on the mobile number 
@@ -313,7 +314,7 @@ export default function OTPVerification({navigation,route}) {
           <View style={{marginTop:responsiveHeight(5)}}>
             {timer!==0 && <Text style={{color:"#3D3D3D",fontSize:18,fontWeight:"700",textAlign:"center"}}>Resend OTP in {timer}s </Text>}
             <TouchableOpacity disabled={timer!=0} onPress={resendOtpHandler}>
-              <Text style={{fontSize:14,color:timer==0?"#065E2C":"#8F8F8F",fontWeight:"700",textAlign:"center",marginTop:responsiveHeight(1)}}>Resend OTP</Text>
+              <Text style={{fontSize:14,color:timer==0? commonStyles.btnColor:"#8F8F8F",fontWeight:"700",textAlign:"center",marginTop:responsiveHeight(1)}}>Resend OTP</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={handleVerifyOtp} style={styles.loginButton}>
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   loginButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btnColor,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
