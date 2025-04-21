@@ -595,8 +595,8 @@ useEffect(() => {
                             </View>
 
                             <View style={styles.statItem}>
-                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.7)} color={"#065E2C"} />
-                              <Text style={styles.statText}>{item?.distance?.toFixed(2)}</Text>
+                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.5)} color={"#065E2C"} />
+                              <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
                             </View>
                            
                             <View style={styles.statItem}>

@@ -421,7 +421,12 @@ const OrderDetailsScreen = ({navigation, route}) => {
                 <View style={styles.itemDetails}>
                   <HeaderPick2 />
                   <Text style={styles.itemName}>{item.item_name}</Text>
+                  <View style={{flexDirection:"row",alignItems:"center",gap:7}}>
                   <Text style={styles.itemPrice}>₹{item.item_price}</Text>
+                    {item.actualitem_price !== item.item_price && (
+                  <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:14, marginTop: 4,}]}>₹{item.actualitem_price}</Text>
+                  )}
+                  </View>
                 </View>
                 <View style={styles.quantityInfo}>
                   <Text style={styles.quantity}>x{item.sub_item_count}</Text>
