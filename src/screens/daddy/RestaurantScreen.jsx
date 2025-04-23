@@ -293,6 +293,7 @@ const RestaurantScreen = ({navigation,route}) => {
 
   const renderItem = ({ item }) => {
     const isHighlighted = item.id === highlightedItemId;
+    console.log(item,"++++++++++++++>>>>>>>>>>>>>>>item")
     const scaleAnim = scaleAnims.get(item.id) || new Animated.Value(1);
     
     return (
@@ -347,12 +348,12 @@ const RestaurantScreen = ({navigation,route}) => {
               <HeaderPick2 color={item.filter_one === "Veg" ? "#0EAF50" : "#CD2A2A"} />
             </View>
           </View>
-
+{/* 
           <View style={styles.itemRatingContainer}>
             <Icon name="star" size={17} color="#D0A50F" />
             <Text style={styles.itemRating}>4.7</Text>
             <Text style={styles.itemReviewCount}>(12)</Text>
-          </View>
+          </View> */}
 
           <View style={styles.itemFooter}>
             <View>
@@ -730,6 +731,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#000',
     marginRight: 5,
+    height:responsiveHeight(4)
   },
   itemIcon: { 
     marginTop: 3,

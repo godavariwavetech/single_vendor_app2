@@ -300,7 +300,7 @@ const CheckoutScreen = ({navigation, route}) => {
         key: 'rzp_test_QNQ6xyfpco3YGe',
         order_id:orderIdResponse.payload.id,
         amount: Number(grandTotal)*100,
-        name: 'Local Daddy',
+        name: 'Food Trial',
         prefill: {
           // email: "test@gmail.com",
           contact: selectedAddress?.customer_mobile_number,

@@ -8,7 +8,6 @@ export const endpoints = {
   TOUR_PACKAGES:'packages/v1/getAll',
   GET_RENTAL_ITEMS:"rentalItems/v1/getAll",
   GET_ALL_ORDERS:'categories/v1/getAll',
-
   DADDY_GET_CATEGORIES:'public_app/getlocationctgrylist',
   GET_SUB_CATEGORIES:'public_app/getshopsubcategorylist',
   GET_BANNER:'public_app/getbannerslist',

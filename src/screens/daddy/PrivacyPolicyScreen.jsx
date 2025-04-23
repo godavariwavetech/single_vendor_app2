@@ -19,7 +19,7 @@ const PrivacyPolicyScreen = () => {
       <ScrollView style={{padding: 20,paddingBottom:100}}>
         <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
         <Text style={styles.content}>
-          Welcome to Local Daddy! Your privacy is important to us. This Privacy Policy explains how Local Daddy ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
+          Welcome to Food Trial! Your privacy is important to us. This Privacy Policy explains how Food Trial ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
 
         <Text style={styles.subtitle}>1. Information We Collect</Text>

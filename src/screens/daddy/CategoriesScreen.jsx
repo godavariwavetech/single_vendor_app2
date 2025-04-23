@@ -11,9 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   responsiveHeight,
@@ -26,7 +26,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { getResultFullData } from '../../redux/reducers/reviews';
-import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { getSearchShopList } from '../../redux/reducers/search';
 
 const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
@@ -34,6 +35,7 @@ const CategoriesScreen = ({navigation,route}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCategories, setFilteredCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const dispatch = useDispatch();
   const timeoutRef = useRef();
@@ -55,7 +57,7 @@ const CategoriesScreen = ({navigation,route}) => {
             style={{ marginLeft: 15 }}
             onPress={() => navigation.goBack()}
           >
-            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
           </TouchableOpacity>
         )
       });
@@ -87,9 +89,12 @@ const CategoriesScreen = ({navigation,route}) => {
     clearTimeout(timeoutRef.current);
     
     if (query.trim()) {
+      setSearchLoading(true);
       timeoutRef.current = setTimeout(() => {
-        dispatch(globalSearch({ searchText: query }));
+        dispatch(globalSearch({ searchText: query })).then(() => setSearchLoading(false));
       }, 500);
+    } else {
+      setSearchLoading(false);
     }
   };
 
@@ -204,19 +209,25 @@ const CategoriesScreen = ({navigation,route}) => {
         <Text style={styles.searchResultTitle} numberOfLines={1}>
           {item.search_text}
         </Text>
-        {/* <Text style={styles.searchResultType}>
-          {item?.search_table?.replace(/_/g, ' ')?.replace(/z food /gi, '') || 'Item'}
-        </Text> */}
+        <Text style={[styles.searchResultTitle,{color:"grey"}]} numberOfLines={1}>
+          {item.search_tagline}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
   const handleSearchResultPress = async (result) => {
     // Handle navigation based on search result type
-    console.log("Search result pressed:", result);
-    const response = await dispatch(getResultFullData({resultData:result}));
+    console.log("Search result pressed:", result.search_type);
+    if(result.search_type==2){
+      navigation.navigate('BannerRestaurantScreen',{...result,fromSearch:true}); 
+      return
+    }
+    navigation.navigate('SearchShopList',result);
 
-    console.log(result,"ressult>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LLLLLLLLLLL",response)
+    // const response = await dispatch(getSearchShopList({tableName:result.table_name,searchText:result.search_text}));
+
+    // console.log("ressult>>>>>>>>>>>>>>>>>>>>>>>>>>>>>LLLLLLLLLLL",response)
     // Example: navigation.navigate('SearchResultDetail', {result});
   };
 
@@ -226,9 +237,9 @@ const CategoriesScreen = ({navigation,route}) => {
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <StatusBar backgroundColor="transparent" barStyle={"dark-content"} />
+      <StatusBar backgroundColor="transparent" barStyle="light-content" />
       <LinearGradient
-        colors={['#FD0', '#F7F2F2']}
+       colors={['#FD0', '#F7F2F2']}
         style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           {route.params?.isFromHome ? (
@@ -236,7 +247,7 @@ const CategoriesScreen = ({navigation,route}) => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
             </TouchableOpacity>
           ):  <CategoryInactive color="#000" />}
           <Text style={styles.headerTitle}>All Categories</Text>
@@ -246,12 +257,19 @@ const CategoriesScreen = ({navigation,route}) => {
             <TextInput
               placeholderTextColor="#666666"
               placeholder="Search for your favorites"
-              style={styles.searchInput}
+              style={[styles.searchInput, {paddingRight: searchLoading ? 80 : 35}]}
               value={searchQuery}
               onChangeText={handleSearch}
+              autoFocus={!!route.params?.isFromHome}
             />
             <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
-            {searchQuery.length > 0 && (
+            {searchLoading ? (
+              <ActivityIndicator 
+                size="small" 
+                color="#065E2C" 
+                style={[styles.loaderIndicator, {right: 55}]}
+              />
+            ) : searchQuery.length > 0 && (
               <TouchableOpacity 
                 style={styles.clearButton}
                 onPress={() => setSearchQuery('')}
@@ -265,37 +283,45 @@ const CategoriesScreen = ({navigation,route}) => {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <View style={styles.loaderOverlay}>
+  <ActivityIndicator size="large" color="#065E2C" animating={true} />
+</View>
         </View>
       ) : (
         <>
           {searchQuery.trim() ? (
-            <View style={styles.searchResultsContainer}>
+            <ScrollView style={styles.searchResultsContainer}>
+              {/* {searchLoading && (
+                <View style={styles.loaderContainer}>
+                  <View style={styles.loaderOverlay}>
+  <ActivityIndicator size="large" color="#065E2C" animating={true} />
+</View>
+                </View>
+              )} */}
               {/* Search Results Section */}
               {globalSearchResults?.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Search Results</Text>
                   <View>
-
                   <FlatList
-                    horizontal
+                  scrollEnabled={false}
                     data={globalSearchResults}
                     renderItem={renderSearchResult}
-                    keyExtractor={item => item.search_id.toString()}
+                    keyExtractor={item => item.id.toString()}
                     showsHorizontalScrollIndicator={false}
                     style={{paddingHorizontal: responsiveWidth(4)}}
                     contentContainerStyle={styles.searchResultsList}
-                    />
-                    </View>
+                  />
+                  </View>
                 </>
               )}
-
               {/* Filtered Categories Section */}
               {filteredCategories.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Matching Categories</Text>
                   <FlatList
                     data={filteredCategories}
+                    scrollEnabled={false}
                     renderItem={renderCategory}
                     keyExtractor={item => item.category_id}
                     contentContainerStyle={[styles.categoriesList,!route?.params?.isFromHome&&{paddingBottom: 40}]}
@@ -303,7 +329,6 @@ const CategoriesScreen = ({navigation,route}) => {
                   />
                 </>
               )}
-
               {/* Empty State */}
               {globalSearchResults?.length === 0 && filteredCategories.length === 0 && (
                 <View style={styles.emptySearchContainer}>
@@ -313,7 +338,7 @@ const CategoriesScreen = ({navigation,route}) => {
                   </Text>
                 </View>
               )}
-            </View>
+            </ScrollView>
           ) : (
             <FlatList
               data={filteredCategories}
@@ -348,7 +373,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   headerTitle: {
-    color: '#000',
+    color: "#000",
     fontSize: 20,
     fontWeight: '700',
   },
@@ -373,7 +398,7 @@ const styles = StyleSheet.create({
     color: '#000',
     flex: 1,
     paddingLeft: 40,
-    paddingRight: 35,
+    paddingRight: 80,
   },
   searchIcon: {
     position: 'absolute',
@@ -467,20 +492,22 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   searchResultItem: {
-    width: 200,
+    // width: 200,
     marginRight: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
     // padding: 12,
     paddingBottom: 12,
-    elevation: 2,
+    // elevation: 2,
+    flexDirection:"row",
+    alignItems:"center",
   },
   searchResultImage: {
-    width: '100%',
-    height: 120,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    marginBottom: 8,
+    // width: '100%',
+   height:responsiveHeight(7),
+   width:responsiveHeight(7),
+    borderRadius: responsiveHeight(20), // Rounded corners for the image
+    // marginBottom: 8,
   },
   searchResultTitle: {
     fontSize: 16,
@@ -501,6 +528,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   emptySearchContainer: {
     flex: 1,

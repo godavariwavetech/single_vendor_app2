@@ -19,15 +19,15 @@ const TermsConditionsScreen = () => {
       <ScrollView style={{padding: 20}}>
         <Text style={styles.effectiveDate}>Last Updated: 4/3/2025</Text>
         <Text style={styles.content}>
-          Welcome to Local Daddy! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Local Daddy, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
+          Welcome to Food Trial! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Food Trial, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>1. Definitions</Text>
         <Text style={styles.content}>
-          <Text style={styles.subsectionTitle}>• "Local Daddy"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
-          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Local Daddy.{"\n"}
+          <Text style={styles.subsectionTitle}>• "Food Trial"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
+          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Food Trial.{"\n"}
           <Text style={styles.subsectionTitle}>• "Restaurant Partner"</Text> refers to the restaurants listed on our platform.{"\n"}
           <Text style={styles.subsectionTitle}>• "Delivery Partner"</Text> refers to the individuals responsible for delivering orders.
         </Text>
@@ -36,14 +36,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>2. Eligibility</Text>
         <Text style={styles.content}>
-          You must be at least 18 years old to use Local Daddy. By accessing our platform, you represent that you meet this requirement.
+          You must be at least 18 years old to use Food Trial. By accessing our platform, you represent that you meet this requirement.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>3. Use of Services</Text>
         <Text style={styles.content}>
-          • You agree to use Local Daddy for lawful purposes only.{"\n"}
+          • You agree to use Food Trial for lawful purposes only.{"\n"}
           • You shall not engage in fraudulent activities, abuse promotions, or interfere with the platform's functionality.{"\n"}
           • We reserve the right to suspend or terminate your account if we detect suspicious activity.
         </Text>
@@ -52,9 +52,9 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>4. Orders and Payments</Text>
         <Text style={styles.content}>
-          • Orders placed through Local Daddy are subject to restaurant availability.{"\n"}
+          • Orders placed through Food Trial are subject to restaurant availability.{"\n"}
           • Prices listed on the platform may change at any time.{"\n"}
-          • Payments must be made through the available payment methods. Local Daddy is not responsible for payment failures due to banking issues.{"\n"}
+          • Payments must be made through the available payment methods. Food Trial is not responsible for payment failures due to banking issues.{"\n"}
           • Orders cannot be canceled once confirmed, unless explicitly allowed by the restaurant.
         </Text>
 
@@ -64,7 +64,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Estimated delivery times are approximate and may vary due to factors such as traffic, weather, or restaurant preparation time.{"\n"}
           • If an order cannot be delivered due to incorrect address details, the user may still be charged.{"\n"}
-          • Local Daddy is not liable for delays caused by third-party service providers.
+          • Food Trial is not liable for delays caused by third-party service providers.
         </Text>
 
         <View style={styles.separator} />
@@ -73,7 +73,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Refunds will be processed only in cases where an order is undelivered, incomplete, or incorrect.{"\n"}
           • Any refund request must be made within 24 hours of order delivery.{"\n"}
-          • The final decision on refunds rests with Local Daddy.
+          • The final decision on refunds rests with Food Trial.
         </Text>
 
         <View style={styles.separator} />
@@ -88,7 +88,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
         <Text style={styles.content}>
-          • All content on Local Daddy, including logos, trademarks, and text, is the property of Local Daddy and protected by copyright laws.{"\n"}
+          • All content on Food Trial, including logos, trademarks, and text, is the property of Food Trial and protected by copyright laws.{"\n"}
           • You may not use our content without prior written consent.
         </Text>
 
@@ -96,7 +96,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>9. Limitation of Liability</Text>
         <Text style={styles.content}>
-          • Local Daddy is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
+          • Food Trial is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
           • We are not liable for any direct, indirect, or incidental damages arising from the use of our services.
         </Text>
 
@@ -104,14 +104,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>10. Privacy Policy</Text>
         <Text style={styles.content}>
-          Your use of Local Daddy is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
+          Your use of Food Trial is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>11. Modifications to Terms</Text>
         <Text style={styles.content}>
-          We reserve the right to update these Terms at any time. Continued use of Local Daddy after modifications constitutes acceptance of the updated Terms.
+          We reserve the right to update these Terms at any time. Continued use of Food Trial after modifications constitutes acceptance of the updated Terms.
         </Text>
 
         <View style={styles.separator} />

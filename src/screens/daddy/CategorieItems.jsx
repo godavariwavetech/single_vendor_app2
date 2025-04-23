@@ -352,7 +352,7 @@ console.log(filtered,'filter')
     <View style={styles.main}>
       <StatusBar backgroundColor={"transparent"} translucent barStyle={"dark-content"} />
       <LinearGradient
-        colors={['#FFCC00', '#F7F2F2']}
+        colors={['#FD0', '#F7F2F2']}
         style={styles.gradientContainer}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>

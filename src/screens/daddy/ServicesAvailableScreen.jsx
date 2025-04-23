@@ -18,6 +18,7 @@ import { checkServiceAvailability,getServices } from '../../redux/reducers/daddy
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { setLocation, setLocationId, setLocationName } from '../../redux/reducers/auth';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     // paddingTop: responsiveHeight(2),
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",

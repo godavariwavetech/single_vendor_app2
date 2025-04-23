@@ -238,9 +238,9 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         }),
       );
 
-      if (response.payload.data.length > 0) {
+      if (response.payload?.data?.length > 0) {
         setLocationResponse(response)
-        if (response.payload.data[0].id != locationId && cartItems.length > 0) {
+        if (response.payload?.data[0].id != locationId && cartItems.length > 0) {
           setCartItemsError(true);
           return;
         }
