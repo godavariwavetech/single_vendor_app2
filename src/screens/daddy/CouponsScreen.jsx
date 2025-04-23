@@ -12,7 +12,6 @@ import {
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useDispatch, useSelector } from 'react-redux';
 import { applyCoupon, fetchCoupons, removeCoupon } from '../../redux/reducers/coupons';
 
@@ -76,38 +75,48 @@ const CouponsScreen = ({ navigation, route }) => {
       </View>
 
       <ScrollView style={styles.content}>
-        {coupons.map((coupon) => (
-          <TouchableOpacity
-            key={coupon.id}
-            style={[
-              styles.couponCard,
-              (selectedCoupon?.id||appliedCoupon?.id) === coupon.id && styles.selectedCouponCard
-            ]}
-            onPress={() => handleApplyCoupon(coupon)}
-          >
-            <View style={styles.couponLeft}>
-              <View style={styles.couponIconContainer}>
-                <MaterialIcons name="local-offer" size={24} color="#065E2C" />
-              </View>
-              <View style={styles.couponDetails}>
-                <Text style={styles.couponName}>{coupon.coupon_name}</Text>
-                <Text style={styles.couponDescription}>{coupon.coupon_description}</Text>
-                <View style={styles.couponTerms}>
-                  <Text style={styles.couponTermsText}>
-                    • Min. order value: ₹{coupon.coupon_upto_price}
-                  </Text>
-                  <Text style={styles.couponTermsText}>
-                    • Max. discount: ₹{coupon.coupon_max_price_limit}
-                  </Text>
+        {coupons.length === 0 ? (
+          <View style={{flex: 1, alignItems: 'center', justifyContent: 'center',height:responsiveHeight(80)}}>
+            <MaterialIcons name="local-offer" size={60} color="#E0E0E0" />
+            <Text style={{fontSize: 18, color: '#888', fontWeight: '600', marginTop: 16}}>No Coupons Available</Text>
+            <Text style={{fontSize: 14, color: '#aaa', marginTop: 8, textAlign: 'center', maxWidth: 250}}>
+              There are currently no coupons to display. Please check back later!
+            </Text>
+          </View>
+        ) : (
+          coupons.map((coupon) => (
+            <TouchableOpacity
+              key={coupon.id}
+              style={[
+                styles.couponCard,
+                (selectedCoupon?.id||appliedCoupon?.id) === coupon.id && styles.selectedCouponCard
+              ]}
+              onPress={() => handleApplyCoupon(coupon)}
+            >
+              <View style={styles.couponLeft}>
+                <View style={styles.couponIconContainer}>
+                  <MaterialIcons name="local-offer" size={24} color="#065E2C" />
+                </View>
+                <View style={styles.couponDetails}>
+                  <Text style={styles.couponName}>{coupon.coupon_name}</Text>
+                  <Text style={styles.couponDescription}>{coupon.coupon_description}</Text>
+                  <View style={styles.couponTerms}>
+                    <Text style={styles.couponTermsText}>
+                      • Min. order value: ₹{coupon.coupon_upto_price}
+                    </Text>
+                    <Text style={styles.couponTermsText}>
+                      • Max. discount: ₹{coupon.coupon_max_price_limit}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-            <View style={styles.couponRight}>
-              <Text style={styles.discountText}>{coupon.coupon_percentage}%</Text>
-              <Text style={styles.offText}>OFF</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+              <View style={styles.couponRight}>
+                <Text style={styles.discountText}>{coupon.coupon_percentage}%</Text>
+                <Text style={styles.offText}>OFF</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       {selectedCoupon && (
@@ -343,4 +352,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CouponsScreen; 
+export default CouponsScreen;

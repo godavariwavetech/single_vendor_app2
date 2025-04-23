@@ -6,6 +6,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch } from'react-redux';
 import { getChargesList } from '../../redux/reducers/addressSlice';
+import { colors } from '../../config/theme';
 
 const SupportScreen = ({ navigation }) => {
   const dispatch = useDispatch(); 
@@ -41,10 +42,10 @@ const SupportScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={"transparent"} barStyle={'light-content'} />
-      <LinearGradient colors={['#065E2C', '#F7F2F2']} style={styles.gradientContainer}>
+      <LinearGradient colors={[colors.green, colors.borderGray13]} style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Support</Text>
         </View>
@@ -55,15 +56,15 @@ const SupportScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.contactOptions}>
             <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
-              <MaterialIcons name="phone" size={32} color="#065E2C" />
+              <MaterialIcons name="phone" size={32} color={colors.green} />
               <Text style={styles.contactText}>Call Support Team</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
-              <MaterialIcons name="email" size={32} color="#065E2C" />
+              <MaterialIcons name="email" size={32} color={colors.green} />
               <Text style={styles.contactText}>Send Email</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
-              <FontAwesome6 name="whatsapp" size={32} color="#065E2C" />
+              <FontAwesome6 name="whatsapp" size={32} color={colors.green} />
               <Text style={styles.contactText}>Chat on WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -142,4 +143,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SupportScreen; 
+export default SupportScreen;

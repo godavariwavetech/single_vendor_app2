@@ -13,7 +13,6 @@ import {
   PanResponder,
   ActivityIndicator,
   Modal,
-  LayoutAnimation,
 } from 'react-native';
 import {
   responsiveFontSize,
@@ -34,7 +33,8 @@ import {
   setCartRestaurant,
 } from '../../redux/reducers/daddy';
 import {setRestaurnatDetails} from '../../redux/reducers/auth';
-import {globalSearch, indiviadualShop} from '../../redux/reducers/addressSlice';
+import {indiviadualShop} from '../../redux/reducers/addressSlice';
+import { getSingleShopDetails } from '../../redux/reducers/search';
 
 const BannerRestaurantScreen = ({navigation, route}) => {
   const [translateY] = useState(new Animated.Value(100));
@@ -60,19 +60,25 @@ const BannerRestaurantScreen = ({navigation, route}) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [restaurantData, setRestaurantData] = useState(null);
-  const {location, locationId} = useSelector(state => state.Auth);
+  const {location} = useSelector(state => state.Auth);
   // const [bottomGap,setBottomGap] = useState(0)
   const bottomGap = new Animated.Value(0);
   const flatListRef = useRef(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+console.log(route.params,"+++++++++++++++PRARAMD")
+
 
   const fetchRestaurantData = async () => {
+    if(route?.params?.fromSearch) {
+      if (!route?.params?.id) return;
+      const response = await dispatch(getSingleShopDetails({shopId: route?.params?.id}));
+      setRestaurantData(response?.payload.data[0])
+      return
+    }
     if (!route?.params?.shopId) return;
-    const response = await dispatch(
-      indiviadualShop({shopId: route?.params?.shopId}),
-    );
+    const response = await dispatch(indiviadualShop({shopId: route?.params?.shopId}));
     setRestaurantData(response.payload.data[0][0]);
   };
 
@@ -110,20 +116,21 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }
   };
 
-  const handleFilter = selected => {
+  const handleFilter = (selected) => {
     if (selected.type === 'subcategory') {
-      setActiveSubCategoryFilter(
-        selected.filter_name === 'All' ? 'All' : selected.filter_name,
-      );
+      setActiveSubCategoryFilter(selected.filter_name === 'All' ? 'All' : selected.filter_name);
     } else {
-      if (selected.filter_name === 'All') {
-        setActiveFilters(['All']);
-        return;
-      }
-      const newFilters = activeFilters.includes(selected.filter_name)
-        ? activeFilters.filter(f => f !== selected.filter_name)
-        : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
-      setActiveFilters(newFilters);
+
+
+    setActiveFilters([selected.filter_name]);
+      // if (selected.filter_name === 'All') {
+      //   setActiveFilters(['All']);
+      //   return;
+      // }
+      // const newFilters = activeFilters.includes(selected.filter_name) 
+      //   ? activeFilters.filter(f => f !== selected.filter_name)
+      //   : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
+      // setActiveFilters(newFilters);
     }
   };
 
@@ -295,7 +302,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }),
   ).current;
 
-  console.log(translateY, '+++++++++++++++++TRSNAANANNAANAN');
 
   const handleDraggableMenuAction = subCategory => {
     if (subCategory.sub_category_name === 'All') {
@@ -310,6 +316,16 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }
     setDraggableMenuVisible(false);
   };
+
+  const getShopDetails = async () => {
+    try {
+      dispatch(getSingleShopDetails({shopId: route?.params?.shopId}));
+    } catch (error) {
+      console.error('Error fetching shop details:', error);
+    }
+  }
+
+  console.log(restaurantData,"+++++++++++++Restaurat data")
 
   useEffect(() => {
     return () => {

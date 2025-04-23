@@ -27,6 +27,7 @@ import {
   setLocationName,
   setLocationId,
 } from '../../redux/reducers/auth';
+import { colors } from '../../config/theme';
 
 const DEFAULT_REGION = {
   latitude: 16.9979679,
@@ -303,7 +304,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.title}>Select Service Location</Text>
       </View>
@@ -330,7 +331,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         )}
         <View style={styles.markerOverlay}>
           <View style={styles.markerContainer}>
-            <MaterialIcons name="location-on" size={40} color="#065E2C" />
+            <MaterialIcons name="location-on" size={40} color={colors.green} />
           </View>
         </View>
         <TouchableOpacity
@@ -342,10 +343,10 @@ const SelectServiceFromLocation = ({navigation, route}) => {
           onPress={getCurrentLocation}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
-            <ActivityIndicator color="#065E2C" size="small" />
+            <ActivityIndicator color={colors.green} size="small" />
           ) : (
             <>
-              <MaterialIcons name="my-location" size={24} color="#065E2C" />
+              <MaterialIcons name="my-location" size={24} color={colors.green} />
               <Text style={styles.currentLocationText}>
                 use current location
               </Text>

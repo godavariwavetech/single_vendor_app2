@@ -1,6 +1,8 @@
 // export const baseURL = 'https://developementapi.freshozapcart.com/'; 
 export const baseURL = 'https://api.localdaddy.in/'; 
 
+// https://github.com/DustinDoan315/RN-BubbleNotify-NativeModule
+
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',
   LOGIN:'customers/v1/otpAuth',
@@ -36,5 +38,9 @@ export const endpoints = {
   UPDATE_ORDER_STATUS:'public_app/updatepaymetdetails',
   GET_RESULT_FULL_DATA:'public_app/searchitemsfull',
   GET_NOTIFICATIONS:'public_app/notificationslist',
-  DELETE_ACCOUNT:'public_app/deleteaccount'
+  DELETE_ACCOUNT:'public_app/deleteaccount',
+  GET_SEARCH_SHOP_LIST:"public_app/getsearchshoplist",
+  GET_SINGLE_SHOP_DETAILS:"public_app/getsingleshopdetails",
+  GET_SEARCH_SUB_CATEGORIES:"public_app/getsearchsubcategoriesshoplist",
+  GET_SEARCH_CATEGORIES:"public_app/getsearchcategoriesshoplist"
 };

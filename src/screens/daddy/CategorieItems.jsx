@@ -12,10 +12,7 @@ import {
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
-import HeaderPick1 from './tabassets/HeaderPick1';
 import HeaderPick2 from './tabassets/HeaderPick2';
-import HeaderPick3 from './tabassets/HeaderPick3';
-import Seller from './tabassets/Seller';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import { useDispatch, useSelector } from 'react-redux';
@@ -221,7 +218,7 @@ export default function CategorieItems({navigation,route}) {
               }
             ]}
           >
-           {item.filter_name!="All" && <HeaderPick2 color={
+           {item.filter_name!="All" && ( item.filter_name === "Veg" || item.filter_name === "Non Veg")  && <HeaderPick2 color={
               item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
               item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
             } />}

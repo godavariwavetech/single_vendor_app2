@@ -29,6 +29,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import CustomModal from '../../components/CustomModal';
 import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
 import {getMessaging} from '@react-native-firebase/messaging';
+import {colors} from '../../config/theme';
 
 const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
@@ -636,24 +637,24 @@ const OrderDetailsScreen = ({navigation, route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
   },
   header: {
-    backgroundColor: '#065E2C',
+    backgroundColor: colors.green,
     height: responsiveHeight(15),
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5),
+    paddingLeft: responsiveWidth(5)
   },
   backButton: {
-    width: responsiveWidth(7),
-    marginBottom: responsiveHeight(2),
+    width: responsiveWidth(7)
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.white,
+    textAlign: "left"
   },
   orderId: {
     fontSize: 12,

@@ -16,6 +16,7 @@ import userDahboard from './reducers/userDashboard';
 import Dashboard from './reducers/daddy'
 import couponsReducer from './reducers/coupons'; 
 import addressReducer from './reducers/addressSlice';
+import search from './reducers/search';
 // Import the coupons reducer
 // import { AuthSlice } from './reducers/auth';
 // import Auth from './reducers/auth';
@@ -38,6 +39,7 @@ export const store = configureStore({
     Dashboard: persistReducer(dashboardPersistConfig, Dashboard),
     coupons: couponsReducer,
     address: addressReducer,
+    search
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

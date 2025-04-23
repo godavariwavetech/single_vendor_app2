@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import commonStyles from '../commonstyles/CommonStyles';
+import { colors } from '../config/theme';
 
 const PrivacyPolicy = () => {
   const navigation = useNavigation();
@@ -11,7 +12,7 @@ const PrivacyPolicy = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-left" size={24} color="#333" />
+          <Icon name="chevron-left" size={24} color={colors.darkGray} />
         </TouchableOpacity>
         <Text style={styles.title}>Privacy Policy</Text>
         <View style={styles.placeholder} />
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: 8,
     marginTop: 32,
     borderWidth: 1,

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'r
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import { colors } from '../../config/theme';
 
 const TermsConditionsScreen = () => {
   const navigation = useNavigation();
@@ -141,11 +142,11 @@ const TermsConditionsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingBottom:20
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: colors.green,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -158,12 +159,12 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#fff',
+    color: colors.white,
     textAlign: "left" 
   },
   effectiveDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
     marginBottom: 15,
     fontStyle: 'italic'
   },
@@ -171,29 +172,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
-    color: '#065E2C'
+    color: colors.green
   },
   subsectionTitle: {
     fontWeight: '600',
-    color: '#333'
+    color: colors.darkGray
   },
   content: {
     fontSize: 14,
     marginTop: 5,
     lineHeight: 24,
-    color: '#666'
+    color: colors.gray
   },
   separator: {
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.borderGray,
     marginVertical: 15
   },
   bold: {
     fontWeight: '700',
-    color: '#000'
+    color: colors.black
   },
   link: {
-    color: '#065E2C',
+    color: colors.green,
     textDecorationLine: 'underline',
   }
 });

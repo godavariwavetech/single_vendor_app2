@@ -9,6 +9,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Use any other icon set you prefer
 import commonStyles from '../commonstyles/CommonStyles';
+import { colors } from '../config/theme';
 
 const TermsAndConditions = () => {
   const navigation = useNavigation();
@@ -20,7 +21,8 @@ const TermsAndConditions = () => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Icon name="chevron-left" size={20} color="#333" />
+-           <Icon name="chevron-left" size={20} color="#333" />
++           <Icon name="chevron-left" size={20} color={colors.darkGray} />
         </TouchableOpacity>
         <Text style={styles.title}>Terms and Conditions</Text>
       </View>
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor:commonStyles.bgColor
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: 8,
     marginTop: 32,
     borderWidth: 1,
@@ -112,6 +114,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 15,
-    color: '#333',
+    color: colors.darkGray,
   },
 });

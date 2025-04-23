@@ -18,6 +18,7 @@ import { checkServiceAvailability,getServices } from '../../redux/reducers/daddy
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { setLocation, setLocationId, setLocationName } from '../../redux/reducers/auth';
+import { colors } from '../../config/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -63,7 +64,7 @@ const ServicesAvailableScreen = ({ navigation,route }) => {
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-        {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />}
+        {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />}
         </TouchableOpacity>
         <Text style={styles.title}>Available Service Areas</Text>
       </View>
@@ -71,24 +72,24 @@ const ServicesAvailableScreen = ({ navigation,route }) => {
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="Search service areas..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.gray}
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <MaterialIcons name="search" size={24} color="#065E2C" />
+        <MaterialIcons name="search" size={24} color={colors.green} />
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#065E2C" style={styles.loader} />
+        <ActivityIndicator size="large" color={colors.green} style={styles.loader} />
       ) : (
         <FlatList
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={['#065E2C']}
-              tintColor="#065E2C"
+              colors={[colors.green]}
+              tintColor={colors.green}
             />
           }
           data={filteredAreas}
@@ -103,16 +104,16 @@ const ServicesAvailableScreen = ({ navigation,route }) => {
                 <Text style={styles.areaName}>{item.location_name}</Text>
                 <View style={styles.detailsRow}>
                   <Text style={styles.detailText}>
-                    <MaterialIcons name="location-pin" size={16} color="#065E2C" /> 
+                    <MaterialIcons name="location-pin" size={16} color={colors.green} /> 
                     {item.maximum_delivery_service_km} km radius
                   </Text>
                   {/* <Text style={styles.detailText}>
-                    <MaterialIcons name="delivery-dining" size={16} color="#065E2C" />
+                    <MaterialIcons name="delivery-dining" size={16} color={colors.green} />
                     Free Delivery
                   </Text> */}
                 </View>
               </View>
-              <MaterialIcons name="chevron-right" size={24} color="#065E2C" />
+              <MaterialIcons name="chevron-right" size={24} color={colors.green} />
             </TouchableOpacity>
           )}
           ListEmptyComponent={
@@ -133,11 +134,11 @@ const ServicesAvailableScreen = ({ navigation,route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.white, // centralized color
     // paddingTop: responsiveHeight(2),
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: colors.green, // centralized color
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -150,38 +151,38 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#fff',
+    color: colors.white, // centralized color
     textAlign: "left" 
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.white, // centralized color
     borderRadius: 10,
     marginHorizontal: responsiveWidth(5),
     paddingHorizontal: 15,
     height: 50,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderGray, // centralized color
     marginVertical: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: colors.darkGray, // centralized color
     paddingVertical: 8,
   },
   areaCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.white, // centralized color
     padding: 15,
     marginHorizontal: responsiveWidth(5),
     marginVertical: 5,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: colors.borderGray2, // centralized color
   },
   areaInfo: {
     flex: 1,
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   areaName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.darkGray, // centralized color
     marginBottom: 4,
   },
   detailsRow: {
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -220,7 +221,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.gray,
+    textAlign: 'center',
+    lineHeight: 24,
     textAlign: 'center',
     marginHorizontal: responsiveWidth(10),
   },
@@ -229,4 +232,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ServicesAvailableScreen; 
+export default ServicesAvailableScreen;
