@@ -11,7 +11,7 @@ import {
   Keyboard,
   ActivityIndicator,
   Alert,
-  Linking,
+  Linking,Image
 } from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import AuthBackground from './tabassets/AuthBackground';
@@ -262,7 +262,7 @@ export default function OTPVerification({navigation,route}) {
       <View style={styles.main}>
         <StatusBar translucent hidden />
         <ImageBackground
-          // source={require('./tabassets/authbg.png')}
+          source={require('../daddy/svg/bgDesign.png')}
           resizeMode="stretch"
           style={{
             width: responsiveWidth(100),
@@ -270,7 +270,21 @@ export default function OTPVerification({navigation,route}) {
             backgroundColor: commonStyles.mainColor,
             justifyContent:"flex-end"
           }}>
-          <Text style={{fontSize:32,fontWeight:"700",botttom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>Verification</Text>
+          <Text style={{fontSize:28,fontWeight:"700",botttom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>Verification</Text>
+
+                      {/* Food Trial Image on top */}
+            <Image
+              source={require('../daddy/svg/foodTrialLogo2.png')} // <- your new image
+              style={{
+                width: 130,
+                height: 130,
+                // marginBottom:responsiveHeight(8),marginRight:responsiveWidth(10)
+                position: 'absolute',
+                bottom: responsiveHeight(5),
+                right: responsiveWidth(5),
+              }}
+              resizeMode="contain"
+            />
         </ImageBackground>
         <View
           style={{

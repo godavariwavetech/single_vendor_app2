@@ -1,13 +1,6 @@
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {NavigationContainer} from '@react-navigation/native';
-import {View, Text, Image, Pressable, Platform, StyleSheet} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {tab1} from './tabassets';
-import {
-  responsiveHeight,
-  responsiveWidth,
-} from 'react-native-responsive-dimensions';
+import {View, Text, Pressable, Platform, StyleSheet} from 'react-native';
 import User from './User';
 import HomeSvg from './HomeSvg';
 import Reorder from './Reorder';
@@ -49,23 +42,23 @@ export default function BottomNavigation() {
           tabBarIcon: ({focused, color, size}) => {
             let iconName;
             if (route.name === 'Home') {
-              iconName = focused ? <HomeSvg color={commonStyles.btnColor} /> : <HomeInactive />;
+              iconName = focused ? <HomeSvg color={commonStyles.btn2Color} /> : <HomeInactive />;
             } else if (route.name === 'Reorder') {
-              iconName = focused ? <ReorderInactive color={commonStyles.btnColor}/> : <Reorder />;
+              iconName = focused ? <ReorderInactive color={commonStyles.btn2Color}/> : <Reorder />;
             } else if (route.name === 'Categories') {
               iconName = focused ? (
-                <CategoryInactive color={commonStyles.btnColor}/>
+                <CategoryInactive color={commonStyles.btn2Color}/>
               ) : (
                 <Categoreis/>
               );
             } else if (route.name === 'Cart') {
               iconName = (
                 <View>
-                  {focused ? <CartInactive color={commonStyles.btnColor}/> : <Cart />}
+                  {focused ? <CartInactive color={commonStyles.btn2Color}/> : <Cart />}
                   {cartItems.length > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>
-                        {cartItems.length}
+                        {cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0)}
                       </Text>
                     </View>
                   )}
@@ -76,7 +69,7 @@ export default function BottomNavigation() {
             }
             return iconName;
           },
-          tabBarActiveTintColor: commonStyles.btnColor,
+          tabBarActiveTintColor: commonStyles.btn2Color,
           tabBarInactiveTintColor: 'gray',
           tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
           tabBarStyle: {
@@ -156,7 +149,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: commonStyles.btnColor,
+    backgroundColor: commonStyles.btn2Color,
     borderRadius: 10,
     minWidth: 20,
     height: 20,

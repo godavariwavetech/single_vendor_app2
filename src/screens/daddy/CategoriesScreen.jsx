@@ -26,6 +26,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { getResultFullData } from '../../redux/reducers/reviews';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
@@ -225,9 +226,9 @@ const CategoriesScreen = ({navigation,route}) => {
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <StatusBar backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar backgroundColor="transparent" barStyle={"dark-content"} />
       <LinearGradient
-        colors={['#065E2C', '#F7F2F2']}
+        colors={['#FD0', '#F7F2F2']}
         style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           {route.params?.isFromHome ? (
@@ -235,9 +236,9 @@ const CategoriesScreen = ({navigation,route}) => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+              <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
             </TouchableOpacity>
-          ):  <CategoryInactive color="#fff" />}
+          ):  <CategoryInactive color="#000" />}
           <Text style={styles.headerTitle}>All Categories</Text>
         </View>
         <View style={styles.searchContainer}>
@@ -264,7 +265,7 @@ const CategoriesScreen = ({navigation,route}) => {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#065E2C" />
+          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
         </View>
       ) : (
         <>
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   headerTitle: {
-    color: '#fff',
+    color: '#000',
     fontSize: 20,
     fontWeight: '700',
   },

@@ -306,7 +306,7 @@ import {
   TouchableOpacity,
   Pressable,
   Keyboard,
-  ActivityIndicator,
+  ActivityIndicator,Image
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AuthBackground from './tabassets/AuthBackground';
@@ -395,17 +395,31 @@ export default function Register({navigation,route}) {
         )}
         <StatusBar translucent hidden />
         <ImageBackground
-          // source={require('./tabassets/authbg.png')}
-          resizeMode="stretch"
+          source={require('../daddy/svg/bgDesign.png')}
+          // resizeMode="cover"
           style={{
             width: responsiveWidth(100),
             height: responsiveHeight(30),
             backgroundColor: commonStyles.mainColor,
             justifyContent: "flex-end"
           }}>
-          <Text style={{fontSize:32,fontWeight:"700",bottom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>
+          <Text style={{fontSize:28,fontWeight:"700",bottom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>
             Sign In
           </Text>
+
+            {/* Food Trial Image on top */}
+  <Image
+    source={require('../daddy/svg/foodTrialLogo2.png')} // <- your new image
+    style={{
+      width: 130,
+      height: 130,
+      // marginBottom:responsiveHeight(8),marginRight:responsiveWidth(10)
+      position: 'absolute',
+      bottom: responsiveHeight(5),
+      right: responsiveWidth(5),
+    }}
+    resizeMode="contain"
+  />
         </ImageBackground>
         <View
           style={{

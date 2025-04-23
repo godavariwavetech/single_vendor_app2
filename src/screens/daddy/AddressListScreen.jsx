@@ -25,6 +25,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { setSelectedAddress as setSelectedAddressAction, setUserDetails } from '../../redux/reducers/addressSlice';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { haversineDistance } from './distanceCalculator';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const AddressListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -38,7 +39,7 @@ const AddressListScreen = ({ navigation, route }) => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const  [toggleValue,setToggleValue] = useState(false)
   const [refreshing, setRefreshing] = useState(false);
-  const { customerId,reaturantDetails } = useSelector(state => state.Auth);
+  const { customerId, reaturantDetails, locationId } = useSelector(state => state.Auth);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isCheckingAddress, setIsCheckingAddress] = useState(false);
@@ -46,6 +47,8 @@ const AddressListScreen = ({ navigation, route }) => {
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
+
+  console.log(addressList,"+++++++++++++++++++VVV")
 
   const handleSelectAddress = async (address) => {
     try {
@@ -137,7 +140,7 @@ const AddressListScreen = ({ navigation, route }) => {
     <TouchableOpacity 
       style={styles.addressCard} 
       onPress={() => handleSelectAddress(item)}
-      disabled={isCheckingAddress}
+      disabled={isCheckingAddress|| !isFromCart}
     >
       <View style={styles.addressHeader}>
         <Text style={styles.addressType}>{item.address_type}</Text>
@@ -184,19 +187,19 @@ const AddressListScreen = ({ navigation, route }) => {
       <View style={{flex: 1}}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
           </TouchableOpacity>
           <Text style={styles.title}>Address List</Text>
         </View>
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#065E2C" />
+            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
             <Text style={styles.loadingText}>Loading addresses...</Text>
           </View>
         ) : (
           <FlatList
-            data={addressList}
+            data={isFromCart ? addressList.filter(address => address.location_id === locationId) : addressList}
             renderItem={renderAddress}
             keyExtractor={item => item?.id?.toString()}
             contentContainerStyle={[
@@ -272,7 +275,7 @@ const AddressListScreen = ({ navigation, route }) => {
       />
       {isCheckingAddress && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#065E2C" />
+          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
         </View>
       )}
     </View>
@@ -300,7 +303,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: responsiveHeight(2),
     fontSize: 16,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -322,7 +325,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(3),
   },
   addAddressButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     paddingVertical: responsiveHeight(1.5),
     paddingHorizontal: responsiveWidth(10),
     borderRadius: 8,
@@ -333,12 +336,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5)
+    paddingLeft: responsiveWidth(5),
+    gap:6
   },
   backButton: {
     width: responsiveWidth(7)
@@ -346,7 +350,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#fff',
+    color: '#000',
     textAlign: "left" 
   },
   addressCard: { 
@@ -394,7 +398,7 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     bottom: 20, 
     right: 20, 
-    backgroundColor: '#065E2C', 
+    backgroundColor: commonStyles.btn2Color, 
     borderRadius: 50, 
     padding: 10, 
     elevation: 5 
@@ -469,4 +473,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddressListScreen; 
+export default AddressListScreen;

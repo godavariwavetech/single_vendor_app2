@@ -5,16 +5,14 @@ import {store} from './src/redux/store';
 import AppNavigation from './src/navigation/AppNavigation';
 import SplashScreen from 'react-native-splash-screen'
 import { getFCMToken } from './src/services/NotificationsService';
-import notifee, { AndroidImportance } from '@notifee/react-native';
-import { requestNotificationPermission, setupNotificationHandlers } from './src/services/NotificationsService';
-import { Alert, Linking, PermissionsAndroid, Platform, View, Text, StyleSheet, Animated } from 'react-native';
-import { checkNotifications, requestNotifications } from 'react-native-permissions';
+import { Linking, Platform, View, Text, StyleSheet, Animated } from 'react-native';
+import { checkNotifications, requestNotifications, RESULTS } from 'react-native-permissions';
 import VersionCheck from 'react-native-version-check'; 
-import CustomAlert from './src/components/CustomAlert';
 import CustomModal from './src/components/CustomModal';
 import NetInfo from '@react-native-community/netinfo';
 import { setIsNetworkConnected } from './src/redux/reducers/addressSlice';
 import { useDispatch } from 'react-redux';
+import OnboardingScreen from './src/screens/daddy/OnboardingScreen';
 const NetworkStatusBanner = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [slideAnim] = useState(new Animated.Value(-50));
@@ -39,8 +37,7 @@ const NetworkStatusBanner = () => {
   if (isConnected) return null;
 
   return (
-    <Animated.View style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.text}>No Internet Connection</Text>
+    <Animated.View style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}>\n      <Text style={styles.text}>No Internet Connection</Text>
     </Animated.View>
   );
 };
@@ -69,27 +66,18 @@ const App = () => {
 
   useEffect(() => {
     const checkAndRequestPermissions = async () => {
-      if (Platform.OS === 'android') {
-        try {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-          );
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Notification permission granted');
-          }
-        } catch (err) {
-          console.warn(err);
-        }
-      } else {
-        // For iOS
+      try {
         const { status } = await checkNotifications();
-        if (status !== 'granted') {
+        if (status !== RESULTS.GRANTED) {
           const { status: newStatus } = await requestNotifications(['alert', 'sound']);
           console.log('Notification permission status:', newStatus);
+        } else {
+          console.log('Notification permission granted');
         }
+      } catch (err) {
+        console.warn('Notification permission error:', err);
       }
     };
-
     checkAndRequestPermissions();
   }, []);
 
@@ -128,7 +116,6 @@ const App = () => {
     }
   };
 
-  console.log(showUpdateModal,"+++++++++++++++++showUpdateModal")
 
   useEffect(() => {
     checkForUpdate();

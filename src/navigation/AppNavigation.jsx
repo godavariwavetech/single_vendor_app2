@@ -81,6 +81,10 @@ import HomeScreen from '../screens/restaurants/HomeScreen';
 // import CategoriesScreen from '../screens/daddy/CategoriesScreen';
 import CategoriesScreen from '../screens/restaurants/CategoriesScreen';
 import RestaurantsScreen from '../screens/restaurants/RestaurantsScreen';
+import OnboardingScreen2 from '../screens/daddy/OnboardingScreen2';
+import OnboardingScreen3 from '../screens/daddy/OnboardingScreen3';
+
+
 const Stack = createStackNavigator();
 
 const AuthNavigation = () => {
@@ -113,6 +117,10 @@ const AuthNavigation = () => {
       <Stack.Screen name="HomeScreen" component={HomeScreen} />
       <Stack.Screen name='CategoriesScreen' component={CategoriesScreen} />
       <Stack.Screen name='RestaurantsScreen' component={RestaurantsScreen} />
+
+      <Stack.Screen name='OnboardingScreen2' component={OnboardingScreen2} />
+      <Stack.Screen name='OnboardingScreen3' component={OnboardingScreen3} />
+
 
     </Stack.Navigator>
   );

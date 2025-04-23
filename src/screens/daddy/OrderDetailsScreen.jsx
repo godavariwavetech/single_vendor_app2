@@ -28,7 +28,8 @@ import {getOrderDetails, getOrders} from '../../redux/reducers/daddy';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import CustomModal from '../../components/CustomModal';
 import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
-import { getMessaging } from '@react-native-firebase/messaging';
+import {getMessaging} from '@react-native-firebase/messaging';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
@@ -41,6 +42,8 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showReviewDetails, setShowReviewDetails] = useState(false);
+  const [cancelSuccess,setCancelSuccess] = useState(false)
 
   const getOrderData = async () => {
     const response = await dispatch(
@@ -66,6 +69,17 @@ const OrderDetailsScreen = ({navigation, route}) => {
   }, [route.params?.orderDetails?.id]);
 
   useEffect(() => {
+    if (
+      orderDetails?.order_status === 3 &&
+      orderDetails?.order_rating_status !== '0'
+    ) {
+      setShowReviewDetails(true);
+      setRating(parseInt(orderDetails?.order_rating_status));
+      setComment(orderDetails?.rating_comment || '');
+    }
+  }, [orderDetails]);
+
+  useEffect(() => {
     fetchOrderItems();
   }, [orderDetails]);
 
@@ -86,7 +100,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const STATUS_MAP = {
     0: 'Order Placed',
     1: 'Order Accepted',
-    2: 'Preparing Your Order',
+    2: 'Order On The Way',
     3: 'Order Completed',
     4: 'Order Cancelled by You',
     5: 'Order Rejected by Restaurant',
@@ -164,7 +178,6 @@ const OrderDetailsScreen = ({navigation, route}) => {
         ? JSON.parse(deliveryBoys.replace(/'/g, '"'))
         : [];
 
-
     if (Array.isArray(deliveryBoys) && deliveryBoys.length > 0) {
       orderData.deliveryAgent.name =
         deliveryBoys[0]?.delivery_boy_name || 'N/A';
@@ -182,11 +195,12 @@ const OrderDetailsScreen = ({navigation, route}) => {
   }
 
   const handleCallDriver = () => {
-    Linking.openURL(`tel:${orderData.deliveryAgent.phone}`);
+    Linking.openURL(`tel:${orderData?.deliveryAgent.phone}`);
   };
 
   const handleCallRestaurant = () => {
-    Linking.openURL(`tel:${orderData.shop_phone_number}`);
+    console.log(orderDetails?.shop_phone_number,"+++++++++++++++++++>>>>NUM")
+    Linking.openURL(`tel:${orderDetails?.shop_phone_number}`);
   };
 
   const handleBackPress = () => {
@@ -217,13 +231,19 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const handleCancelOrder = async () => {
     try {
       await dispatch(cancelOrder({orderId: orderDetails.id}));
-      route.params?.fromOrderSuccess ? handleBackPress()  :navigation.goBack();
+      // route.params?.fromOrderSuccess ? handleBackPress() : navigation.goBack();
       setShowCancelModal(false);
+      setCancelSuccess(true)
     } catch (error) {
       Alert.alert('Error', 'Failed to cancel order');
       setShowCancelModal(false);
     }
   };
+
+  const handleCanceSuccess = () => {
+    route.params?.fromOrderSuccess? handleBackPress() : navigation.goBack(); 
+    setCancelSuccess(false)
+  }
 
   const handleSubmitReview = async () => {
     try {
@@ -240,22 +260,24 @@ const OrderDetailsScreen = ({navigation, route}) => {
         }),
       );
       setShowSuccessModal(true);
+      await getOrderData();
+      await fetchOrderItems();
     } catch (error) {
       Alert.alert('Error', 'Failed to submit review');
     }
   };
 
-  useEffect(()=>{
-    getMessaging().onMessage(async (remoteMessage) => {
-      onRefresh()
-    })
-  },[])
+  useEffect(() => {
+    getMessaging().onMessage(async remoteMessage => {
+      onRefresh();
+    });
+  }, []);
 
-  console.log("orderData.restaurant",orderDetails?.order_date)
+
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#065E2C" />
+      <StatusBar barStyle="light-content" backgroundColor={commonStyles.yellowColor} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -266,7 +288,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
               ? handleBackPress()
               : navigation.goBack()
           }>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
         </TouchableOpacity>
         <View>
           <Text style={styles.title}>Order Details</Text>
@@ -338,13 +360,14 @@ const OrderDetailsScreen = ({navigation, route}) => {
               {orderData.restaurant.name}
             </Text>
             <Text style={styles.orderTime}>
-              Ordered At:- {orderDetails?.order_date} {orderData.restaurant.orderTime}
+              Ordered At:- {orderDetails?.order_date}{' '}
+              {orderData.restaurant.orderTime}
             </Text>
           </View>
           <TouchableOpacity
             onPress={handleCallRestaurant}
             style={styles.callButton}>
-            <MaterialIcons name="call" size={24} color="#065E2C" />
+            <MaterialIcons name="call" size={23} color='#fff' style={styles.callIcon} />
           </TouchableOpacity>
         </View>
 
@@ -367,7 +390,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
         </View>
 
         {/* Delivery Agent */}
-        {orderDetails?.order_status >= 8 && (
+        {(orderDetails?.order_status >= 8 || orderDetails?.order_status==2) && (
           <View style={styles.agentContainer}>
             <View style={styles.agentHeader}>
               <Text style={styles.sectionTitle}>Delivery Agent</Text>
@@ -424,9 +447,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
           <Text style={styles.sectionTitle}>Delivery Details</Text>
           <View style={styles.addressCard}>
             <View style={styles.addressSection}>
-              {/* <MaterialIcons name="home" size={24} color="#666" /> */}
               <View style={styles.addressInfo}>
-                {/* <Text style={styles.addressType}>Home</Text> */}
                 <Text style={styles.addressText}>
                   {orderData.delivery.address}
                   {'\n'}
@@ -434,24 +455,6 @@ const OrderDetailsScreen = ({navigation, route}) => {
                 </Text>
               </View>
             </View>
-            {/* <View style={styles.dottedLineContainer}>
-              {Array(20)
-                .fill(0)
-                .map((_, index) => (
-                  <View key={index} style={styles.dot} />
-                ))}
-            </View> */}
-            {/* <View style={styles.contactSection}>
-              <MaterialIcons name="person" size={24} color="#666" />
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>
-                  {orderData.delivery.name}
-                </Text>
-                <Text style={styles.contactPhone}>
-                  {orderData.delivery.phone}
-                </Text>
-              </View>
-            </View> */}
           </View>
         </View>
 
@@ -513,7 +516,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
         </View>
 
         {/* Cancel button - only show for cancelable statuses */}
-        {orderDetails?.order_status === 0 && (
+        {(orderDetails?.order_status === 0) && (
           <View style={styles.actionButtonContainer}>
             <TouchableOpacity
               style={styles.cancelButton}
@@ -525,32 +528,60 @@ const OrderDetailsScreen = ({navigation, route}) => {
 
         {orderDetails?.order_status === 3 && (
           <View style={styles.reviewSection}>
-            <Text style={styles.sectionTitle}>Rate Your Experience</Text>
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map(star => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <FontAwesome5
-                    name="star"
-                    solid={star <= rating}
-                    size={30}
-                    color={star <= rating ? '#FFD700' : '#E0E0E0'}
-                  />
+            <Text style={styles.sectionTitle}>
+              {showReviewDetails ? 'Your Review' : 'Rate Your Experience'}
+            </Text>
+
+            {showReviewDetails ? (
+              <View style={styles.reviewContainer}>
+                <View style={styles.ratingStarsContainer}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <FontAwesome5
+                      key={star}
+                      name="star"
+                      solid={star <= rating}
+                      size={30}
+                      color={star <= rating ? '#FFD700' : '#E0E0E0'}
+                    />
+                  ))}
+                </View>
+                {comment && (
+                  <View style={styles.reviewCommentBox}>
+                    <Text style={styles.reviewCommentText}>{comment}</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <>
+                <View style={styles.ratingContainer}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() => setRating(star)}>
+                      <FontAwesome5
+                        name="star"
+                        solid={star <= rating}
+                        size={30}
+                        color={star <= rating ? '#FFD700' : '#E0E0E0'}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Write your review..."
+                  multiline
+                  numberOfLines={4}
+                  value={comment}
+                  onChangeText={setComment}
+                />
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSubmitReview}>
+                  <Text style={styles.submitButtonText}>Submit Review</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Write your review..."
-              multiline
-              numberOfLines={4}
-              value={comment}
-              onChangeText={setComment}
-            />
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSubmitReview}>
-              <Text style={styles.submitButtonText}>Submit Review</Text>
-            </TouchableOpacity>
+              </>
+            )}
           </View>
         )}
       </ScrollView>
@@ -584,6 +615,16 @@ const OrderDetailsScreen = ({navigation, route}) => {
         onConfirm={() => setShowRatingModal(false)}
         showCancel={false}
       />
+
+       <CustomModal
+        visible={cancelSuccess}
+        title="Order Cancelled"
+        message="Your order has been cancelled successfully."
+        confirmText="OK"
+        cancelText=""
+        onConfirm={handleCanceSuccess}
+        showCancel={false}
+      />
     </View>
   );
 };
@@ -594,7 +635,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -608,11 +649,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: '#000',
   },
   orderId: {
     fontSize: 12,
-    color: '#fff',
+    color: '#000',
     opacity: 0.8,
     marginTop: 4,
   },
@@ -680,7 +721,7 @@ const styles = StyleSheet.create({
   estimatedTimeValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
   },
   estimatedTimeLabel: {
     fontSize: 10,
@@ -706,7 +747,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   callAgentButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     padding: responsiveWidth(2),
     borderRadius: 20,
   },
@@ -746,7 +787,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 14,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
     fontWeight: '600',
     marginTop: 4,
   },
@@ -768,7 +809,7 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     borderWidth: 1,
-    borderColor: '#065E2C',
+    borderColor: commonStyles.btn2Color,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -776,7 +817,6 @@ const styles = StyleSheet.create({
   addressSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: responsiveHeight(2),
   },
   addressInfo: {
     flex: 1,
@@ -816,7 +856,7 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     borderWidth: 1,
-    borderColor: '#065E2C',
+    borderColor: commonStyles.btn2Color,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -847,7 +887,7 @@ const styles = StyleSheet.create({
   },
   couponCode: {
     fontSize: 12,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
     marginLeft: responsiveWidth(2),
     marginBottom: responsiveHeight(1),
   },
@@ -921,7 +961,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
@@ -939,6 +979,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF3CD',
     borderColor: '#FFC107',
   },
+  reviewCommentContainer: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  reviewCommentText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  ratingStarsContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  reviewCommentBox: {
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    marginBottom: 15,
+  },
+  reviewCommentText: {
+    fontSize: 16,
+    color: '#333333',
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  reviewSubmittedText: {
+    fontSize: 14,
+    color: commonStyles.btn2Color,
+    fontWeight: '600',
+  },
+  reviewContainer: {
+    // alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 10,
+    marginVertical: 15,
+  },
+  callIcon:{
+    backgroundColor:commonStyles.btn2Color,
+    padding:5,
+    borderRadius:30
+  }
 });
 
 export default OrderDetailsScreen;

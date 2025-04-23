@@ -1,4 +1,4 @@
-package com.localdaddy
+package com.foodtrial
 
 import android.app.Application
 import com.facebook.react.PackageList

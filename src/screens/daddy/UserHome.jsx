@@ -991,13 +991,13 @@ import {
   FlatList,
   StyleSheet,
   Platform,
-  PermissionsAndroid,
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import Octicons from 'react-native-vector-icons/Octicons';
 import {
+  responsiveFontSize,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import ReviewStar from './tabassets/ReviewStar';
@@ -1024,6 +1024,8 @@ import NetInfo from '@react-native-community/netinfo';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Skeleton from './Skeleton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import Permissions, { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import StarIcon from './svg/StarIcon';
 import commonStyles from '../../commonstyles/CommonStyles';
@@ -1039,9 +1041,8 @@ const popularFoods = [
 export default function UserHome({navigation}) {
   const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
     serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
-    const {customerId,locationName,orderOfferAmount} =
-    useSelector(state => state.Auth);
-    const {isNetworkConnected,onloadComponents} = useSelector(state => state.address);
+    const {locationName} = useSelector(state => state.Auth);
+  const {isNetworkConnected} = useSelector(state => state.address);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -1050,7 +1051,6 @@ export default function UserHome({navigation}) {
   const [searchQuery, setSearchQuery] = useState('');
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
   const [initialNetLoad, setInitialNetLoad] = useState(false);
@@ -1063,11 +1063,11 @@ useEffect(() => {
 }, [isNetworkConnected]);
 
   // Calculate isLoading from Redux loading states
-  let isLoading = (
+  const isLoading = (
     loading.addressCheck || 
     isLoadingLocation || 
     loading.categories || 
-    loading.banners
+    loading.banners 
   );
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
@@ -1121,6 +1121,7 @@ useEffect(() => {
       error => {
         console.error('Error getting location:', error);
         setIsLoadingLocation(false);
+        networkStatusRef.current && navigation.replace('ServicesAvailable', { permissionDenied: true });
       },
       {
         enableHighAccuracy: false,
@@ -1130,58 +1131,38 @@ useEffect(() => {
     );
   }, [dispatch, userAddress]);
 
+
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'ios') {
-      try {
-        const status = await Geolocation.requestAuthorization('whenInUse');
-        if (status !== 'granted') {
-          networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
-        } else {
-          getCurrentLocation();
-        }
-      } catch (err) {
-        networkStatusRef.current && navigation.replace('ServicesAvailable',{permissionDenied:true});
+    try {
+      let permission;
+      if (Platform.OS === 'ios') {
+        permission = PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
+      } else if (Platform.OS === 'android') {
+        permission = PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
       }
-    } else {
-      try {
-        const startTime = Date.now();
-        const testUrl = 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png';
-        
-        const response = await fetch(testUrl);
-        const blob = await response.blob();
-        
-        const endTime = Date.now();
-        const duration = (endTime - startTime) / 1000; // in seconds
-        const bitsLoaded = blob.size * 8;
-        const speedMbps = (bitsLoaded / (1024 * 1024)) / duration;
-        console.log("SPEED",speedMbps)
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'This app needs access to your location to provide delivery services.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
-        } else {
+      if (!permission) return;
+      const status = await check(permission);
+      if (status === RESULTS.GRANTED) {
+        getCurrentLocation();
+      } else {
+        const reqStatus = await request(permission);
+        if (reqStatus === RESULTS.GRANTED) {
           getCurrentLocation();
+        } else {
+          networkStatusRef.current && navigation.replace('ServicesAvailable', { permissionDenied: true });
         }
-      } catch (err) {
-        networkStatusRef.current && speedMbps > 0.05 && navigation.replace('ServicesAvailable',{permissionDenied:true});
       }
+    } catch (err) {
+      networkStatusRef.current && navigation.replace('ServicesAvailable', { permissionDenied: true });
     }
-  }, [getCurrentLocation, navigation,isNetworkConnected]);
+  }, [getCurrentLocation, navigation, isNetworkConnected]);
 
   const getCategoreis = async () => {
     try {
       setErrorOccured(false)
-      dispatch(getCategories());
-      dispatch(getSubCategories({categoryId: activeCategoryIndex}));
-      dispatch(getBanners());
+     dispatch(getCategories());
+     dispatch(getSubCategories({categoryId: activeCategoryIndex}));
+    dispatch(getBanners());
     if (!restaurants || restaurants.length === 0) {
       dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
       // dispatch(getRestaurants({categoryId: activeCategoryIndex}));
@@ -1323,31 +1304,28 @@ useEffect(() => {
     }
   };
 
-  const updateRestaurantsData = async () => {
-    setIsUpdating(true);
-    // await dispatch(getRestaurants({ categoryId: activeCategoryIndex }));
-    setIsUpdating(false);
-  };
+  // const updateRestaurantsData = async () => {
+  //   setIsUpdating(true);
+  //   // await dispatch(getRestaurants({ categoryId: activeCategoryIndex }));
+  //   setIsUpdating(false);
+  // };
 
-  useFocusEffect(
-    useCallback(() => {
-      updateRestaurantsData();
-    }, [activeCategoryIndex])
-  );
-
-  const updateOrderOfferAmount =  (amount) => {
-    dispatch(setOrderOfferAmount(amount));
-  };
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     updateRestaurantsData();
+  //   }, [activeCategoryIndex])
+  // );
 
   const handleBannerPress = (banner) => {
-    const item = homeRestaurnats.filter(item => item.shop_id === banner.shop_id);
-    if(item.length > 0){
-      navigation.navigate('RestaurantScreen', {
-        shopId: item.shop_id,
-        shopItem: item.shop_items_tb_nm,
-        item,
-      })
+    return
+    if(banner?.shop_id && banner?.shop_id!==0){
+     navigation.navigate('BannerRestaurantScreen', {
+       shopId: banner?.shop_id,
+       shopItem: banner?.item_id,
+       highlightItemId:0
+     });
     }
+
   };
 
   // Handle network connection changes
@@ -1376,10 +1354,6 @@ useEffect(() => {
     });
     return () => unsubscribe();
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
-
-
-  console.log("+++++++++++++++>>>>>>>>>>>>>>CATEGOIRIES",categories)
-
 
   return (
     <View style={styles.mainContainer}>
@@ -1412,7 +1386,7 @@ useEffect(() => {
           <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}>
             <View style={styles.headerContainer}>
               <View>
-                  <TouchableOpacity 
+                <TouchableOpacity 
                     onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress})} 
                     style={styles.locationContainer}
                   >
@@ -1420,15 +1394,18 @@ useEffect(() => {
                     <View>
                       <Text style={styles.locationTitle}>
                         {locationName ? ( locationName || 'Current Location') : 'Select Location'}
-                      </Text>
-                      <Text style={styles.locationAddress} numberOfLines={1}>
+                    </Text>
+                    <Text style={styles.locationAddress} numberOfLines={1}>
                         {selectedAddress?.full_address || 'Tap to choose delivery location'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('Support')} style={styles.supportButton}>
-                <Icon name="support-agent" size={30} color="grey" />
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Notifications')} 
+                style={styles.supportButton}
+              >
+                <FontAwesome6 name="bell" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -1529,7 +1506,7 @@ useEffect(() => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={[commonStyles.btnColor]}
+                colors={[commonStyles.btn2Color]}
               />
             }
             style={styles.container}
@@ -1627,7 +1604,7 @@ useEffect(() => {
             {activeCategoryIndex === 1 ? (
               <View>
                 <Text style={styles.sectionTitle}>Restaurants Near You</Text>
-                
+
                 {homeRestaurnats?.length > 0 ? (
                   <FlatList
                     showsVerticalScrollIndicator={false}
@@ -1638,14 +1615,14 @@ useEffect(() => {
                       const distance = item.distance;
                       
                       return (
-                        <TouchableOpacity
+                      <TouchableOpacity
                           style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
                           onPress={() => {
                             if (!isUnavailable) {
-                              navigation.navigate('RestaurantScreen', {
-                                shopId: item.shop_id,
-                                shopItem: item.shop_items_tb_nm,
-                                item,
+                          navigation.navigate('RestaurantScreen', {
+                            shopId: item.shop_id,
+                            shopItem: item.shop_items_tb_nm,
+                            item,
                               });
                             }
                           }}
@@ -1657,8 +1634,8 @@ useEffect(() => {
                             </View>
                           )}
                           
-                          <Image
-                            source={{uri: item.shop_image}}
+                        <Image
+                          source={{uri: item.shop_image}}
                             style={[styles.restaurantImage, isUnavailable && styles.grayImage]}
                           />
                           <View style={styles.restaurantInfo}>
@@ -1675,26 +1652,26 @@ useEffect(() => {
                                 <Text style={styles.statText}>{item.shop_rating}</Text>
                               </View>
 
-                              {/* <View style={styles.statItem}>
-                                <DeliveryVehicle />
-                                <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
-                              </View> */}
-
-                              <View style={styles.statItem}>
-                                <Clock />
-                                <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
-                              </View>
+                            <View style={styles.statItem}>
+                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.7)} color={"#065E2C"} />
+                              <Text style={styles.statText}>{item?.distance?.toFixed(2)}</Text>
+                            </View>
+                           
+                            <View style={styles.statItem}>
+                              <Clock />
+                              <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
                             </View>
                           </View>
-                        </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
                       );
                     }}
                   />
-                ) : (
+            ) : (
                   <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>No restaurants found in your area</Text>
-                  </View>
-                )}
+                </View>
+            )}
               </View>
             ) : <ShopSection shops={restaurants} />
             }
@@ -1755,8 +1732,8 @@ const styles = StyleSheet.create({
   supportButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#fff',
-    borderRadius: 50,
+    backgroundColor: '#065E2C20',
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1891,7 +1868,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 15,
-    paddingBottom: 20,
   },
   categoryText: {
     marginLeft: 10,
@@ -1932,17 +1908,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
     borderRadius: 15,
   },
   unavailableText: {
-    color: '#ff4444',
+    color: '#D9534F',
     fontWeight: '700',
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: 12,
   },
   offlineContainer: {
     flex: 1,
@@ -2024,6 +2002,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  unavailableRestaurant: {
+    opacity: 0.7,
+  },
+  unavailableImage: {
+    opacity: 0.5,
+  },
+  unavailableIcon: {
+    marginBottom: 8,
+  },
+  patternOverlay: {
+    position: 'absolute',
+    width: '200%',
+    height: '200%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    transform: [{ rotate: '-45deg' }],
+    zIndex: -1,
   },
 
   popularCard: { width:212,height:277,borderRadius: 8, marginRight: 16,

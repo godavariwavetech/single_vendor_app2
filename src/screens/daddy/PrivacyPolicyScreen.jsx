@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const PrivacyPolicyScreen = () => {
   const navigation = useNavigation();
@@ -11,7 +12,7 @@ const PrivacyPolicyScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <AntDesign name="arrowleft" size={24} color="white" />
+          <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
@@ -79,8 +80,13 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subtitle}>8. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For questions about this policy:{"\n"}
-          Email: localdaddyweb@gmail.com{"\n"}
-          Phone: 80747 09926
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:localdaddyweb@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: localdaddyweb@gmail.com</Text>
+          </TouchableOpacity>{"\n"}
+          <TouchableOpacity onPress={() => Linking.openURL('tel:8074709926')}>
+            <Text style={[styles.link, styles.bold]}>Phone: 80747 09926</Text>
+          </TouchableOpacity>{"\n"}
+          <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text>
         </Text>
       </ScrollView>
     </View>
@@ -94,7 +100,7 @@ const styles = StyleSheet.create({
     paddingBottom:20
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -105,7 +111,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(7),
   },
   title: {
-    color: '#fff',
+    color: '#000',
     fontSize: 20,
     fontWeight: '700',
     marginLeft: 10,
@@ -120,7 +126,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
-    color: '#065E2C'
+    color: commonStyles.btn2Color
   },
   subsectionTitle: {
     fontSize: 16,
@@ -137,6 +143,10 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: '700',
     color: '#000'
+  },
+  link: {
+    color: commonStyles.btn2Color,
+    textDecorationLine: 'underline',
   }
 });
 

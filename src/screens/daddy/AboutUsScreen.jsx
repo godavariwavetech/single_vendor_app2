@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const AboutUsScreen = () => {
   const navigation = useNavigation();
@@ -12,7 +13,7 @@ const AboutUsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>About Us</Text>
       </View>
@@ -24,32 +25,32 @@ const AboutUsScreen = () => {
         <Text style={styles.sectionTitle}>Why Choose Local Daddy?</Text>
         
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Wide Variety of Categories – Explore diverse cuisines from street food to fine dining</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Restaurant Ratings & Reviews – Make informed decisions with honest feedback</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Seamless Cart & Checkout – Intuitive ordering experience</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Fast & Reliable Delivery – Food arrives hot and fresh</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Secure Payments – Multiple safe payment options</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color="#065E2C" />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
           <Text style={styles.featureText}>Real-Time Order Tracking – Follow your order from restaurant to doorstep</Text>
         </View>
 
@@ -67,12 +68,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5)
+    paddingLeft: responsiveWidth(5),
+    gap:6
   },
   backButton: {
     width: responsiveWidth(7)
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#fff',
+    color: '#000',
     textAlign: "left" 
   },
   sectionTitle: {
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 20,
     marginBottom: 15,
-    color: '#065E2C'
+    color: commonStyles.btn2Color
   },
   content: {
     fontSize: 14,

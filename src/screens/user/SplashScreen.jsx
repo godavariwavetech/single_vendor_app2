@@ -4,6 +4,8 @@ import {  useDispatch, useSelector } from 'react-redux'
 import { setInitial } from '../../redux/reducers/auth'
 // import SplashScreenImg from './svgs/SplashScreenImg'
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
+import commonStyles from '../../commonstyles/CommonStyles'
+import { translate } from '../../config/i18n'
 
 const SplashScreen = ({navigation}) => {
     const {token} = useSelector((state) => state.Auth);
@@ -23,10 +25,16 @@ const SplashScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-         <StatusBar backgroundColor={'#065E2C'}  />
-        <View style={styles.imgContainer}>
-            <Image source={require('../daddy/tabassets/Splash.png')} style={{flex:1,width:responsiveWidth(100),height:responsiveHeight(100)}} />
+         <StatusBar backgroundColor={'transparent'} translucent barStyle={'dark-content'}  />
+        {/* <View style={styles.imgWrapper}> */}
+            <Image source={require('../daddy/tabassets/SplashFoodTrial.png')} style={[{flex:1,width:responsiveWidth(100),height:responsiveHeight(100)}]} />
             {/* <SplashScreenImg /> */}
+        {/* </View> */}
+          {/* <Image source={require('../daddy/svg/foodTrialLogo2.png')} style={styles.logo} />           */}
+          <View style={styles.logoWrapper}>
+  <Image source={require('../daddy/svg/foodTrialLogo2.png')} style={styles.logo} />
+</View>
+        <View>
         </View>
     </SafeAreaView>
   )
@@ -37,14 +45,44 @@ export default SplashScreen
 const styles = StyleSheet.create({
     container:{
         flex:1,
-        backgroundColor:'#065E2C',
+        backgroundColor:'#fff',
+        position:'relative'
+
     },
     imgContainer:{
         flex:1,
         alignItems:'center',
         justifyContent:'center'
     },
-    text1:{
-
+    imgWrapper:{
+      position:'relative'
+    },
+    logo:{
+      position:"absolute",
+      top:'50%',
+      left:'50%',
+      // transform:translate('-50%','-50%')
+      transform: [
+        { translateX: -50 }, // Replace 50 with half the image width
+        { translateY: -50 }  // Replace 50 with half the image height
+      ],
+      width: 200,
+      height: 200,
+      //marginLeft: -50, // negative half of width
+      //marginTop: -50, // negative half of height
+    },
+    logoWrapper: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logo: {
+      width: 250,
+      height: 250,
     }
+    
 })

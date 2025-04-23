@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const TermsConditionsScreen = () => {
   const navigation = useNavigation();
@@ -11,7 +12,7 @@ const TermsConditionsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Terms and Conditions</Text>
       </View>
@@ -125,8 +126,13 @@ const TermsConditionsScreen = () => {
         <Text style={styles.sectionTitle}>13. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For any queries or concerns regarding these Terms:{"\n"}
-          Email: localdaddyweb@gmail.com{"\n"}
-          Phone: 80747 09926
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:localdaddyweb@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: localdaddyweb@gmail.com</Text>
+          </TouchableOpacity>{"\n"}
+          <TouchableOpacity onPress={() => Linking.openURL('tel:8074709926')}>
+            <Text style={[styles.link, styles.bold]}>Phone: 80747 09926</Text>
+          </TouchableOpacity>{"\n"}
+          <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text>
         </Text>
       </ScrollView>
     </View>
@@ -140,12 +146,13 @@ const styles = StyleSheet.create({
     paddingBottom:20
   },
   header: { 
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5)
+    paddingLeft: responsiveWidth(5),
+    gap:6
   },
   backButton: {
     width: responsiveWidth(7)
@@ -153,7 +160,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#fff',
+    color: '#000',
     textAlign: "left" 
   },
   effectiveDate: {
@@ -182,6 +189,14 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E0E0E0',
     marginVertical: 15
+  },
+  bold: {
+    fontWeight: '700',
+    color: '#000'
+  },
+  link: {
+    color: '#065E2C',
+    textDecorationLine: 'underline',
   }
 });
 

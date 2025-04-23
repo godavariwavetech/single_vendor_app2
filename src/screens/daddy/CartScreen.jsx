@@ -14,7 +14,6 @@ import {
   Modal,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useDispatch, useSelector} from 'react-redux';
@@ -24,10 +23,10 @@ import {
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import LinearGradient from 'react-native-linear-gradient';
-import CategoryInactive from './tabassets/CategoryInactive';
 import CartInactive from './tabassets/CartInactive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const CartScreen = ({navigation,route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -53,14 +52,6 @@ const CartScreen = ({navigation,route}) => {
     globalSearchResults?.some(result => result.item_name === item.item_name) ||
     item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleCheckout = () => {
-    if (!customerId) {
-      setShowLoginModal(true);
-      return;
-    }
-    navigation.navigate('Checkout');
-  };
 
   const handleAddToCart = (item) => {
     dispatch(addToCart(item));
@@ -103,8 +94,8 @@ const CartScreen = ({navigation,route}) => {
   };
 
   const renderCartItem = ({item}) => {
-    const eachPrice =
-      Number(item.selling_price||item.actualitem_price) * Number(item.quantity);
+    const eachPrice = Number(item.selling_price) * Number(item.quantity);
+    
     return (
       <View>
         <View style={styles.cartItem}>
@@ -115,16 +106,18 @@ const CartScreen = ({navigation,route}) => {
           <View style={styles.itemDetails}>
             <HeaderPick2 />
             <Text style={styles.foodName}>{item.item_name}</Text>
-            <Text style={styles.foodPrice}>
-              ₹ {item.selling_price||item.actualitem_price}
-            </Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
+              <Text style={styles.sellingPrice}>₹{item.selling_price}</Text>
+           
+            </View>
           </View>
           <View>
             <View style={styles.quantityContainer}>
               <TouchableOpacity
                 onPress={() => handleRemoveFromCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="minus" size={16} color="#065E2C" />
+                <AntDesign name="minus" size={16} color={commonStyles.btn2Color} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>
                 {item.quantity}
@@ -132,7 +125,7 @@ const CartScreen = ({navigation,route}) => {
               <TouchableOpacity
                 onPress={() => handleAddToCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="plus" size={16} color="#065E2C" />
+                <AntDesign name="plus" size={16} color={commonStyles.btn2Color} />
               </TouchableOpacity>
             </View>
             <Text style={styles.itemTotalPrice}>₹ {eachPrice}</Text>
@@ -154,12 +147,12 @@ const CartScreen = ({navigation,route}) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-      <StatusBar backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar backgroundColor="transparent" barStyle="dark-content" />
       {route.params?.isFromRestaurant ? (
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <TouchableOpacity onPress={()=>navigation.goBack()}>
-              <AntDesign name="arrowleft" size={24} color="white" />
+              <AntDesign name="arrowleft" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Cart</Text>
           </View>
@@ -169,10 +162,10 @@ const CartScreen = ({navigation,route}) => {
         </View>
       ) : (
         <LinearGradient
-          colors={['#065E2C', '#F7F2F2']}
+          colors={['#FD0', '#F7F2F2']}
           style={styles.gradientContainer}>
           <View style={styles.headerContainer}>
-            <CartInactive color="#fff" />
+            <CartInactive color="#000" />
             <Text style={styles.headerTitle}>Your Cart</Text>
           </View>
           <View style={styles.searchContainer}>
@@ -284,19 +277,20 @@ const CartScreen = ({navigation,route}) => {
   );
 };
 
+// Add these new styles to your StyleSheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.yellowColor,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(5),
-    paddingTop: responsiveHeight(6),
-    paddingBottom: responsiveHeight(2),
+    paddingTop: responsiveHeight(5),
+    paddingBottom: responsiveHeight(3),
   },
   headerTop: {
     flexDirection: 'row',
@@ -331,9 +325,9 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
   exploreButton: {
-    backgroundColor: '#065E2C',
-    width: responsiveWidth(80),
-    paddingVertical: responsiveHeight(2),
+    backgroundColor: commonStyles.btn2Color,
+    width: responsiveWidth(85),
+    paddingVertical: responsiveHeight(1.7),
     borderRadius: 8,
     marginTop: responsiveHeight(2),
     alignItems: 'center',
@@ -380,7 +374,7 @@ const styles = StyleSheet.create({
   },
   totalPrice: {
     fontSize: 18,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
     fontWeight: '700',
   },
   gradientContainer: {
@@ -394,16 +388,16 @@ const styles = StyleSheet.create({
     marginLeft: responsiveWidth(5),
   },
   headerTitle: {
-    color: '#fff',
+    color: '#000',
     fontSize: 20,
     fontWeight: '700',
   },
   searchContainer: {
     marginHorizontal: responsiveWidth(5),
-    marginTop: responsiveHeight(2),
+    marginTop: responsiveHeight(3),
     marginBottom: responsiveHeight(1),
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 10,
     padding: 5,
     height: 48,
   },
@@ -453,14 +447,14 @@ const styles = StyleSheet.create({
   },
   foodPrice: {
     fontSize: 16,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
     fontWeight: '700',
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#065E2C',
+    borderColor: commonStyles.btn2Color,
     borderRadius: 6,
   },
   quantityButton: {
@@ -470,7 +464,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: 5,
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
   },
   addMoreContainer: {},
   addMoreText: {
@@ -491,8 +485,8 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   addressButton: {
-    backgroundColor: '#065E2C',
-    height: 35,
+    backgroundColor: commonStyles.btn2Color,
+    height: 42,
     paddingHorizontal: 20,
     borderRadius: 8,
     width: '100%',
@@ -598,6 +592,22 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     color: '#A3A3A3',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actualPrice: {
+    fontSize: 14,
+    color: 'red',
+    textDecorationLine: 'line-through',
+  },
+  sellingPrice: {
+    fontSize: 16,
+    color: commonStyles.btn2Color,
+    fontWeight: '700',
+    textAlign:"left"
   },
 });
 
