@@ -13,7 +13,6 @@ import {
   PanResponder,
   ActivityIndicator,
   Modal,
-  LayoutAnimation,
 } from 'react-native';
 import {
   responsiveFontSize,
@@ -34,7 +33,9 @@ import {
   setCartRestaurant,
 } from '../../redux/reducers/daddy';
 import {setRestaurnatDetails} from '../../redux/reducers/auth';
-import {globalSearch, indiviadualShop} from '../../redux/reducers/addressSlice';
+import {indiviadualShop} from '../../redux/reducers/addressSlice';
+import { getSingleShopDetails } from '../../redux/reducers/search';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const BannerRestaurantScreen = ({navigation, route}) => {
   const [translateY] = useState(new Animated.Value(100));
@@ -60,19 +61,25 @@ const BannerRestaurantScreen = ({navigation, route}) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [restaurantData, setRestaurantData] = useState(null);
-  const {location, locationId} = useSelector(state => state.Auth);
+  const {location} = useSelector(state => state.Auth);
   // const [bottomGap,setBottomGap] = useState(0)
   const bottomGap = new Animated.Value(0);
   const flatListRef = useRef(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+console.log(route.params,"+++++++++++++++PRARAMD")
+
 
   const fetchRestaurantData = async () => {
+    if(route?.params?.fromSearch) {
+      if (!route?.params?.id) return;
+      const response = await dispatch(getSingleShopDetails({shopId: route?.params?.id}));
+      setRestaurantData(response?.payload.data[0])
+      return
+    }
     if (!route?.params?.shopId) return;
-    const response = await dispatch(
-      indiviadualShop({shopId: route?.params?.shopId}),
-    );
+    const response = await dispatch(indiviadualShop({shopId: route?.params?.shopId}));
     setRestaurantData(response.payload.data[0][0]);
   };
 
@@ -110,20 +117,21 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }
   };
 
-  const handleFilter = selected => {
+  const handleFilter = (selected) => {
     if (selected.type === 'subcategory') {
-      setActiveSubCategoryFilter(
-        selected.filter_name === 'All' ? 'All' : selected.filter_name,
-      );
+      setActiveSubCategoryFilter(selected.filter_name === 'All' ? 'All' : selected.filter_name);
     } else {
-      if (selected.filter_name === 'All') {
-        setActiveFilters(['All']);
-        return;
-      }
-      const newFilters = activeFilters.includes(selected.filter_name)
-        ? activeFilters.filter(f => f !== selected.filter_name)
-        : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
-      setActiveFilters(newFilters);
+
+
+    setActiveFilters([selected.filter_name]);
+      // if (selected.filter_name === 'All') {
+      //   setActiveFilters(['All']);
+      //   return;
+      // }
+      // const newFilters = activeFilters.includes(selected.filter_name) 
+      //   ? activeFilters.filter(f => f !== selected.filter_name)
+      //   : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
+      // setActiveFilters(newFilters);
     }
   };
 
@@ -163,13 +171,13 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     // Scroll to item
     const index = filteredData.findIndex(item => item.id === itemId);
     if (index !== -1 && flatListRef.current) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index,
-          viewOffset: 100,
-          animated: true,
-        });
-      }, 500); // Delay to allow toast animation
+      // setTimeout(() => {
+      //   flatListRef.current?.scrollToIndex({
+      //     index,
+      //     viewOffset: 100,
+      //     animated: true,
+      //   });
+      // }, 500); // Delay to allow toast animation
     }
 
     Animated.timing(toastAnim, {
@@ -237,6 +245,8 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     setSelectedItem(null);
   };
 
+  console.log(translateY,"+++++translateY")
+
   const startAnim = () => {
     Animated.parallel([
       Animated.timing(translateY, {
@@ -295,7 +305,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }),
   ).current;
 
-  console.log(translateY, '+++++++++++++++++TRSNAANANNAANAN');
 
   const handleDraggableMenuAction = subCategory => {
     if (subCategory.sub_category_name === 'All') {
@@ -310,6 +319,14 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     }
     setDraggableMenuVisible(false);
   };
+
+  const getShopDetails = async () => {
+    try {
+      dispatch(getSingleShopDetails({shopId: route?.params?.shopId}));
+    } catch (error) {
+      console.error('Error fetching shop details:', error);
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -397,14 +414,22 @@ const BannerRestaurantScreen = ({navigation, route}) => {
             </View>
           </View>
 
-          <View style={styles.itemRatingContainer}>
+          {/* <View style={styles.itemRatingContainer}>
             <Icon name="star" size={17} color="#D0A50F" />
             <Text style={styles.itemRating}>4.7</Text>
             <Text style={styles.itemReviewCount}>(12)</Text>
-          </View>
+          </View> */}
 
           <View style={styles.itemFooter}>
-            <Text style={styles.price}>₹{item.selling_price}</Text>
+          <View>
+            <View style={{flexDirection: 'row',justifyContent:"flex-start"}}>
+              {item.actual_price !== item.selling_price && (
+                <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:10,textAlign:"left"}]}>₹{item.actual_price}</Text>
+              )}
+              </View>
+
+              <Text style={styles.price}>₹{item.selling_price}</Text>
+            </View>
             {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
               <View style={styles.counterContainer}>
                 <TouchableOpacity onPress={() => decreaseItem(item)}>
@@ -578,7 +603,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
         )}
       </Animated.View>
 
-      {true && (
         <Animated.View style={styles.cartSummary(translateY)}>
           <TouchableOpacity
             onPress={() =>
@@ -590,7 +614,6 @@ const BannerRestaurantScreen = ({navigation, route}) => {
             </Text>
           </TouchableOpacity>
         </Animated.View>
-      )}
 
       <Modal
         visible={showReplaceModal}
@@ -798,6 +821,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#000',
     marginRight: 5,
+    height:responsiveHeight(4)
   },
   itemIcon: {
     marginTop: 3,
@@ -1016,7 +1040,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
   },
   cancelButtonText: {
     color: '#666',

@@ -25,10 +25,6 @@ const ServiceUnavailableScreen = () => {
 
       <View style={styles.content}>
         <MaterialIcons name="location-off" size={responsiveFontSize(25)} color="#666" />
-        {/* <Image
-          source={{ uri: 'https://raw.githubusercontent.com/Adarsh-arya/local_daddy_images/main/no_service.png' }}
-          style={styles.image}
-        /> */}
         <Text style={styles.titleText}>Service Not Available</Text>
         <Text style={styles.messageText}>
           We're currently not serving in your area. Please choose from our available service locations.

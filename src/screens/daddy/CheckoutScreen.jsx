@@ -30,7 +30,6 @@ import {
 } from '../../redux/reducers/daddy';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import RazorpayCheckout from 'react-native-razorpay';
 import {getChargesList} from '../../redux/reducers/addressSlice';
 import {haversineDistance} from './distanceCalculator';
 import { removeCoupon } from '../../redux/reducers/coupons';
@@ -282,46 +281,14 @@ const CheckoutScreen = ({navigation, route}) => {
         })),
       };
 
-      if (selectedPaymentMethod === 'COD') {
+
+      console.log(payload,"+++++++++++++++++++++++>>>>>>>>>>>>>>payload")
+
+
        const responseCod = await dispatch(placeOrder({orderDetails: payload}));
+       console.log("+++++++++++++++++>>>>>>>>>>>>>>>>>>>>>>>>PPPPPPOPOO",responseCod)
         navigation.replace('OrderSuccess', {response: responseCod.payload});
         return;
-      }
-
-      payload.order_status=7;
-      const pacedResponse=await dispatch(placeOrder({orderDetails: payload}));
-
-      if(!pacedResponse.payload) return
-        const orderIdResponse=await dispatch(generateOrderId({orderAmount: Number(grandTotal)*100}));
-      const options = {
-        description: 'Order Payment',
-        image: '',
-        currency: 'INR',
-        key: 'rzp_test_QNQ6xyfpco3YGe',
-        order_id:orderIdResponse.payload.id,
-        amount: Number(grandTotal)*100,
-        name: 'Food Trial',
-        prefill: {
-          // email: "test@gmail.com",
-          contact: selectedAddress?.customer_mobile_number,
-          name: selectedAddress?.customer_name,
-        },
-        theme: {color: commonStyles.btn2Color},
-      };
-
-      RazorpayCheckout.open(options)
-        .then(async data => {
-          console.log("response from razorpay",data)
-          payload.payment_id=data.razorpay_payment_id;
-          payload.razorpay_order_id=data.razorpay_payment_id;
-          payload.order_status=0;
-          const updateOrderStatusResponse=await dispatch(updateOrderStatus({paymentId:data.razorpay_payment_id,rzpId:data.razorpay_order_id,orderId:pacedResponse.payload.id}))
-          console.log("responselkmksdfkljas",updateOrderStatusResponse)
-          navigation.replace('OrderSuccess', {response: pacedResponse.payload});
-        })
-        .catch(error => {
-          console.error('Payment error:', error);
-        });
     } catch (error) {
       console.error('Payment error:', error);
     } finally {

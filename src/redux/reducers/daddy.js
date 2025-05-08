@@ -135,6 +135,7 @@ export const getSubCategories = createAsyncThunk(
             "category_id": categoryId,
             "location_id": locationId  
         }
+        console.log(">>>>>>>>>>>>>>>>>>>>>>IDDD",data)
         const response = await api.post(endpoints.GET_SUB_CATEGORIES,data);
         if (response) {
             if (response.data) {
@@ -246,6 +247,7 @@ export const getOrders = createAsyncThunk(
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
     const {customerId} = getState().Auth;
+    console.log(customerId,"+++++++++++++++++CUSTOMERID")
       const response = await api.post(endpoints.GET_ORDERS,{
        "customer_id": customerId,
        "order_id":orderId

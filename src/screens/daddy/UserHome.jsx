@@ -47,14 +47,8 @@ import Permissions, { PERMISSIONS, RESULTS, check, request } from 'react-native-
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import StarIcon from './svg/StarIcon';
 import commonStyles from '../../commonstyles/CommonStyles';
-
-const popularFoods = [
-  { id: '1', title: 'Star Biryani Darbar', rating: 4.8,image:'https://media.istockphoto.com/id/495188382/photo/indian-pulav-vegetable-rice-veg-biryani-basmati-rice.jpg?s=612x612&w=0&k=20&c=KQUBQt3PY-9IF31C0gvjrLFb9jZvp5mmLG6Vcxe1e7Q=' ,time:'30 mins'},
-  { id: '2', title: 'Southern Spice', rating: 4.7, image: 'https://media.istockphoto.com/id/504339251/photo/vege-rice.jpg?s=612x612&w=0&k=20&c=TMFfcFAoCuuwFgrRO-U7uyvz-wuDhPurmdd4YdK7EYU=',time:'30 mins' },
-  { id: '3', title: 'Big Bucket', rating: 4.6, image: 'https://media.istockphoto.com/id/501137061/photo/chicken-biryani-1-4.jpg?s=612x612&w=0&k=20&c=4YH3uPuv2iNyNTemn5bTxCyst608o3WDZNyATnibDsg=',time:'30 mins' },
-  { id: '4', title: 'Sri kanya', rating: 4.5, image: 'https://media.istockphoto.com/id/534334870/photo/egg-biryani-or-anda-biryani-using-basmati-rice-and-spices.jpg?s=612x612&w=0&k=20&c=hkqGYJNjMnaRKIfrd8od4rx9J5Rskmoex_Clfpda4TM=',time:'30 mins' },
-  { id: '5', title: 'Kritinga', rating: 4.4, image: 'https://media.istockphoto.com/id/1424507202/photo/chicken-dum-biriyani-served-in-copper-handi-or-bowl-with-onion-raita.jpg?s=612x612&w=0&k=20&c=NqYk3aexTrCaGdnjybSA26eFRiA41oDdi8yTryAHacU=',time:'30 mins' },
-];
+import { colors } from '../../config/theme';
+import { indiviadualShop } from '../../redux/reducers/addressSlice';
 
 export default function UserHome({navigation}) {
   const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
@@ -257,6 +251,7 @@ useEffect(() => {
     setRefreshing(true);
     getCategoreis();
     setRefreshing(false);
+    dispatch(setActiveCategoryIndex(1));
   }, []);
 
   const handleSearch = (text) => {
@@ -334,8 +329,13 @@ useEffect(() => {
   //   }, [activeCategoryIndex])
   // );
 
-  const handleBannerPress = (banner) => {
-    return
+  // console.log(banners,"+++++++++++++++>>>>>>>BANNERS")
+
+  const handleBannerPress = async (banner) => {
+   const resp = await dispatch(indiviadualShop({shopId:banner?.shop_id}))
+   console.log("respon>>>>>>>>>>>>>>>>>",resp.payload.data[0])
+    // return
+    if(!resp.payload.data[0] || resp.payload.data[0]<=0) return
     if(banner?.shop_id && banner?.shop_id!==0){
      navigation.navigate('BannerRestaurantScreen', {
        shopId: banner?.shop_id,
@@ -373,7 +373,6 @@ useEffect(() => {
     return () => unsubscribe();
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
 
-
 const popularRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) >= 4.5);
 const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) < 4.5);
 
@@ -385,13 +384,13 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
           <Skeleton/>
       ) : !isNetworkConnected && !categories ? (
         <View style={styles.offlineContainer}>
-          <MaterialCommunityIcons name="wifi-off" size={40} color="#666" />
+          <MaterialCommunityIcons name="wifi-off" size={40} color={colors.gray} />
           <Text style={styles.offlineText}>No internet connection available</Text>
           <Text style={styles.offlineSubText}>Please check your network settings</Text>
         </View>
       ) : serviceCheckFailed && !isLoading ? (
         <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={40} color="#FF4444" />
+          <MaterialIcons name="error-outline" size={40} color={colors.red} />
           <Text style={styles.errorText}>Network Error</Text>
           <Text style={styles.errorSubText}>Failed to connect to the server</Text>
           <TouchableOpacity
@@ -427,21 +426,21 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
                 onPress={() => navigation.navigate('Notifications')} 
                 style={styles.supportButton}
               >
-                <FontAwesome6 name="bell" size={20} color="#fff" />
+                <FontAwesome6 name="bell" size={20} color={colors.white} />
               </TouchableOpacity>
             </View>
 
               <>
                 <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen',{isFromHome:true})} style={styles.searchContainer}>
                   <TextInput
-                    placeholderTextColor={'#666666'}
+                    placeholderTextColor={colors.gray}
                     placeholder="Search for your favorites"
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={handleSearch}
                     editable={false}
                   />
-                  <Icon name="search" size={24} color="gray" />
+                  <Icon name="search" size={24} color={colors.gray} />
                 </TouchableOpacity>
 
                 { categories && (
@@ -457,7 +456,7 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
                           style={styles.activeItemTab}
                           colors={[
                             'rgba(255, 204, 0, 0.5)',
-                            'rgba(255, 255, 255, 0.5)',
+                            colors.transparentWhite,
                           ]}>
                           <TouchableOpacity
                             style={styles.activeItemTab}
@@ -696,8 +695,8 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
                               </View>
 
                             <View style={styles.statItem}>
-                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.7)} color={"#065E2C"} />
-                              <Text style={styles.statText}>{item?.distance?.toFixed(2)}</Text>
+                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.5)} color={"#065E2C"} />
+                              <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
                             </View>
                            
                             <View style={styles.statItem}>
@@ -744,8 +743,13 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+    paddingBottom: 10,
   },
   gradientContainer: {
     paddingTop: 40,
@@ -775,14 +779,14 @@ const styles = StyleSheet.create({
   supportButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#065E2C20',
+    backgroundColor: colors.yellow,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchContainer: {
     marginTop: 15,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
@@ -795,6 +799,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
     flex: 1,
+    color: colors.black,
+    // fontSize: responsiveFontSize(2),
+    // paddingVertical: 6,
+    // paddingHorizontal: 8,
   },
   categoriesList: {
     marginTop: 20,
@@ -818,14 +826,14 @@ const styles = StyleSheet.create({
   inactiveCategoryText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#525252',
+    color: colors.gray,
   },
   subCategoryShadow: {
     marginHorizontal: 5,
     marginVertical: 10,
   },
   subCategoryButton: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
@@ -1022,6 +1030,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.white,
   },
   errorText: {
     fontSize: 20,

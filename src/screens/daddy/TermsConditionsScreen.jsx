@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const TermsConditionsScreen = () => {
   const navigation = useNavigation();
@@ -19,15 +20,15 @@ const TermsConditionsScreen = () => {
       <ScrollView style={{padding: 20}}>
         <Text style={styles.effectiveDate}>Last Updated: 4/3/2025</Text>
         <Text style={styles.content}>
-          Welcome to Food Trial! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Food Trial, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
+          Welcome to Food Trail! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Food Trail, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>1. Definitions</Text>
         <Text style={styles.content}>
-          <Text style={styles.subsectionTitle}>• "Food Trial"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
-          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Food Trial.{"\n"}
+          <Text style={styles.subsectionTitle}>• "Food Trail"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
+          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Food Trail.{"\n"}
           <Text style={styles.subsectionTitle}>• "Restaurant Partner"</Text> refers to the restaurants listed on our platform.{"\n"}
           <Text style={styles.subsectionTitle}>• "Delivery Partner"</Text> refers to the individuals responsible for delivering orders.
         </Text>
@@ -36,14 +37,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>2. Eligibility</Text>
         <Text style={styles.content}>
-          You must be at least 18 years old to use Food Trial. By accessing our platform, you represent that you meet this requirement.
+          You must be at least 18 years old to use Food Trail. By accessing our platform, you represent that you meet this requirement.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>3. Use of Services</Text>
         <Text style={styles.content}>
-          • You agree to use Food Trial for lawful purposes only.{"\n"}
+          • You agree to use Food Trail for lawful purposes only.{"\n"}
           • You shall not engage in fraudulent activities, abuse promotions, or interfere with the platform's functionality.{"\n"}
           • We reserve the right to suspend or terminate your account if we detect suspicious activity.
         </Text>
@@ -52,9 +53,9 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>4. Orders and Payments</Text>
         <Text style={styles.content}>
-          • Orders placed through Food Trial are subject to restaurant availability.{"\n"}
+          • Orders placed through Food Trail are subject to restaurant availability.{"\n"}
           • Prices listed on the platform may change at any time.{"\n"}
-          • Payments must be made through the available payment methods. Food Trial is not responsible for payment failures due to banking issues.{"\n"}
+          • Payments must be made through the available payment methods. Food Trail is not responsible for payment failures due to banking issues.{"\n"}
           • Orders cannot be canceled once confirmed, unless explicitly allowed by the restaurant.
         </Text>
 
@@ -64,7 +65,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Estimated delivery times are approximate and may vary due to factors such as traffic, weather, or restaurant preparation time.{"\n"}
           • If an order cannot be delivered due to incorrect address details, the user may still be charged.{"\n"}
-          • Food Trial is not liable for delays caused by third-party service providers.
+          • Food Trail is not liable for delays caused by third-party service providers.
         </Text>
 
         <View style={styles.separator} />
@@ -73,7 +74,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Refunds will be processed only in cases where an order is undelivered, incomplete, or incorrect.{"\n"}
           • Any refund request must be made within 24 hours of order delivery.{"\n"}
-          • The final decision on refunds rests with Food Trial.
+          • The final decision on refunds rests with Food Trail.
         </Text>
 
         <View style={styles.separator} />
@@ -88,7 +89,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
         <Text style={styles.content}>
-          • All content on Food Trial, including logos, trademarks, and text, is the property of Food Trial and protected by copyright laws.{"\n"}
+          • All content on Food Trail, including logos, trademarks, and text, is the property of Food Trail and protected by copyright laws.{"\n"}
           • You may not use our content without prior written consent.
         </Text>
 
@@ -96,7 +97,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>9. Limitation of Liability</Text>
         <Text style={styles.content}>
-          • Food Trial is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
+          • Food Trail is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
           • We are not liable for any direct, indirect, or incidental damages arising from the use of our services.
         </Text>
 
@@ -104,14 +105,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>10. Privacy Policy</Text>
         <Text style={styles.content}>
-          Your use of Food Trial is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
+          Your use of Food Trail is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>11. Modifications to Terms</Text>
         <Text style={styles.content}>
-          We reserve the right to update these Terms at any time. Continued use of Food Trial after modifications constitutes acceptance of the updated Terms.
+          We reserve the right to update these Terms at any time. Continued use of Food Trail after modifications constitutes acceptance of the updated Terms.
         </Text>
 
         <View style={styles.separator} />
@@ -126,13 +127,13 @@ const TermsConditionsScreen = () => {
         <Text style={styles.sectionTitle}>13. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For any queries or concerns regarding these Terms:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:localdaddyweb@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: localdaddyweb@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: foodtrailpro@gmail.com</Text>
           </TouchableOpacity>{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('tel:8074709926')}>
-            <Text style={[styles.link, styles.bold]}>Phone: 80747 09926</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
+            <Text style={[styles.link, styles.bold]}>Phone: 86881 04157</Text>
           </TouchableOpacity>{"\n"}
-          <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text>
+          {/* <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text> */}
         </Text>
       </ScrollView>
     </View>
@@ -142,7 +143,7 @@ const TermsConditionsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingBottom:20
   },
   header: { 
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
   },
   effectiveDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.gray,
     marginBottom: 15,
     fontStyle: 'italic'
   },
@@ -173,29 +174,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
-    color: '#065E2C'
+    color: colors.green
   },
   subsectionTitle: {
     fontWeight: '600',
-    color: '#333'
+    color: colors.darkGray
   },
   content: {
     fontSize: 14,
     marginTop: 5,
     lineHeight: 24,
-    color: '#666'
+    color: colors.gray
   },
   separator: {
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.borderGray,
     marginVertical: 15
   },
   bold: {
     fontWeight: '700',
-    color: '#000'
+    color: colors.black
   },
   link: {
-    color: '#065E2C',
+    color: colors.green,
     textDecorationLine: 'underline',
   }
 });

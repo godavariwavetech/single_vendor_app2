@@ -280,11 +280,14 @@ import OnboardingLogo from './svg/OnboardingLogo';
 import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight ,responsiveWidth } from 'react-native-responsive-dimensions';
 import OnboardingLogo1 from './tabassets/OnboardingLogo1';
+import { SystemBars } from 'react-native-edge-to-edge';
 
 const OnboardingScreen = () => {
   const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.container}>
+      {/* <SystemBars style='light' hidden={true} /> */}
+
        <StatusBar barStyle="dark-content" backgroundColor={commonStyles.bgColor} />
       <TouchableOpacity style={styles.skipButton} onPress={() => navigation.replace('Register')}>
         <Text style={styles.skipText}>Skip</Text>

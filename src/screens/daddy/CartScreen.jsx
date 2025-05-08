@@ -168,7 +168,7 @@ const CartScreen = ({navigation,route}) => {
             <CartInactive color="#000" />
             <Text style={styles.headerTitle}>Your Cart</Text>
           </View>
-          <View style={styles.searchContainer}>
+        {filteredCartItems.length >0 &&  <View style={styles.searchContainer}>
             <View style={styles.inputWrapper}>
               <TextInput
                 placeholder="Search items in cart..."
@@ -186,7 +186,7 @@ const CartScreen = ({navigation,route}) => {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
+          </View>}
         </LinearGradient>
       )}
 
@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: responsiveHeight(5),
     marginLeft: responsiveWidth(5),
+    marginBottom:10
   },
   headerTitle: {
     color: '#000',

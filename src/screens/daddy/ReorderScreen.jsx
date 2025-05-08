@@ -35,7 +35,7 @@ const ReorderScreen = ({navigation}) => {
     try {
       setInitialLoading(true);
       const response = await dispatch(getOrders({orderId:0}));
-
+      console.log(response,"++++++++++++++++++++++++RRESPONSE")
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {
@@ -124,7 +124,6 @@ const ReorderScreen = ({navigation}) => {
     globalSearchResults?.some(result => result.shop_name === order.shop_name) ||
     order.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  console.log(filteredOrders&& filteredOrders[0],"++++++++++++++++++++<><>ITEMS")
   
   const onRefresh = async () => {
     setRefreshing(true);
@@ -606,7 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor:commonStyles.btn2Color,
   },
   cancelButtonText: {
     color: '#666',

@@ -19,7 +19,7 @@ const PrivacyPolicyScreen = () => {
       <ScrollView style={{padding: 20,paddingBottom:100}}>
         <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
         <Text style={styles.content}>
-          Welcome to Food Trial! Your privacy is important to us. This Privacy Policy explains how Food Trial ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
+          Welcome to Food Trail! Your privacy is important to us. This Privacy Policy explains how Food Trail ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
 
         <Text style={styles.subtitle}>1. Information We Collect</Text>
@@ -80,11 +80,11 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subtitle}>8. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For questions about this policy:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:localdaddyweb@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: localdaddyweb@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: foodtrailpro@gmail.com</Text>
           </TouchableOpacity>{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('tel:8074709926')}>
-            <Text style={[styles.link, styles.bold]}>Phone: 80747 09926</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
+            <Text style={[styles.link, styles.bold]}>Phone: 86881 04157</Text>
           </TouchableOpacity>{"\n"}
           <Text style={[styles.link, styles.bold]}>Address: Tadepalligudem, 534101.</Text>
         </Text>

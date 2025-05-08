@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -28,6 +29,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { getResultFullData } from '../../redux/reducers/reviews';
 import { colors } from '../../config/theme';
 import { getSearchShopList } from '../../redux/reducers/search';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const CategoriesScreen = ({navigation,route}) => {
   const {allCategories} = useSelector(state => state.Dashboard);
@@ -104,18 +106,20 @@ const CategoriesScreen = ({navigation,route}) => {
       return;
     }
 
-    // 1. Always start with local filtering
-    const localFiltered = categories.map(category => {
-      const categoryMatches = category.category_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const subCategoryMatches = category.sub_categories.filter(sub => 
-        sub.sub_category_name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      return (categoryMatches || subCategoryMatches.length > 0) ? {
-        ...category,
-        sub_categories: categoryMatches ? category.sub_categories : subCategoryMatches
-      } : null;
-    }).filter(Boolean);
+    // 1. Conditional local filtering
+    const localFiltered = route.params?.isFromHome 
+      ? [] 
+      : categories.map(category => {
+          const categoryMatches = category.category_name.toLowerCase().includes(searchQuery.toLowerCase());
+          const subCategoryMatches = category.sub_categories.filter(sub => 
+            sub.sub_category_name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          
+          return (categoryMatches || subCategoryMatches.length > 0) ? {
+            ...category,
+            sub_categories: categoryMatches ? category.sub_categories : subCategoryMatches
+          } : null;
+        }).filter(Boolean);
 
     // 2. Add API results if available
     const apiResults = (globalSearchResults || [])
@@ -144,6 +148,7 @@ const CategoriesScreen = ({navigation,route}) => {
   const handleNavigation = async(item,subItem) => {
     await dispatch(setActiveCategoryIndex(item.category_id));
     dispatch(setsubCategory(subItem));
+    Keyboard.dismiss()
     navigation.navigate('CategorieItems');
   }
 
@@ -219,6 +224,7 @@ const CategoriesScreen = ({navigation,route}) => {
   const handleSearchResultPress = async (result) => {
     // Handle navigation based on search result type
     console.log("Search result pressed:", result.search_type);
+    Keyboard.dismiss()
     if(result.search_type==2){
       navigation.navigate('BannerRestaurantScreen',{...result,fromSearch:true}); 
       return
@@ -247,7 +253,7 @@ const CategoriesScreen = ({navigation,route}) => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+              <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
             </TouchableOpacity>
           ):  <CategoryInactive color="#000" />}
           <Text style={styles.headerTitle}>All Categories</Text>
@@ -266,7 +272,7 @@ const CategoriesScreen = ({navigation,route}) => {
             {searchLoading ? (
               <ActivityIndicator 
                 size="small" 
-                color="#065E2C" 
+                color={commonStyles.btn2Color} 
                 style={[styles.loaderIndicator, {right: 55}]}
               />
             ) : searchQuery.length > 0 && (

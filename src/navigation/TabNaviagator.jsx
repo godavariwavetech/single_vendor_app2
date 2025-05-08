@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import BookingsScreen from "../screens/user/BookingsScreen";
-import HomeScreen from "../screens/user/HomeScreen";
 import ProfileScreen from "../screens/user/ProfileScreen";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import commonStyles from "../commonstyles/CommonStyles";

@@ -10,7 +10,6 @@ import {
   ScrollView,SafeAreaView
 } from 'react-native';
 import commonStyles from '../../commonstyles/CommonStyles';
-import StatusBar from '../daddy/builder/StatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/Feather';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -64,36 +63,7 @@ const restaurants = [
   },
 ];
 
-const famousPlaces = [
-  {
-    id: '1',
-    title: 'Starbuck Borobudur',
-    image: 'https://img.freepik.com/free-photo/restaurant-interior_1127-3394.jpg?uid=R196494889&ga=GA1.1.1595522953.1743226631&semt=ais_hybrid&w=740',
-    distance: '1.0 km',
-    rating: 4.8,
-  },
-  {
-    id: '2',
-    title: 'Starbuck Borobudur',
-    image: 'https://img.freepik.com/free-photo/restaurant-interior_1127-3394.jpg?uid=R196494889&ga=GA1.1.1595522953.1743226631&semt=ais_hybrid&w=740',
-    distance: '1.0 km',
-    rating: 4.8,
-  },
-  {
-    id: '3',
-    title: 'Starbuck Borobudur',
-    image: 'https://img.freepik.com/free-photo/restaurant-interior_1127-3394.jpg?uid=R196494889&ga=GA1.1.1595522953.1743226631&semt=ais_hybrid&w=740',
-    distance: '1.0 km',
-    rating: 4.8,
-  },
-  {
-    id: '4',
-    title: 'Starbuck Borobudur',
-    image: 'https://img.freepik.com/free-photo/restaurant-interior_1127-3394.jpg?uid=R196494889&ga=GA1.1.1595522953.1743226631&semt=ais_hybrid&w=740',
-    distance: '1.0 km',
-    rating: 4.8,
-  },
-];
+const famousPlaces = [];
 
 export default function HomeScreen() {
   const navigation = useNavigation()

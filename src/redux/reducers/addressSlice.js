@@ -48,7 +48,8 @@ export const globalSearch = createAsyncThunk(
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
       const response = await api.post(endpoints.GLOBAL_SEARCH,{
-          searchterm: searchText
+          searchterm: searchText,
+          location_id: 1,
       })
       if (response) {
           if (response.data) {
@@ -64,17 +65,16 @@ export const globalSearch = createAsyncThunk(
 export const indiviadualShop = createAsyncThunk(
   "indiviadualShop",
   async(
-    {shopId},
+    {shopId,categoryId},
     {getState, rejectWithValue, fulfillWithValue}
   ) => {
     console.log("shopId individual shop",shopId,locationId,location)
     const {location,locationId} = getState().Auth;
-    console.log(location,"+++++++++++++++>>>>>>>>>LOcation")
     const response = await api.post(endpoints.GET_SHOPS,{
       "shop_latitude":  location.latitude,
       "shop_longitude": location.longitude,
       "location_id": locationId,
-      "category_id": 1,
+      "category_id":categoryId||1,
       "sub_category_id":0,
       "shop_id": shopId
     })

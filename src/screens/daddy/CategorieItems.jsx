@@ -12,10 +12,7 @@ import {
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
-import HeaderPick1 from './tabassets/HeaderPick1';
 import HeaderPick2 from './tabassets/HeaderPick2';
-import HeaderPick3 from './tabassets/HeaderPick3';
-import Seller from './tabassets/Seller';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,98 +22,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import commonStyles from '../../commonstyles/CommonStyles';
-
-const restaurants = [
-  {
-    id: '1',
-    name: 'Vantalakka Biriyani',
-    image:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_cR_lCMXmgj2I9k807VNZxLN4xLmUFknXZA&s', // Replace with real image URL
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'Street Food, Shake, Beverages',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '2',
-    name: 'Naidu Gari Kunda Biryani',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh4heBKn8mMJz00VVuP1hl2Qd7IVegxGisJw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'Fried Rice, Chinese, Italian',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-  {
-    id: '3',
-    name: 'Helapuri Restaurant-Diamond ...',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7XSuh-M_6J74T6jsGBGGwfPrIIoMPe-cFaw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, Chinese, Biry...',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '4',
-    name: 'Real Deepa Punjabi Dhaba',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFP_eRBTJIPb2PdOV89xZy6A_3nEGTIIFn2w&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, South Indian...',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-  {
-    id: '5',
-    name: 'Helapuri Restaurant-Diamond ...',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7XSuh-M_6J74T6jsGBGGwfPrIIoMPe-cFaw&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, Chinese, Biry...',
-    location: 'Tilak Road • 3.0 km',
-    offer: '',
-  },
-  {
-    id: '6',
-    name: 'Real Deepa Punjabi Dhaba',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFP_eRBTJIPb2PdOV89xZy6A_3nEGTIIFn2w&s',
-    rating: '4.5 (26k+)',
-    time: '20-30 mins',
-    type: 'North Indian, South Indian...',
-    location: 'Tilak Road • 3.0 km',
-    offer: 'EXTRA 10% off & FREE DELIVERY',
-  },
-];
-
-const headerBar = [
-  {
-    id: 1,
-    name: 'Filter',
-    icon: HeaderPick1,
-  },
-  {
-    id: 2,
-    name: 'Veg',
-    icon: HeaderPick2,
-  },
-  {
-    id: 3,
-    name: 'Non-Veg',
-    icon: HeaderPick2,
-  },
-  {
-    id: 4,
-    name: 'Best Seller',
-    icon: Seller,
-  },
-  {
-    id: 5,
-    name: '+Rating',
-    icon: HeaderPick3,
-  },
-];
 
 export default function CategorieItems({navigation,route}) {
   const dispatch = useDispatch()
@@ -333,7 +238,7 @@ console.log(filtered,'filter')
               }
             ]}
           >
-           {item.filter_name!="All" && (item.filter_name=="Veg"||item.filter_name=="Non Veg" ) && <HeaderPick2 color={
+           {item.filter_name!="All" && ( item.filter_name === "Veg" || item.filter_name === "Non Veg")  && <HeaderPick2 color={
               item.filter_name === "Veg" ? (isActive ? "#fff" : "#0EAF50") : 
               item.filter_name === "Non Veg" ? "#CD2A2A" : "#065E2C"
             } />}

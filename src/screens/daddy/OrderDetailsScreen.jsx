@@ -30,6 +30,7 @@ import CustomModal from '../../components/CustomModal';
 import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
 import {getMessaging} from '@react-native-firebase/messaging';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
@@ -422,7 +423,12 @@ const OrderDetailsScreen = ({navigation, route}) => {
                 <View style={styles.itemDetails}>
                   <HeaderPick2 />
                   <Text style={styles.itemName}>{item.item_name}</Text>
+                  <View style={{flexDirection:"row",alignItems:"center",gap:7}}>
                   <Text style={styles.itemPrice}>₹{item.item_price}</Text>
+                    {item.actualitem_price !== item.item_price && (
+                  <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:14, marginTop: 4,}]}>₹{item.actualitem_price}</Text>
+                  )}
+                  </View>
                 </View>
                 <View style={styles.quantityInfo}>
                   <Text style={styles.quantity}>x{item.sub_item_count}</Text>
@@ -632,19 +638,18 @@ const OrderDetailsScreen = ({navigation, route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
   },
   header: {
     backgroundColor: commonStyles.yellowColor,
     height: responsiveHeight(15),
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5),
+    paddingLeft: responsiveWidth(5)
   },
   backButton: {
-    width: responsiveWidth(7),
-    marginBottom: responsiveHeight(2),
+    width: responsiveWidth(7)
   },
   title: {
     fontSize: 16,

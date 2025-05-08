@@ -293,7 +293,6 @@ const RestaurantScreen = ({navigation,route}) => {
 
   const renderItem = ({ item }) => {
     const isHighlighted = item.id === highlightedItemId;
-    console.log(item,"++++++++++++++>>>>>>>>>>>>>>>item")
     const scaleAnim = scaleAnims.get(item.id) || new Animated.Value(1);
     
     return (
@@ -945,7 +944,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
   },
   cancelButtonText: {
     color: '#666',

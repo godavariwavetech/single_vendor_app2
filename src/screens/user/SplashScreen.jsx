@@ -6,6 +6,7 @@ import { setInitial } from '../../redux/reducers/auth'
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import commonStyles from '../../commonstyles/CommonStyles'
 import { translate } from '../../config/i18n'
+import { SystemBars } from 'react-native-edge-to-edge';
 
 const SplashScreen = ({navigation}) => {
     const {token} = useSelector((state) => state.Auth);
@@ -25,7 +26,8 @@ const SplashScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-         <StatusBar backgroundColor={'transparent'} translucent barStyle={'dark-content'}  />
+      {/* <SystemBars style='dark' hidden={false} /> */}
+         {/* <StatusBar backgroundColor={'transparent'} translucent barStyle={'dark-content'}  /> */}
         {/* <View style={styles.imgWrapper}> */}
             <Image source={require('../daddy/tabassets/SplashFoodTrial.png')} style={[{flex:1,width:responsiveWidth(100),height:responsiveHeight(100)}]} />
             {/* <SplashScreenImg /> */}

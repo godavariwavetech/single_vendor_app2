@@ -108,9 +108,7 @@ const ProfileScreen = () => {
 
   const handleUpdate = async () => {
     try {
-      await Linking.openURL(
-        'https://play.google.com/store/apps/details?id=com.localdaddy',
-      );
+      console.log('Checking for updates...');
     } catch (error) {
       console.log('Play Store error:', error);
     } finally {
@@ -122,10 +120,6 @@ const ProfileScreen = () => {
     setLogoutModalVisible(false);
     dispatch(actionLogout());
     dispatch(clearCart());
-    navigation.reset({
-      index: 0,
-      routes: [{name: 'Login'}],
-    });
   };
 
   const handleCheckForUpdate = async () => {
@@ -342,9 +336,7 @@ const ProfileScreen = () => {
             marginLeft: responsiveWidth(5),
           }}>
           <Image
-            source={{
-              uri: 'https://skiblue.co.uk/wp-content/uploads/2015/06/dummy-profile.png',
-            }}
+            source={require("../daddy/tabassets/dummy-profile.png")}
             style={{
               width: responsiveWidth(10),
               height: responsiveWidth(10),
@@ -421,7 +413,7 @@ const ProfileScreen = () => {
         message={
           showUpdateModal
             ? 'A new version is available. Please update now!'
-            : "You're using the latest version of Food Trial"
+            : "You're using the latest version of Food Trail"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
@@ -442,7 +434,7 @@ const ProfileScreen = () => {
       <CustomModal
         visible={showUpdateModal}
         title="Update Available"
-        message="A new version of Food Trial is available. Please update to continue using all features."
+        message="A new version of Food Trail is available. Please update to continue using all features."
         confirmText="Update Now"
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}

@@ -12,7 +12,6 @@ import CustomModal from './src/components/CustomModal';
 import NetInfo from '@react-native-community/netinfo';
 import { setIsNetworkConnected } from './src/redux/reducers/addressSlice';
 import { useDispatch } from 'react-redux';
-import OnboardingScreen from './src/screens/daddy/OnboardingScreen';
 const NetworkStatusBanner = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [slideAnim] = useState(new Animated.Value(-50));
@@ -108,7 +107,7 @@ const App = () => {
 
   const handleUpdate = async () => {
     try {
-      await Linking.openURL("https://play.google.com/store/apps/details?id=com.localdaddy");
+      console.log("Open playstore")
     } catch (error) {
       console.log("Play Store link error:", error);
     } finally {

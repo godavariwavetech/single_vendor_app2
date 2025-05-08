@@ -28,6 +28,7 @@ import AboutUsScreen from '../screens/daddy/AboutUsScreen';
 import CategoriesScreen from '../screens/daddy/CategoriesScreen';
 import NotificationsScreen from '../screens/daddy/NotificationsScreen';
 import BannerRestaurantScreen from '../screens/daddy/BannerRestaurantScreen';
+import SearchShopList from '../screens/daddy/SearchShopList';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
@@ -55,6 +56,7 @@ export default function RentalNavigation() {
     <Stack.Screen  name='Register1' component={Register} />
     <Stack.Screen  name='OTPVerification1' component={OTPVerification} />
     <Stack.Screen name='RefundPolicy' component={RefundPolicyScreen} />
+    <Stack.Screen name='SearchShopList' component={SearchShopList} />
     <Stack.Screen 
         name="AboutUs" 
         component={AboutUsScreen} 
