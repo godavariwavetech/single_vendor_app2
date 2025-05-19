@@ -62,7 +62,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`,
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
       );
       const data = await response.json();
       if (data.results && data.results.length > 0) {
@@ -139,7 +139,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         const response = await fetch(
           `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
             text,
-          )}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c&components=country:in`,
+          )}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o&components=country:in`,
         );
 
         if (!response.ok) throw new Error('Network response was not ok');
@@ -180,7 +180,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
   const handlePlaceSelect = async placeId => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=AIzaSyCjIVYSyhXOFfT7nQ4UoV85c-UB5FXzY2c`,
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
       );
       const data = await response.json();
       const location = data.result.geometry.location;
