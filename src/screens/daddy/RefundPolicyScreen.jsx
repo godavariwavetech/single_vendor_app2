@@ -17,7 +17,7 @@ const RefundPolicyScreen = () => {
         <Text style={styles.title}>Refund Policy</Text>
       </View>
       <ScrollView style={{padding: 20}}>
-        <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
+        <Text style={styles.effectiveDate}>Effective Date: 20/05/2025</Text>
         
         <Text style={styles.sectionTitle}>1. Order Cancellation</Text>
         <Text style={styles.content}>
@@ -42,7 +42,7 @@ const RefundPolicyScreen = () => {
         <Text style={styles.content}>
           1. Go to Orders → Select Order → Help & Support → Request Refund{"\n"}
           2. Provide details and supporting images{"\n"}
-          3. Processing time: 5–7 business days
+          3. Credited Time: The refunded amount will  be credited in the original mode payment with in 5-7 working days
         </Text>
 
         <View style={styles.separator} />

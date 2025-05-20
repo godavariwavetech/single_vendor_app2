@@ -18,7 +18,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.title}>Terms and Conditions</Text>
       </View>
       <ScrollView style={{padding: 20}}>
-        <Text style={styles.effectiveDate}>Last Updated: 4/3/2025</Text>
+        <Text style={styles.effectiveDate}>Last Updated: 20/05/2025</Text>
         <Text style={styles.content}>
           Welcome to Food Trail! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Food Trail, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
@@ -70,7 +70,19 @@ const TermsConditionsScreen = () => {
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>6. Refund and Cancellation Policy</Text>
+        <Text style={styles.sectionTitle}>6. Shipping Policy</Text>
+        <Text style={styles.content}>
+          • All ordered food will be delivered within 1 hour of order confirmation{"\n"}
+          • Delivery time may vary based on restaurant preparation time and distance{"\n"}
+          • Real-time order tracking is available in the app{"\n"}
+          • Contact support if delivery exceeds the estimated time{"\n"}
+          • Delivery areas are subject to restaurant availability{"\n"}
+          • Minimum order value may apply for delivery
+        </Text>
+
+        <View style={styles.separator} />
+
+        <Text style={styles.sectionTitle}>7. Refund and Cancellation Policy</Text>
         <Text style={styles.content}>
           • Refunds will be processed only in cases where an order is undelivered, incomplete, or incorrect.{"\n"}
           • Any refund request must be made within 24 hours of order delivery.{"\n"}
@@ -79,7 +91,7 @@ const TermsConditionsScreen = () => {
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>7. User Conduct</Text>
+        <Text style={styles.sectionTitle}>8. User Conduct</Text>
         <Text style={styles.content}>
           • Users must not misuse, hack, or attempt to exploit vulnerabilities in the platform.{"\n"}
           • Abusive language, harassment, or inappropriate behavior towards restaurant or delivery partners will not be tolerated.
@@ -87,7 +99,7 @@ const TermsConditionsScreen = () => {
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
+        <Text style={styles.sectionTitle}>9. Intellectual Property</Text>
         <Text style={styles.content}>
           • All content on Food Trail, including logos, trademarks, and text, is the property of Food Trail and protected by copyright laws.{"\n"}
           • You may not use our content without prior written consent.
@@ -95,7 +107,7 @@ const TermsConditionsScreen = () => {
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>9. Limitation of Liability</Text>
+        <Text style={styles.sectionTitle}>10. Limitation of Liability</Text>
         <Text style={styles.content}>
           • Food Trail is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
           • We are not liable for any direct, indirect, or incidental damages arising from the use of our services.
@@ -103,28 +115,28 @@ const TermsConditionsScreen = () => {
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>10. Privacy Policy</Text>
+        <Text style={styles.sectionTitle}>11. Privacy Policy</Text>
         <Text style={styles.content}>
           Your use of Food Trail is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
         </Text>
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>11. Modifications to Terms</Text>
+        <Text style={styles.sectionTitle}>12. Modifications to Terms</Text>
         <Text style={styles.content}>
           We reserve the right to update these Terms at any time. Continued use of Food Trail after modifications constitutes acceptance of the updated Terms.
         </Text>
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>12. Governing Law</Text>
+        <Text style={styles.sectionTitle}>13. Governing Law</Text>
         <Text style={styles.content}>
-          These Terms shall be governed by and interpreted in accordance with the laws of [Your Country/State].
+          These Terms shall be governed by and interpreted in accordance with the laws of India.
         </Text>
 
         <View style={styles.separator} />
 
-        <Text style={styles.sectionTitle}>13. Contact Us</Text>
+        <Text style={styles.sectionTitle}>14. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For any queries or concerns regarding these Terms:{"\n"}
           <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>

@@ -17,7 +17,7 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
       <ScrollView style={{padding: 20,paddingBottom:100}}>
-        <Text style={styles.effectiveDate}>Effective Date: 4/3/2025</Text>
+        <Text style={styles.effectiveDate}>Effective Date: 20/05/2025</Text>
         <Text style={styles.content}>
           Welcome to Food Trail! Your privacy is important to us. This Privacy Policy explains how Food Trail ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
