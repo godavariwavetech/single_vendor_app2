@@ -14,6 +14,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { applyCoupon, fetchCoupons, removeCoupon } from '../../redux/reducers/coupons';
+import commonStyles from '../../commonstyles/CommonStyles';
 
 const CouponsScreen = ({ navigation, route }) => {
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -62,7 +63,7 @@ const CouponsScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={'light-content'} backgroundColor={'#065E2C'} />
+      <StatusBar barStyle={'light-content'} backgroundColor={commonStyles.btn2Color} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -95,22 +96,23 @@ const CouponsScreen = ({ navigation, route }) => {
             >
               <View style={styles.couponLeft}>
                 <View style={styles.couponIconContainer}>
-                  <MaterialIcons name="local-offer" size={24} color="#065E2C" />
+                  <MaterialIcons name="local-offer" size={24} color={commonStyles.btn2Color} />
                 </View>
                 <View style={styles.couponDetails}>
                   <Text style={styles.couponName}>{coupon.coupon_name}</Text>
                   <Text style={styles.couponDescription}>{coupon.coupon_description}</Text>
                   <View style={styles.couponTerms}>
-                    <Text style={styles.couponTermsText}>
+                    {/* <Text style={styles.couponTermsText}>
                       • Min. order value: ₹{coupon.coupon_upto_price}
                     </Text>
                     <Text style={styles.couponTermsText}>
                       • Max. discount: ₹{coupon.coupon_max_price_limit}
-                    </Text>
+                    </Text> */}
                   </View>
                 </View>
               </View>
               <View style={styles.couponRight}>
+              <Text style={styles.offText}>UP TO</Text>
                 <Text style={styles.discountText}>{coupon.coupon_percentage}%</Text>
                 <Text style={styles.offText}>OFF</Text>
               </View>
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -226,8 +228,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedCouponCard: {
-    borderColor: '#065E2C',
-    backgroundColor: '#F5FFF8',
+    borderColor: commonStyles.btn2Color,
+    backgroundColor: '#FFF8CF',
   },
   couponLeft: {
     flex: 1,
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#FFF8CF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -273,12 +275,12 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
   },
   offText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#065E2C',
+    color: commonStyles.btn2Color,
   },
   bottomContainer: {
     position: 'absolute',
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
   },
   applyButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
     textAlign:"center"
   },
   closeButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: commonStyles.btn2Color,
     borderRadius: 5,
     padding: 10,
     alignItems: 'center',

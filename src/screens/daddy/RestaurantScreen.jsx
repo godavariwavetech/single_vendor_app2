@@ -31,6 +31,7 @@ import { setRestaurnatDetails } from '../../redux/reducers/auth';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import StarRating from '../../components/StarRating';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const RestaurantScreen = ({navigation,route}) => {
@@ -53,6 +54,7 @@ const RestaurantScreen = ({navigation,route}) => {
   const [initialFilter, setSetInitialFilter] = useState(true);
    const bottomGap = new Animated.Value(0);
   const flatListRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   // Restore original mergedFilters
   const mergedFilters = [
@@ -396,6 +398,36 @@ const RestaurantScreen = ({navigation,route}) => {
     };
   }, []);
 
+  const getCartSummaryStyle = (translateY) => ({
+    position: "absolute",
+    width: "100%",
+    height: 45,
+    bottom: 0,
+    backgroundColor: "#FFF8CF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    // padding: 20,
+    alignItems: "center",
+    elevation: 5,
+    zIndex: 10,
+    transform: [{ translateY: translateY }],
+    paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+  });
+
+  const getDraggableMenuStyle = () => ({
+    position: 'absolute',
+    backgroundColor: 'white',
+    width: 68,
+    height: 68,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 7,
+    zIndex: 100,
+    left: 20,
+    bottom: 40 + (insets.bottom > 0 ? insets.bottom : 0), // Account for safe area
+  });
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" translucent />
@@ -539,7 +571,7 @@ const RestaurantScreen = ({navigation,route}) => {
 
       <Animated.View 
         {...panResponder.panHandlers}
-        style={[styles.draggableMenu, pan.getLayout()]}
+        style={[getDraggableMenuStyle(), pan.getLayout()]}
       >
         <TouchableOpacity 
           style={styles.menuButton}
@@ -589,7 +621,7 @@ const RestaurantScreen = ({navigation,route}) => {
       </Animated.View>
 
       <Animated.View
-        style={styles.cartSummary(translateY)}
+        style={getCartSummaryStyle(translateY)}
       >
         <TouchableOpacity onPress={() => navigation.navigate("CartScreen",{isFromRestaurant:true})}>          
           <Text style={styles.cartSummaryText}>{cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0)} Items added to cart <AntDesign name="right" color={commonStyles.btn2Color} size={17} /> </Text>
@@ -774,19 +806,6 @@ const styles = StyleSheet.create({
     borderColor: commonStyles.btn2Color,
   },
   addButtonText: { color: commonStyles.btn2Color, fontWeight: '700', fontSize: 14 },
-  draggableMenu: {
-    position: 'absolute',
-    backgroundColor: 'white',
-    width: 68,
-    height: 68,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 7,
-    zIndex: 100,
-    left: 20,
-    bottom: 40,
-  },
   menuText: { fontSize: 12, fontWeight: 700, color:commonStyles.btn2Color },
   menuButton: {
     backgroundColor: '#fffbe5',
@@ -837,20 +856,6 @@ const styles = StyleSheet.create({
   activeMenuText: {
     fontWeight: '700',
   },
-  cartSummary: (translateY) => ({
-    position: "absolute",
-    width: "100%",
-    height: 45,
-    bottom: 0,
-    backgroundColor: "#FFF8CF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    // padding: 20,
-    alignItems: "center",
-    elevation: 5,
-    zIndex: 10,
-    transform: [{ translateY: translateY }],
-  }),
   cartSummaryText: { fontSize: 18, fontWeight: "600",marginTop: 7, color: commonStyles.btnColor  },
   cartSummarySubText: { fontSize: 14, color: "gray", marginVertical: 5 },
   menuOverlay: {

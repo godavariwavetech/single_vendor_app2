@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -19,10 +19,7 @@ import {
 } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 import HeaderPick2 from './tabassets/HeaderPick2';
-import MapView, {Marker, PROVIDER_GOOGLE, Polyline} from 'react-native-maps';
-// import { getOrderDetails } from '../../redux/reducers/addressSlice';
 import {useDispatch} from 'react-redux';
 import {getOrderDetails, getOrders} from '../../redux/reducers/daddy';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -45,6 +42,9 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showReviewDetails, setShowReviewDetails] = useState(false);
   const [cancelSuccess,setCancelSuccess] = useState(false)
+  
+  // Add timer ref for auto-refresh
+  const timerRef = useRef(null);
 
   const getOrderData = async () => {
     const response = await dispatch(
@@ -62,6 +62,39 @@ const OrderDetailsScreen = ({navigation, route}) => {
     );
     if (response.payload?.data) {
       setSubOrderData(response.payload.data);
+    }
+  };
+
+  // Function to check if order is in final state (completed or cancelled)
+  const isOrderFinal = () => {
+    // Order status: 3 = Completed, 4 = Cancelled by You, 5 = Rejected by Restaurant
+    return orderDetails?.order_status === 3 || 
+           orderDetails?.order_status === 4 || 
+           orderDetails?.order_status === 5;
+  };
+
+  // Function to start the timer
+  const startTimer = () => {
+    // Clear any existing timer first
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    // Only start timer if order is not in final state
+    if (!isOrderFinal()) {
+      // Start new timer - fetch data every 2 seconds
+      timerRef.current = setInterval(async () => {
+        await getOrderData();
+        await fetchOrderItems();
+      }, 2000); // 2 seconds interval
+    }
+  };
+
+  // Function to clear the timer
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   };
 
@@ -83,6 +116,44 @@ const OrderDetailsScreen = ({navigation, route}) => {
   useEffect(() => {
     fetchOrderItems();
   }, [orderDetails]);
+
+  // Start timer when order details are loaded, but only if order is active
+  useEffect(() => {
+    if (orderDetails?.id) {
+      if (isOrderFinal()) {
+        // Clear timer if order is already in final state
+        clearTimer();
+      } else {
+        // Start timer only for active orders
+        startTimer();
+      }
+    }
+    
+    // Cleanup timer on unmount
+    return () => {
+      clearTimer();
+    };
+  }, [orderDetails?.id, orderDetails?.order_status]);
+
+  // Handle screen focus/blur for timer management
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      // Start timer when screen comes into focus, but only if order is active
+      if (orderDetails?.id && !isOrderFinal()) {
+        startTimer();
+      }
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      // Clear timer when screen loses focus
+      clearTimer();
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+    };
+  }, [navigation, orderDetails?.id, orderDetails?.order_status]);
 
   useEffect(() => {
     const backAction = () => {

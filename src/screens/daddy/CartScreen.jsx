@@ -10,7 +10,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Modal,
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -27,6 +26,7 @@ import CartInactive from './tabassets/CartInactive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CartScreen = ({navigation,route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -36,6 +36,7 @@ const CartScreen = ({navigation,route}) => {
   const { globalSearchResults } = useSelector(state => state.address);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const insets = useSafeAreaInsets();
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -215,6 +216,8 @@ const CartScreen = ({navigation,route}) => {
             data={filteredCartItems}
             keyExtractor={item => item.id}
             renderItem={renderCartItem}
+            contentInset={{ bottom: 120 }}
+            contentContainerStyle={{ paddingBottom: 120 }}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No items found</Text>
@@ -222,7 +225,7 @@ const CartScreen = ({navigation,route}) => {
             )}
           />
 
-          <View style={styles.bottomContainer}>
+          <View style={[styles.bottomContainer, {paddingBottom: insets.bottom > 0 ? insets.bottom + 60 : 80}]}>
             <View style={styles.totalContainer}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
@@ -340,7 +343,6 @@ const styles = StyleSheet.create({
   },
   cartContainer: {
     flex: 1,
-    paddingBottom: Platform.OS === 'ios' ? 85 : 60,
   },
   bottomContainer: {
     position: 'absolute',
@@ -348,7 +350,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#fff',
-    paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   itemDetails: {
     flex: 1,

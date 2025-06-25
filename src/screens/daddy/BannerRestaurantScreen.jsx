@@ -36,6 +36,7 @@ import {setRestaurnatDetails} from '../../redux/reducers/auth';
 import {indiviadualShop} from '../../redux/reducers/addressSlice';
 import { getSingleShopDetails } from '../../redux/reducers/search';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BannerRestaurantScreen = ({navigation, route}) => {
   const [translateY] = useState(new Animated.Value(100));
@@ -67,6 +68,7 @@ const BannerRestaurantScreen = ({navigation, route}) => {
   const flatListRef = useRef(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
 console.log(route.params,"+++++++++++++++PRARAMD")
 
@@ -457,6 +459,42 @@ console.log(route.params,"+++++++++++++++PRARAMD")
     );
   };
 
+  const getCartSummaryStyle = translateY => ({
+    position: 'absolute',
+    width: '100%',
+    height: 75,
+    bottom: 0,
+    backgroundColor: '#FFF8CF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 5,
+    zIndex: 10,
+    transform: [{translateY: translateY}],
+    paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 20,
+  });
+
+  const getDraggableMenuStyle = () => ({
+    position: 'absolute',
+    backgroundColor: 'white',
+    width: 68,
+    height: 68,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 7,
+    zIndex: 100,
+    left: 20,
+    bottom: 40 + (insets.bottom > 0 ? insets.bottom : 0), // Account for safe area
+  });
+
+  const getItemListStyle = () => ({
+    paddingHorizontal: responsiveWidth(5),
+    paddingBottom: 120 + (insets.bottom > 0 ? insets.bottom : 20), // Extra padding for cart summary
+    flex: 1,
+  });
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" translucent />
@@ -533,7 +571,7 @@ console.log(route.params,"+++++++++++++++PRARAMD")
             data={filteredData}
             keyExtractor={item => item.id}
             numColumns={2}
-            style={[styles.itemList]}
+            style={[getItemListStyle()]}
             columnWrapperStyle={styles.columnWrapper}
             renderItem={renderItem}
             onScrollToIndexFailed={({index, averageItemLength}) => {
@@ -551,7 +589,7 @@ console.log(route.params,"+++++++++++++++PRARAMD")
 
       <Animated.View
         {...panResponder.panHandlers}
-        style={[styles.draggableMenu, pan.getLayout()]}>
+        style={[getDraggableMenuStyle(), pan.getLayout()]}>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => setDraggableMenuVisible(!draggableMenuVisible)}>
@@ -603,7 +641,7 @@ console.log(route.params,"+++++++++++++++PRARAMD")
         )}
       </Animated.View>
 
-        <Animated.View style={styles.cartSummary(translateY)}>
+        <Animated.View style={getCartSummaryStyle(translateY)}>
           <TouchableOpacity
             onPress={() =>
               navigation.navigate('CartScreen', {isFromRestaurant: true})
@@ -870,19 +908,6 @@ const styles = StyleSheet.create({
     borderColor: '#065E2C',
   },
   addButtonText: {color: '#065E2C', fontWeight: '700', fontSize: 14},
-  draggableMenu: {
-    position: 'absolute',
-    backgroundColor: 'white',
-    width: 68,
-    height: 68,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 7,
-    zIndex: 100,
-    left: 20,
-    bottom: 40,
-  },
   menuText: {fontSize: 12, fontWeight: 700, color: '#065E2C'},
   menuButton: {
     backgroundColor: '#fff',
@@ -933,20 +958,6 @@ const styles = StyleSheet.create({
   activeMenuText: {
     fontWeight: '700',
   },
-  cartSummary: translateY => ({
-    position: 'absolute',
-    width: '100%',
-    height: 75,
-    bottom: 0,
-    backgroundColor: '#FFF8CF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 5,
-    zIndex: 10,
-    transform: [{translateY: translateY}],
-  }),
   cartSummaryText: {fontSize: 18, fontWeight: 'bold'},
   cartSummarySubText: {fontSize: 14, color: 'gray', marginVertical: 5},
   menuOverlay: {

@@ -35,6 +35,7 @@ import {haversineDistance} from './distanceCalculator';
 import { removeCoupon } from '../../redux/reducers/coupons';
 import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CheckoutScreen = ({navigation, route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -50,6 +51,7 @@ const CheckoutScreen = ({navigation, route}) => {
     locationName,
   } = useSelector(state => state.Auth);
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
 
   const [paymentMenuVisible, setPaymentMenuVisible] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -577,7 +579,7 @@ const CheckoutScreen = ({navigation, route}) => {
       </ScrollView>
 
       {/* Bottom Payment Section */}
-      <View style={styles.paymentSection}>
+      <View style={[styles.paymentSection, {paddingBottom: insets.bottom}]}>
         <TouchableOpacity
           style={styles.paymentMethod}
           ref={buttonRef}
@@ -916,7 +918,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingTop: 15,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
