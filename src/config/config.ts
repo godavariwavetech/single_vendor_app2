@@ -1,4 +1,4 @@
-export const baseURL = 'https://api.foodtrail.app/'; 
+export const baseURL = 'https://apicloudkitchen.godavariinnovations.com/public_app/'; 
 
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',
@@ -7,25 +7,26 @@ export const endpoints = {
   TOUR_PACKAGES:'packages/v1/getAll',
   GET_RENTAL_ITEMS:"rentalItems/v1/getAll",
   GET_ALL_ORDERS:'categories/v1/getAll',
-  DADDY_GET_CATEGORIES:'public_app/getlocationctgrylist',
+  DADDY_GET_CATEGORIES:'getcategory',
+  GET_CATEGORY_ITEMS:'getitems',
   GET_SUB_CATEGORIES:'public_app/getshopsubcategorylist',
-  GET_BANNER:'public_app/getbannerslist',
+  GET_BANNER:'getbanners',
   GET_SHOPS:'public_app/getshoplist',
   GET_ITEMS_LIST:"public_app/getitemslist",
   VERIFY_CUSTOMER_MOBILE:'public_app/customerlogin',
-  VERIFY_CUSTOMER_OTP:'public_app/customerlogin',
-  GET_ORDERS:'public_app/getorderlist',
+  VERIFY_CUSTOMER_OTP:'customerlogin',
+  GET_ORDERS:'getorderlist',
   GET_ALL_CATEGORIES:'public_app/getsubcategoryall',
-  GET_ADDRESS_LIST:'public_app/get_customer_delivery_address',
-  SET_ADDRESS_LIST:'public_app/post_customer_delivery_address',
-  DELETE_ADDRESS_LIST:'public_app/delete_customer_address',
-  GET_ORDER_DETAILS:'public_app/getorderdetails',
+  GET_ADDRESS_LIST:'getdeliveryaddress',
+  SET_ADDRESS_LIST:'adddeliveryaddress',
+  DELETE_ADDRESS_LIST:'deletedeliveryaddress',
+  GET_ORDER_DETAILS:'getorderdetails',
   CHECK_ADDRESS_EXISTENCE:'public_app/getuserlocation',
   GET_SERVICES_LIST:'public_app/getserviceslist',
-  GET_COUPONS:'public_app/coupon_list',
-  PLACE_ORDER:'public_app/orderplaced',
-  GET_CHARGES_LIST:'public_app/application_common_api',
-  REQUEST_OTP:'public_app/getuserloginotp',
+  GET_COUPONS:'getcoupon',
+  PLACE_ORDER:'orderplaced',
+  GET_CHARGES_LIST:'getapplicationdata',
+  REQUEST_OTP:'getuserloginotp',
   GLOBAL_SEARCH:'public_app/search_allitems',
   GIVE_APP_FEEDBACK:'public_app/postapprating',
   CANCEL_ORDER:'public_app/cancleorder',
@@ -38,5 +39,8 @@ export const endpoints = {
   GET_SEARCH_SHOP_LIST:"public_app/getsearchshoplist",
   GET_SINGLE_SHOP_DETAILS:"public_app/getsingleshopdetails",
   GET_SEARCH_SUB_CATEGORIES:"public_app/getsearchsubcategoriesshoplist",
-  GET_SEARCH_CATEGORIES:"public_app/getsearchcategoriesshoplist"
+  GET_SEARCH_CATEGORIES:"public_app/getsearchcategoriesshoplist",
+
+  GET_AVAILABLE_LOCATIONS:'getavailablelocations',
+  GET_APPLICATION_DATA:'getapplicationdata'
 };

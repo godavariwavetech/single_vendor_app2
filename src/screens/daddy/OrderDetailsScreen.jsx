@@ -44,7 +44,8 @@ const OrderDetailsScreen = ({navigation, route}) => {
   const [cancelSuccess,setCancelSuccess] = useState(false)
   
   // Add timer ref for auto-refresh
-  const timerRef = useRef(null);
+  const timerRef = useRef(null)
+  console.log(route.params,"++++++++++++++++++>>>>>>>>>>>ROUTE")
 
   const getOrderData = async () => {
     const response = await dispatch(
@@ -349,7 +350,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={commonStyles.yellowColor} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.maintheme} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -360,7 +361,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
               ? handleBackPress()
               : navigation.goBack()
           }>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
         <View>
           <Text style={styles.title}>Order Details</Text>
@@ -422,7 +423,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
         </View> */}
 
         {/* Restaurant Info */}
-        <View style={styles.restaurantInfo}>
+        {/* <View style={styles.restaurantInfo}>
           <Image
             source={{uri: orderData.restaurant.image}}
             style={styles.restaurantImage}
@@ -441,7 +442,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
             style={styles.callButton}>
             <MaterialIcons name="call" size={23} color='#fff' style={styles.callIcon} />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Order Status */}
         <View
@@ -712,7 +713,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   header: {
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: colors.maintheme,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -725,11 +726,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.white,
   },
   orderId: {
     fontSize: 12,
-    color: '#000',
+    color:colors.white,
     opacity: 0.8,
     marginTop: 4,
   },
@@ -797,7 +798,7 @@ const styles = StyleSheet.create({
   estimatedTimeValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   estimatedTimeLabel: {
     fontSize: 10,
@@ -823,7 +824,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   callAgentButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     padding: responsiveWidth(2),
     borderRadius: 20,
   },
@@ -863,7 +864,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '600',
     marginTop: 4,
   },
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -932,7 +933,7 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -963,7 +964,7 @@ const styles = StyleSheet.create({
   },
   couponCode: {
     fontSize: 12,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     marginLeft: responsiveWidth(2),
     marginBottom: responsiveHeight(1),
   },
@@ -1037,7 +1038,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
@@ -1084,7 +1085,7 @@ const styles = StyleSheet.create({
   },
   reviewSubmittedText: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '600',
   },
   reviewContainer: {
@@ -1095,7 +1096,7 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
   callIcon:{
-    backgroundColor:commonStyles.btn2Color,
+    backgroundColor:colors.maintheme,
     padding:5,
     borderRadius:30
   }

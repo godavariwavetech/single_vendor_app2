@@ -28,6 +28,8 @@ import {
   setLocationId,
 } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_REGION = {
   latitude: 16.9979679,
@@ -39,6 +41,7 @@ const DEFAULT_REGION = {
 const SelectServiceFromLocation = ({navigation, route}) => {
   const mapRef = useRef(null);
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -304,7 +307,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.title}>Select Service Location</Text>
       </View>
@@ -331,22 +334,22 @@ const SelectServiceFromLocation = ({navigation, route}) => {
         )}
         <View style={styles.markerOverlay}>
           <View style={styles.markerContainer}>
-            <MaterialIcons name="location-on" size={40} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={40} color={colors.maintheme} />
           </View>
         </View>
         <TouchableOpacity
           style={[
             styles.currentLocationButton,
             isLoadingLocation && styles.currentLocationButtonLoading,
-            isKeyboardVisible && {bottom: 20},
+            isKeyboardVisible && {bottom: 50},
           ]}
           onPress={getCurrentLocation}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
-            <ActivityIndicator color={commonStyles.btn2Color} size="small" />
+            <ActivityIndicator color={colors.maintheme} size="small" />
           ) : (
             <>
-              <MaterialIcons name="my-location" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="my-location" size={24} color={colors.maintheme} />
               <Text style={styles.currentLocationText}>
                 use current location
               </Text>
@@ -390,7 +393,7 @@ const SelectServiceFromLocation = ({navigation, route}) => {
                   key={result.place_id}
                   style={styles.searchResultItem}
                   onPress={() => handlePlaceSelect(result.place_id)}>
-                  <MaterialIcons name="location-on" size={20} color={commonStyles.btn2Color} />
+                  <MaterialIcons name="location-on" size={20} color={colors.maintheme} />
                   <View style={styles.searchResultText}>
                     <Text style={styles.searchResultMain}>
                       {result.structured_formatting?.main_text}
@@ -407,9 +410,9 @@ const SelectServiceFromLocation = ({navigation, route}) => {
       </View>
 
       {!isKeyboardVisible && (
-        <View style={styles.bottomContainer}>
+        <View style={[styles.bottomContainer,{paddingBottom:insets.bottom+10}]}>
           <View style={styles.locationInfo}>
-            <MaterialIcons name="location-on" size={24} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={24} color={colors.maintheme} />
             <View style={styles.locationDetails}>
               <Text style={styles.locationTitle}>
                 {city || 'Select Location'}
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor:colors.maintheme,
     height: responsiveHeight(15),
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -479,7 +482,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color:colors.white,
     marginLeft: 10,
   },
   mapContainer: {
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   currentLocationText: {
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -535,7 +538,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     elevation: 3,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
   },
   searchIcon: {
     marginRight: 10,
@@ -608,7 +611,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

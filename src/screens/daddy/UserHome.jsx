@@ -19,41 +19,35 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import Clock from './tabassets/Clock';
-import {Shadow} from 'react-native-shadow-2';
-import ShopSection from './builder/ShopSection';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   getBanners,
   getCategories,
-  getSubCategories,
   setActiveCategoryIndex,
-  setsubCategory,
-  getAddressList,
-  updateUserAddress,
-  checkAddressExistence,
-  getRestaurantsHome,
+  addToCart,
+  removeFromCart,
+  getCategoryItems
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
-import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
-import ServiceUnavailableScreen from './ServiceUnavailableScreen';
+import { getAvailableLocations, setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
 import NetInfo from '@react-native-community/netinfo';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Skeleton from './Skeleton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import Permissions, { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
+import  { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import StarIcon from './svg/StarIcon';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
-import { indiviadualShop } from '../../redux/reducers/addressSlice';
+import { staticMenuItems } from '../../assets/staticjsons';
+import MenuItemCard from './MenuItemCard';
+import ItemModal from '../../components/ItemModal';
 
 export default function UserHome({navigation}) {
-  const {categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList,userAddress, 
-    serviceAvailable, homeRestaurnats} = useSelector(state => state.Dashboard);
-    const {locationName} = useSelector(state => state.Auth);
+  const {categories, banners, activeCategoryIndex, loading,userAddress, 
+     cartItems,categoryItems} = useSelector(state => state.Dashboard);
+    const {locationName,customerId,availableLocations} = useSelector(state => state.Auth);
   const {isNetworkConnected} = useSelector(state => state.address);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,19 +55,21 @@ export default function UserHome({navigation}) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filteredItems, setFilteredItems] = useState([]);
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
-  const [mounted, setMounted] = useState(true);
   const isFocused = useIsFocused();
   const [initialNetLoad, setInitialNetLoad] = useState(false);
-  const [serviceCheckFailed, setServiceCheckFailed] = useState(false);
   const [errorOccured, setErrorOccured] = useState(false);
   const networkStatusRef = useRef(isNetworkConnected);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState();
 
 useEffect(() => {
   networkStatusRef.current = isNetworkConnected;
+  dispatch(getAvailableLocations())
 }, [isNetworkConnected]);
-
   // Calculate isLoading from Redux loading states
   const isLoading = (
     loading.addressCheck || 
@@ -98,6 +94,8 @@ useEffect(() => {
       return 'Error getting address';
     }
   };
+
+
 
   const getCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
@@ -126,7 +124,6 @@ useEffect(() => {
 
         if(!isNetworkConnected) return
 
-        dispatch(updateUserAddress(currentLocationAddress));
         setSelectedAddress(currentLocationAddress);
         setIsLoadingLocation(false);
       },
@@ -143,6 +140,7 @@ useEffect(() => {
     );
   }, [dispatch, userAddress]);
 
+  console.log(banners,"++++++++++++BANNERS")
 
   const requestLocationPermission = useCallback(async () => {
     try {
@@ -169,19 +167,18 @@ useEffect(() => {
     }
   }, [getCurrentLocation, navigation, isNetworkConnected]);
 
-  const getCategoreis = async () => {
+  const getCategoriesAndItems = async () => {
     try {
       setErrorOccured(false)
-     dispatch(getCategories());
-     dispatch(getSubCategories({categoryId: activeCategoryIndex}));
-    dispatch(getBanners());
-    if (!restaurants || restaurants.length === 0) {
-      dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
-      // dispatch(getRestaurants({categoryId: activeCategoryIndex}));
-    }
+      dispatch(getBanners());
+      const categoriesResponse = await dispatch(getCategories());
+      if (categoriesResponse?.payload?.data?.length > 0) {
+        dispatch(setActiveCategoryIndex(categoriesResponse.payload.data[0].id))
+        dispatch(getCategoryItems({categoryId:categoriesResponse.payload.data[0].id}))
+      }
     } catch (error) {
       setErrorOccured(true)
-      console.log("ERRORIN INITIAL LOAD",error)
+      console.log("ERROR IN INITIAL LOAD", error)
     }
   };
 
@@ -207,11 +204,11 @@ useEffect(() => {
     initializeLocation();
   }, [userAddress, authLocation, requestLocationPermission]);
 
-  useFocusEffect(
-    useCallback(() => {
-      dispatch(getAddressList());
-    }, [activeCategoryIndex]),
-  );
+  useEffect(() => {
+    if (isNetworkConnected && (selectedAddress || authLocation)) {
+      getCategoriesAndItems();
+    }
+  }, [isNetworkConnected, selectedAddress, authLocation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -226,9 +223,11 @@ useEffect(() => {
 
   const handleSubCategories = category => {
     dispatch(setActiveCategoryIndex(category.id));
-    dispatch(getSubCategories({categoryId: category.id}));
-    dispatch(getRestaurantsHome({categoryId: category.id}));
-    dispatch(setOrderOfferAmount(category.order_offer_amount));
+    dispatch(getCategoryItems({categoryId:category.id}))
+    setSelectedCategory(category.category_name);
+    // Clear search when switching categories
+    setSearchQuery('');
+    setFilteredItems([]); // This will be updated when new categoryItems load
   };
 
   useFocusEffect(
@@ -249,277 +248,221 @@ useEffect(() => {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    getCategoreis();
+    getCategoriesAndItems();
     setRefreshing(false);
-    dispatch(setActiveCategoryIndex(1));
   }, []);
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    navigation.navigate('CategoriesScreen');
-  };
-
-  const checkServiceAvailability = async () => {
-    const abortController = new AbortController();
     
-    const checkAvailability = async () => {
-      if (!authLocation || !mounted) return;
-      
-      try {
-        setErrorOccured(false)
-        const response = await dispatch(checkAddressExistence({
-          latitude: authLocation.latitude,
-          longitude: authLocation.longitude
-        })).unwrap();
-
-        if (mounted) {
-          await dispatch(setLocationName(response.data[0].location_name));
-          await dispatch(setLocationId(response.data[0].id));
-          if (response.data.length > 0) {
-            // Load essential data after service check
-            const result = await dispatch(getCategories());
-            dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
-            dispatch(getBanners());
-            if (!restaurants || restaurants.length === 0) {
-              dispatch(getRestaurantsHome({categoryId: activeCategoryIndex}));
-            }
-            dispatch(getSubCategories({categoryId: activeCategoryIndex}));
-          }
-        }
-      } catch (error) {
-        setErrorOccured(true)
-        if (error.name !== 'AbortError' && mounted) {
-          // console.error('Service check failed:', error);
-        }
-      }
-    };
-
-    checkAvailability();
-    return () => {
-      abortController.abort();
-      setMounted(false);
-    };
-  };
-
-  useEffect(() => {
-    if (authLocation) {
-      checkServiceAvailability();
-    }
-  }, [authLocation,serviceAvailable]);
-
-  const calculateDeliveryTime = (distance) => {
-    if (distance < 3) {
-      return '15-20 mins';
-    } else if (distance < 5) {
-      return '20-30 mins';
+    if (text.trim() === '') {
+      setFilteredItems(categoryItems);
     } else {
-      return '30-45 mins';
+      const filtered = categoryItems.filter(item => 
+        item.item_name?.toLowerCase().includes(text.toLowerCase()) ||
+        item.description?.toLowerCase().includes(text.toLowerCase()) ||
+        item.category_name?.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredItems(filtered);
     }
   };
 
-  // const updateRestaurantsData = async () => {
-  //   setIsUpdating(true);
-  //   // await dispatch(getRestaurants({ categoryId: activeCategoryIndex }));
-  //   setIsUpdating(false);
-  // };
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     updateRestaurantsData();
-  //   }, [activeCategoryIndex])
-  // );
-
-  // console.log(banners,"+++++++++++++++>>>>>>>BANNERS")
-
-  const handleBannerPress = async (banner) => {
-   const resp = await dispatch(indiviadualShop({shopId:banner?.shop_id}))
-   console.log("respon>>>>>>>>>>>>>>>>>",resp.payload.data[0])
-    // return
-    if(!resp.payload.data[0] || resp.payload.data[0]<=0) return
-    if(banner?.shop_id && banner?.shop_id!==0){
-     navigation.navigate('BannerRestaurantScreen', {
-       shopId: banner?.shop_id,
-       shopItem: banner?.item_id,
-       highlightItemId:0
-     });
-    }
-
+  const clearSearch = () => {
+    setSearchQuery('');
+    setFilteredItems(categoryItems);
   };
 
-  // Handle network connection changes
+  // Update filtered items when categoryItems change
+  useEffect(() => {
+    setFilteredItems(categoryItems);
+  }, [categoryItems]);
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(async state => {
       if (state.isConnected && !isNetworkConnected) {
-        // Connection restored - show loading state
-        // setRefreshing(true);
         setInitialNetLoad(true)
-        
-        await checkServiceAvailability()
-        // Refresh all data
-        await Promise.all([
-          dispatch(getCategories()),
-          dispatch(getBanners()),
-          dispatch(getRestaurantsHome({categoryId: activeCategoryIndex})),
-          dispatch(getSubCategories({categoryId: activeCategoryIndex}))
-        ]);
-        
-        
-        // Small delay to ensure smooth transition
+        getCategoriesAndItems()
         await new Promise(resolve => setTimeout(resolve, 500));
-        // setRefreshing(false);
         setInitialNetLoad(false)
       }
     });
     return () => unsubscribe();
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
 
-const popularRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) >= 4.5);
-const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) < 4.5);
+  // Cart handlers
+  const handleAddToCart = (item) => {
+    dispatch(addToCart(item));
+  };
+  const decreaseItem = (item) => {
+    dispatch(removeFromCart(item));
+  };
+
+  const handleItemClick = (item) => {
+    setSelectedItem(item);
+    setModalVisible(true);
+  };
 
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={'transparent'} translucent />
-      
+
       {isNetworkConnected === null ? (
-          <Skeleton/>
-      ) : !isNetworkConnected && !categories ? (
+        <Skeleton />
+      ) 
+      : !isNetworkConnected && !categories ? (
         <View style={styles.offlineContainer}>
-          <MaterialCommunityIcons name="wifi-off" size={40} color={colors.gray} />
-          <Text style={styles.offlineText}>No internet connection available</Text>
-          <Text style={styles.offlineSubText}>Please check your network settings</Text>
+          <MaterialCommunityIcons
+            name="wifi-off"
+            size={40}
+            color={colors.gray}
+          />
+          <Text style={styles.offlineText}>
+            No internet connection available
+          </Text>
+          <Text style={styles.offlineSubText}>
+            Please check your network settings
+          </Text>
         </View>
-      ) : serviceCheckFailed && !isLoading ? (
-        <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={40} color={colors.red} />
-          <Text style={styles.errorText}>Network Error</Text>
-          <Text style={styles.errorSubText}>Failed to connect to the server</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={checkServiceAvailability}
-          >
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      ) : isLoading || initialNetLoad ? (
-        <Skeleton/>
-      ) : serviceAvailable ? (
+      ) 
+      // : serviceCheckFailed && !isLoading ? (
+      //   <View style={styles.errorContainer}>
+      //     <MaterialIcons name="error-outline" size={40} color={colors.red} />
+      //     <Text style={styles.errorText}>Network Error</Text>
+      //     <Text style={styles.errorSubText}>
+      //       Failed to connect to the server
+      //     </Text>
+      //     <TouchableOpacity
+      //       style={styles.retryButton}
+      //       onPress={checkServiceAvailability}>
+      //       <Text style={styles.retryText}>Try Again</Text>
+      //     </TouchableOpacity>
+      //   </View>
+      // )
+       : isLoading || initialNetLoad ? (
+        <Skeleton />
+      )
+       : true ? (
         <>
-          <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}>
+          <LinearGradient
+            colors={[colors.maintheme, colors.maintheme]}
+            style={styles.gradientContainer}>
             <View style={styles.headerContainer}>
               <View>
-                <TouchableOpacity 
-                    onPress={() => navigation.navigate("SelectServiceFromLocation",{selectedAddress})} 
-                    style={styles.locationContainer}
-                  >
-                    <SimpleLineIcons name="location-pin" color="#000" size={22} />
-                    <View>
-                      <Text style={styles.locationTitle}>
-                        {locationName ? ( locationName || 'Current Location') : 'Select Location'}
+                <TouchableOpacity
+                disabled={true}
+                  onPress={() =>
+                    navigation.navigate('SelectServiceFromLocation', {
+                      selectedAddress,
+                    })
+                  }
+                  style={styles.locationContainer}>
+                  <SimpleLineIcons
+                    name="location-pin"
+                    color={colors.white}
+                    size={22}
+                  />
+                  <View>
+                    <Text style={styles.locationTitle}>
+                      {/* {locationName
+                        ? locationName || 'Current Location'
+                        : 'Select Location'} */}
+                        {availableLocations[0]?.location_name||""}
                     </Text>
-                    <Text style={styles.locationAddress} numberOfLines={1}>
-                        {selectedAddress?.full_address || 'Tap to choose delivery location'}
-                    </Text>
+                    <Text style={{color:"rgba(255, 255, 255, 0.85)",fontSize:12,fontWeight:"600"}}>123, Main Bazaar, Tirupati, Andhra Pradesh 517501</Text>
+                    {/* <Text style={styles.locationAddress} numberOfLines={1}>
+                      {selectedAddress?.full_address ||
+                        'Tap to choose delivery location'}
+                    </Text> */}
                   </View>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate('Notifications')} 
-                style={styles.supportButton}
-              >
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Notifications')}
+                style={styles.supportButton}>
                 <FontAwesome6 name="bell" size={20} color={colors.white} />
               </TouchableOpacity>
             </View>
 
-              <>
-                <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen',{isFromHome:true})} style={styles.searchContainer}>
-                  <TextInput
-                    placeholderTextColor={colors.gray}
-                    placeholder="Search for your favorites"
-                    style={styles.searchInput}
-                    value={searchQuery}
-                    onChangeText={handleSearch}
-                    editable={false}
-                  />
+            <>
+              <TouchableOpacity
+                // onPress={() =>
+                //   navigation.navigate('CategoriesScreen', {isFromHome: true})
+                // }
+                style={styles.searchContainer}>
+                <TextInput
+                  placeholderTextColor={colors.gray}
+                  placeholder="Search for your favorites"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  // editable={false}
+                />
+                {searchQuery.length > 0 ? (
+                  <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                    <Icon name="close" size={20} color={colors.gray} />
+                  </TouchableOpacity>
+                ) : (
                   <Icon name="search" size={24} color={colors.gray} />
-                </TouchableOpacity>
-
-                { categories && (
-                  <FlatList
-                    showsHorizontalScrollIndicator={false}
-                    data={categories}
-                    style={styles.categoriesList}
-                    horizontal
-                    key={item => item.id}
-                    renderItem={({item}) => {
-                      return item.id == activeCategoryIndex ? (
-                        <LinearGradient
-                          style={styles.activeItemTab}
-                          colors={[
-                            'rgba(255, 204, 0, 0.5)',
-                            colors.transparentWhite,
-                          ]}>
-                          <TouchableOpacity
-                            style={styles.activeItemTab}
-                            onPress={() => handleSubCategories(item)}>
-                            <Image
-                              source={{uri: item.category_image}}
-                              resizeMode="contain"
-                              style={styles.categoryImage}
-                            />
-                            <Text numberOfLines={1} style={styles.activeCategoryText}>
-                              {item.category_name}
-                            </Text>
-                          </TouchableOpacity>
-                        </LinearGradient>
-                      ) : (
-                        <TouchableOpacity onPress={() => handleSubCategories(item)}>
-                          <View style={styles.activeItemTab}>
-                            <Image
-                              source={{uri: item.category_image}}
-                              resizeMode="contain"
-                              style={styles.categoryImage}
-                            />
-                            <Text numberOfLines={1} style={styles.inactiveCategoryText}>
-                              {item.category_name}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    }}
-                  />
                 )}
-              </>
+              </TouchableOpacity>
+            </>
           </LinearGradient>
-         
+          <View style={{backgroundColor:colors.white,elevation:10,paddingBottom:3}}>
 
-                     {/* Popular Restaurants */}
-      {/* <View style={[commonStyles.row,commonStyles.mt24,{paddingHorizontal:16}]}>
-        <Text style={[commonStyles.title]}>Popular Foods</Text>
-        <TouchableOpacity onPress={()=>navigation.navigate('RestaurantsScreen')}>
-          <Text style={styles.moreText}>More</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        horizontal
-        data={popularFoods} contentContainerStyle={{padding:16}}
-        keyExtractor={item => item.id}
-        renderItem={({ item,index }) => (
-          <TouchableOpacity style={styles.popularCard} onPress={()=>{}}>
-            <View style={[{backgroundColor:`${index%2==0? '#FFF5B7':'#E7FFD3'}`},styles.popularImgContainer]}>
-              <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-              <Image source={item.image} style={styles.foodImage} />
-              </View>
-              <Text style={[commonStyles.text3,{paddingLeft:16,paddingBottom:16,fontWeight:'700',color:'#656565'}]}>⭐ {item.rating}</Text>
-            </View>
-            <View style={styles.popularFoodsBottomContainer}>
-            <Text style={commonStyles.label}>{item.title}</Text>
-            <Text style={{fontSize:11,fontWeight:'400'}}>{item.text}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-        showsHorizontalScrollIndicator={false}
-      /> */}
+          {categories && (
+              <FlatList
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{paddingRight:responsiveWidth(6)}}
+                data={categories}
+                style={styles.categoriesList}
+                horizontal
+                key={item => item.id}
+                renderItem={({item}) => {
+                  const isActive = item.id == activeCategoryIndex;
+                  
+                  return isActive ? (
+                    <LinearGradient
+                      style={[styles.activeItemTab]}
+                      colors={[colors.transparentWhite, colors.maintheme]}>
+                      <TouchableOpacity
+                        style={styles.activeItemTab}
+                        onPress={() => handleSubCategories(item)}>
+                        <Image
+                          source={{uri:item.category_image}}
+                          resizeMode="cover"
 
+                          style={styles.categoryImage}
+                        />
+                        <Text
+                          numberOfLines={1}
+                          style={styles.activeCategoryText}>
+                          {item.category_name}
+                        </Text>
+                      </TouchableOpacity>
+                    </LinearGradient>
+                  ) : (
+                    <TouchableOpacity onPress={() => handleSubCategories(item)}>
+                      <View style={styles.activeItemTab}>
+                        <Image
+                          source={{uri:item.category_image}}
+                          resizeMode="contain"
+                          style={styles.categoryImage}
+                        />
+                        <Text
+                          numberOfLines={1}
+                          style={styles.inactiveCategoryText}>
+                          {item.category_name}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+
+          </View>
+
+        
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -530,212 +473,96 @@ const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant =
                 colors={[commonStyles.btn2Color]}
               />
             }
-            style={styles.container}
-          >
-            <View>
-                <FlatList
-                  data={subCategories}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={item => item.id}
-                  contentContainerStyle={styles.listContainer}
-                  renderItem={({item}) => (
-                    <Shadow
-                      distance={15}
-                      offset={[15, 17]}
-                      startColor="rgba(128, 128, 128, 0.07)"
-                      style={styles.subCategoryShadow}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          dispatch(setsubCategory(item));
-                          navigation.navigate('CategorieItems');
-                        }}
-                        style={styles.subCategoryButton}>
-                        <Shadow
-                          distance={15}
-                          shadowOpacity={0.2}
-                          offset={[0, 0]}
-                          startColor="rgba(246, 195, 174, 0.3)">
-                          <View style={styles.subCategoryImageContainer}>
-                            <Image
-                              source={{uri: item.sub_category_image}}
-                              style={styles.subCategoryImage}
-                            />
-                          </View>
-                        </Shadow>
-                        <Text style={styles.categoryText}>
-                          {item.sub_category_name}
-                        </Text>
-                      </TouchableOpacity>
-                    </Shadow>
-                  )}
-                />
-            </View>
+            style={styles.container}>
 
-              <FlatList
+          {/* Render static menu items below categories */}
+          
+          <View style={{marginTop: 0}}>
+          <FlatList
                 ref={flatListRef}
                 data={banners}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
                 renderItem={({item}) => (
-                  <TouchableOpacity onPress={() => handleBannerPress(item)} style={styles.bannerContainer}>
+                  <View style={styles.bannerContainer}>
                     <Image
                       source={{uri: item.banner_image}}
                       style={styles.bannerImage}
                     />
-                  </TouchableOpacity>
+                   </View>
                 )}
               />
-
-                     {/* Popular Restaurants */}
-      <View style={[commonStyles.row,commonStyles.mt24,{paddingHorizontal:16}]}>
-        <Text style={{fontSize:18,fontWeight:'600',color:'#2B2B2B'}}>Popular Restaurants</Text>
-        {/* <TouchableOpacity onPress={()=>navigation.navigate('RestaurantsScreen')}>
-          <Text style={styles.moreText}>More</Text>
-        </TouchableOpacity> */}
-      </View>
-      <FlatList
-        horizontal
-        data={popularRestaurants} 
-        contentContainerStyle={{padding:16}}
-        keyExtractor={item => item.id}
-        ListEmptyComponent={()=><View style={{alignItems:"center",justifyContent:"center",height:responsiveHeight(10),width:responsiveWidth(100)}}>
-          <Text style={{fontSize:14,fontWeight:'400',color:'#656565'}}>No popular restaurants available</Text>
-        </View>}
-        renderItem={({ item,index }) => {
-          const isUnavailable = item.shop_active_status === "1";
-           const distance = item.distance;
-          return (
-          <TouchableOpacity style={[styles.popularCard, isUnavailable && styles.unavailableCard]} onPress={()=>{
-            if (!isUnavailable) {
-              navigation.navigate('RestaurantScreen', {
-                shopId: item.shop_id,
-                shopItem: item.shop_items_tb_nm,
-                item,
-                  });
-                }
               
-          }}>
-            {/* <View style={[styles.popularImgContainer]}> */}
-              <View style={{position:'relative'}}>
-              {isUnavailable && (
-                            <View style={styles.unavailableOverlay}>
-                              <Text style={[styles.unavailableText,{color:"red"}]}>Currently Unavailable</Text>
-                            </View>
-                          )}
-                <Image source={item?.shop_image ? {uri:item?.shop_image} : ''} style={styles.foodImage} />
-                <View style={{flexDirection:'row',position:'absolute',left:8,bottom:8}}>
-                  <StarIcon />
-                  <Text style={[commonStyles.text3,{fontWeight:'700',color:'#fff'}]}>{item.shop_rating}</Text>
-              </View>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionAccentBar} />
+              <Text style={styles.sectionHeaderText}>Recommended For You</Text>
+              <View style={styles.sectionHeaderLine} />
             </View>
-            {/* </View> */}
-            <View style={[styles.popularFoodsBottomContainer,{backgroundColor:`${index%2==0? '#FFF5B7':'#E7FFD3'}`}]}>
-              <Text style={commonStyles.label}>{item.shop_name}</Text>
-            <View style={{flexDirection:"row",gap:8,paddingTop:4}}>
-              <Clock />
-              <Text style={{fontSize:11,fontWeight:'400'}}>{calculateDeliveryTime(distance)}</Text>
-            </View>
-            </View>
-          </TouchableOpacity>
-        )}}
-        showsHorizontalScrollIndicator={false}
-      />
-
-            {activeCategoryIndex === 1 || true ? (
-              <View>
-                <Text style={styles.sectionTitle}>Restaurants Near You</Text>
-
-                {nearbyRestaurants?.length > 0 ? (
-                  <FlatList
-                    showsVerticalScrollIndicator={false}
-                    data={nearbyRestaurants}
-                    keyExtractor={item => item.shop_id}
-                    renderItem={({item}) => {
-                      const isUnavailable = item.shop_active_status === "1";
-                      const distance = item.distance;
-                      
-                      return (
-                      <TouchableOpacity
-                          style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
-                          onPress={() => {
-                            if (!isUnavailable) {
-                          navigation.navigate('RestaurantScreen', {
-                            shopId: item.shop_id,
-                            shopItem: item.shop_items_tb_nm,
-                            item,
-                              });
-                            }
-                          }}
-                          disabled={isUnavailable}
-                        >
-                          {isUnavailable && (
-                            <View style={styles.unavailableOverlay}>
-                              <Text style={styles.unavailableText}>Currently Unavailable</Text>
-                            </View>
-                          )}
-                          
-                        <Image
-                          source={{uri: item.shop_image}}
-                            style={[styles.restaurantImage, isUnavailable && styles.grayImage]}
-                          />
-                          <View style={styles.restaurantInfo}>
-                            <Text style={styles.restaurantName}>
-                              {item.shop_name}
-                            </Text>
-                            <Text style={styles.restaurantType}>
-                              {item.shop_address}
-                            </Text>
-                            <View style={styles.restaurantStats}>
-                              <View style={styles.statItem}>
-                                {/* <ReviewStar /> */}
-                                <StarIcon  />
-                                <Text style={styles.statText}>{item.shop_rating}</Text>
-                              </View>
-
-                            <View style={styles.statItem}>
-                              <MaterialCommunityIcons  name="map-marker-distance" size={responsiveFontSize(2.5)} color={"#065E2C"} />
-                              <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
-                            </View>
-                           
-                            <View style={styles.statItem}>
-                              <Clock />
-                              <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                      );
-                    }}
+            {filteredItems.length > 0 ? (
+              <FlatList
+                data={filteredItems}
+                keyExtractor={item => item.id.toString()}
+                renderItem={({ item }) => (
+                  <MenuItemCard
+                    item={item}
+                    cartItems={cartItems}
+                    handleAddToCart={handleAddToCart}
+                    decreaseItem={decreaseItem}
+                    onPress={() => handleItemClick(item)}
                   />
-            ) : (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No restaurants found in your area</Text>
-                </View>
-            )}
+                )}
+                numColumns={2}
+                contentContainerStyle={{paddingHorizontal: 10, paddingBottom: 20}}
+                columnWrapperStyle={{justifyContent: 'space-between'}}
+              />
+            ) : searchQuery.trim() !== '' ? (
+              <View style={styles.noItemsContainer}>
+                <MaterialIcons name="search" size={60} color={colors.gray} />
+                <Text style={styles.noItemsText}>No items found</Text>
+                <Text style={styles.noItemsSubText}>
+                  No items match your search "{searchQuery}"
+                </Text>
               </View>
-            ) : <ShopSection shops={restaurants} />
-            }
+            ) : (
+              <View style={styles.noItemsContainer}>
+                <MaterialIcons name="restaurant-menu" size={60} color={colors.gray} />
+                <Text style={styles.noItemsText}>No items found</Text>
+                <Text style={styles.noItemsSubText}>
+                  No {selectedCategory} items available at the moment
+                </Text>
+              </View>
+            )}
+          </View>
+         {modalVisible && <ItemModal
+           cartItems={cartItems}
+           handleAddToCart={handleAddToCart}
+           decreaseItem={decreaseItem}
+            visible={modalVisible}
+            item={selectedItem}
+            onAddToCart={handleAddToCart}
+            onClose={() => setModalVisible(false)}
+          />}
+  
           </ScrollView>
         </>
-      ) : serviceAvailable===false ?(
-        <ServiceUnavailableScreen />
       ) 
-      : !categories && !errorOccured ? <Skeleton /> :
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Something went wrong</Text>
-        <TouchableOpacity 
-          style={styles.retryButton} 
-          onPress={() => {
-            checkServiceAvailability();
-            getCategoreis();
-          }}
-        >
-          <Text style={styles.retryText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
-      }
+      // : serviceAvailable === false ? (
+      //   <ServiceUnavailableScreen />
+      // ) 
+      // : !categories && !errorOccured ? (
+      //   <Skeleton />
+      // )
+       : (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Something went wrong</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={getCategoriesAndItems}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -752,7 +579,10 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   gradientContainer: {
-    paddingTop: 40,
+    paddingTop: 35,
+    paddingBottom:responsiveHeight(2),
+    borderBottomLeftRadius:responsiveWidth(5),
+    borderBottomRightRadius:responsiveWidth(5)
   },
   headerContainer: {
     flexDirection: 'row',
@@ -766,12 +596,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   locationTitle: {
-    color: '#000',
+    color: colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
   locationAddress: {
-    color: '#000',
+    color: colors.white,
     fontWeight: '500',
     fontSize: 14,
     width: responsiveWidth(50),
@@ -779,7 +609,7 @@ const styles = StyleSheet.create({
   supportButton: {
     width: 44,
     height: 44,
-    backgroundColor: colors.yellow,
+    backgroundColor:colors.mainthene,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
@@ -787,12 +617,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     marginTop: 15,
     backgroundColor: colors.white,
-    borderRadius: 15,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
+    height: 40,
     paddingHorizontal: 10,
-    marginHorizontal: responsiveWidth(3),
+    marginHorizontal: responsiveWidth(4),
   },
   searchInput: {
     fontSize: 16,
@@ -804,29 +634,35 @@ const styles = StyleSheet.create({
     // paddingVertical: 6,
     // paddingHorizontal: 8,
   },
+  clearButton: {
+    padding: 5,
+  },
   categoriesList: {
-    marginTop: 20,
+    marginTop: 7,
+    paddingHorizontal:responsiveWidth(2.8),
   },
   activeItemTab: {
-    width: responsiveWidth(25),
-    height: 69,
+    width: responsiveHeight(10),
+    height: responsiveHeight(9),
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   categoryImage: {
-    width: 49,
-    height: 48,
+    width: "90%",
+    height: responsiveHeight(6),
   },
   activeCategoryText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    color: commonStyles.btnColor,
+    color: colors.white,
+    textTransform: 'capitalize',
   },
   inactiveCategoryText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
     color: colors.gray,
+    textTransform: 'capitalize',
   },
   subCategoryShadow: {
     marginHorizontal: 5,
@@ -856,7 +692,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   bannerContainer: {
-    width: responsiveWidth(100),
+    width: responsiveWidth(95),
     alignItems: 'center',
     marginVertical: 10,
   },
@@ -1045,7 +881,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: colors.maintheme,
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
@@ -1100,5 +936,50 @@ const styles = StyleSheet.create({
     fontWeight:'700',
     color:'rgba(101, 101, 101, 0.50)',
     // marginTop:8,
+  },
+  noItemsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noItemsText: {
+    fontSize: 18,
+    color: '#333',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  noItemsSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 13,
+    marginBottom: 15,
+    marginTop: 2,
+  },
+  sectionAccentBar: {
+    width: 5,
+    height: 20,
+    backgroundColor: colors.maintheme,
+    borderRadius: 3,
+    marginRight: 10,
+  },
+  sectionHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.maintheme,
+    marginRight: 10,
+    letterSpacing: 0.5,
+  },
+  sectionHeaderLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: colors.maintheme,
+    borderRadius: 1,
   },
 });

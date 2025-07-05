@@ -27,6 +27,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../config/theme';
 
 const CartScreen = ({navigation,route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -63,6 +64,8 @@ const CartScreen = ({navigation,route}) => {
   };
 
   const handleCheckoutPress = () => {
+    navigation.navigate('AddressList', {isFromCart: true});
+    return
     if (!customerId) {
       setShowLoginModal(true);
     } else {
@@ -91,7 +94,7 @@ const CartScreen = ({navigation,route}) => {
   };
 
   const navigateToCategories = () => {
-    navigation.navigate('Categories');
+    navigation.navigate('Home');
   };
 
   const renderCartItem = ({item}) => {
@@ -118,7 +121,7 @@ const CartScreen = ({navigation,route}) => {
               <TouchableOpacity
                 onPress={() => handleRemoveFromCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="minus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="minus" size={16} color={colors.maintheme} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>
                 {item.quantity}
@@ -126,7 +129,7 @@ const CartScreen = ({navigation,route}) => {
               <TouchableOpacity
                 onPress={() => handleAddToCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="plus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="plus" size={16} color={colors.maintheme} />
               </TouchableOpacity>
             </View>
             <Text style={styles.itemTotalPrice}>₹ {eachPrice}</Text>
@@ -163,10 +166,10 @@ const CartScreen = ({navigation,route}) => {
         </View>
       ) : (
         <LinearGradient
-          colors={['#FD0', '#F7F2F2']}
+          colors={[colors.maintheme,colors.maintheme]}
           style={styles.gradientContainer}>
           <View style={styles.headerContainer}>
-            <CartInactive color="#000" />
+            <CartInactive color={colors.white} />
             <Text style={styles.headerTitle}>Your Cart</Text>
           </View>
         {filteredCartItems.length >0 &&  <View style={styles.searchContainer}>
@@ -328,7 +331,7 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
   exploreButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     width: responsiveWidth(85),
     paddingVertical: responsiveHeight(1.7),
     borderRadius: 8,
@@ -383,7 +386,7 @@ const styles = StyleSheet.create({
   },
   totalPrice: {
     fontSize: 18,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
   },
   gradientContainer: {
@@ -398,7 +401,7 @@ const styles = StyleSheet.create({
     marginBottom:10
   },
   headerTitle: {
-    color: '#000',
+    color: colors.white,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -457,14 +460,14 @@ const styles = StyleSheet.create({
   },
   foodPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 6,
   },
   quantityButton: {
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: 5,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   addMoreContainer: {},
   addMoreText: {
@@ -495,7 +498,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   addressButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -615,7 +618,7 @@ const styles = StyleSheet.create({
   },
   sellingPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
     textAlign:"left"
   },

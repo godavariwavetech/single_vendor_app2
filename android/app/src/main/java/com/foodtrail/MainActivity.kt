@@ -1,4 +1,4 @@
-package com.foodtrail
+package com.intlokitchen
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

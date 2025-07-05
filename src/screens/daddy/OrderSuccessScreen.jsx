@@ -15,6 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../redux/reducers/daddy';
 import { removeCoupon } from '../../redux/reducers/coupons';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { orderSuccess } from '../../assets';
 
 const OrderSuccessScreen = ({ navigation, route }) => {
   const {selectedAddress} = useSelector(state => state.address);
@@ -50,7 +52,7 @@ const OrderSuccessScreen = ({ navigation, route }) => {
       
       <View style={styles.content}>
         {/* <View style={styles.checkmarkContainer}> */}
-            <Image source={require('../daddy/tabassets/orderSuccess.png')}  resizeMode='contain' style={styles.checkmarkImage} />
+            <Image source={orderSuccess}  resizeMode='contain' style={styles.checkmarkImage} />
           {/* <MaterialIcons name="check" size={40} color="#fff" /> */}
         {/* </View> */}
         
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor:colors.maintheme,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: responsiveHeight(3),
@@ -135,7 +137,8 @@ const styles = StyleSheet.create({
   checkmarkImage:{
     width:responsiveWidth(90),
     height:responsiveWidth(50),
-    marginBottom:responsiveHeight(1)
+    marginBottom:responsiveHeight(1),
+    tintcolor:colors.maintheme
   }
 });
 

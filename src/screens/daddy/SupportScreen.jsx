@@ -7,6 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch } from'react-redux';
 import { getChargesList } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const SupportScreen = ({ navigation }) => {
   const dispatch = useDispatch(); 
@@ -42,10 +43,10 @@ const SupportScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={"transparent"} barStyle={'light-content'} />
-      <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}>
+      <LinearGradient colors={[colors.maintheme, colors.maintheme]} style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+            <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Support</Text>
         </View>
@@ -56,15 +57,15 @@ const SupportScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.contactOptions}>
             <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
-              <MaterialIcons name="phone" size={32} color={commonStyles.btn2Color} />
+              <MaterialIcons name="phone" size={32} color={colors.maintheme} />
               <Text style={styles.contactText}>Call Support Team</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
-              <MaterialIcons name="email" size={32} color={commonStyles.btn2Color} />
+              <MaterialIcons name="email" size={32} color={colors.maintheme} />
               <Text style={styles.contactText}>Send Email</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
-              <FontAwesome6 name="whatsapp" size={32} color={commonStyles.btn2Color} />
+              <FontAwesome6 name="whatsapp" size={32} color={colors.maintheme} />
               <Text style={styles.contactText}>Chat on WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     marginRight: responsiveWidth(5),
   },
   headerTitle: {
-    color: '#000',
+    color:colors.white,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   contactText: {
     marginTop: 0,
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
   },
 });

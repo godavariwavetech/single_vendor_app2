@@ -1,0 +1,5 @@
+export const c1 = require('./c1.png')
+export const c2 = require('./c2.png')
+export const c3 = require('./c3.png')
+export const c4 = require('./c4.png')
+export const c5 = require('./c5.png')

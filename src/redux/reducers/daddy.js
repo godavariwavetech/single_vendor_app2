@@ -41,29 +41,10 @@ const initialState = {
   products: [],        
   total: 0,           
   checkoutStatus: null,
-  homeRestaurnats : null
+  homeRestaurnats : null,
+  categoryItems:[]
 };
 
-export const checkAddressExistence = createAsyncThunk(
-  "checkAddressExistence",
-  async(
-      {latitude,longitude},
-      {getState, rejectWithValue, fulfillWithValue}
-  ) =>{
-    const data={
-      "location_latitude": latitude,
-      "location_longitude": longitude
-    }
-    const response = await api.post(endpoints.CHECK_ADDRESS_EXISTENCE,data);
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
-      } else {
-        return rejectWithValue('Something went wrong!');
-      }
-    }
-  }
-)
 
 export const getServicesList = createAsyncThunk(
   "getServicesList",
@@ -109,10 +90,8 @@ export const getCategories = createAsyncThunk(
         _,
         {getState, rejectWithValue, fulfillWithValue}
     ) =>{
-      const {locationId} = getState().Auth;
-        const response = await api.post(endpoints.DADDY_GET_CATEGORIES,{
-          "location_id": locationId
-      });
+      try {
+        const response = await api.get(endpoints.DADDY_GET_CATEGORIES);
         if (response) {
             if (response.data) {
               return fulfillWithValue(response.data);
@@ -120,95 +99,23 @@ export const getCategories = createAsyncThunk(
               return rejectWithValue('Something went wrong!');
             }
           }
+      } catch (error) {
+        console.log(error,">>>>>>>>>>>>>>>>>>ERROR")
+      }
     }
 )
 
-export const getSubCategories = createAsyncThunk(
-    "getSubCategories",
-    async(
-        {categoryId},
-        {getState, rejectWithValue, fulfillWithValue}
-    ) =>{
-      const {locationId} = getState().Auth;
-
-        const data={
-            "category_id": categoryId,
-            "location_id": locationId  
-        }
-        console.log(">>>>>>>>>>>>>>>>>>>>>>IDDD",data)
-        const response = await api.post(endpoints.GET_SUB_CATEGORIES,data);
-        if (response) {
-            if (response.data) {
-              return fulfillWithValue(response.data);
-            } else {
-              return rejectWithValue('Something went wrong!');
-            }
-          }
-    }
-)
-
-export const getBanners = createAsyncThunk(
-    "getBanners",
-    async(
-        _,
-        {getState, rejectWithValue, fulfillWithValue}
-    ) =>{
-      const {locationId} = getState().Auth;
-        const response = await api.post(endpoints.GET_BANNER,{
-            "location_id": locationId
-        });
-        if (response) {
-            if (response.data) {
-              return fulfillWithValue(response.data);
-            } else {
-              return rejectWithValue('Something went wrong!');
-            }
-          }
-    }
-)
-
-export const getRestaurants = createAsyncThunk(
-    "getRestaurants",
-    async(
-        {categoryId,subCatergoryId},
-        {getState, rejectWithValue, fulfillWithValue}
-    ) =>{
-
-      const {location,locationId} = getState().Auth;
-        const response = await api.post(endpoints.GET_SHOPS,{
-            "shop_latitude": location.latitude,
-            "shop_longitude": location.longitude,
-            "location_id": locationId,
-            "category_id": categoryId,
-            "sub_category_id":subCatergoryId||0,
-            "shop_id": 0
-        })
-        if (response) {
-            if (response.data) {
-              return fulfillWithValue(response.data);
-            } else {
-              return rejectWithValue('Something went wrong!');
-            }
-          }
-    }
-)
-
-export const getRestaurantsHome = createAsyncThunk(
-  "getRestaurantsHome",
+export const getCategoryItems = createAsyncThunk(
+  "getCategoryItems",
   async(
-      {categoryId,subCatergoryId},
+    {categoryId},
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
-
-    const {location,locationId} = getState().Auth;
-      const response = await api.post(endpoints.GET_SHOPS,{
-          "shop_latitude": location.latitude,
-          "shop_longitude": location.longitude,
-          "location_id": locationId,
-          "category_id": categoryId,
-          "sub_category_id":subCatergoryId||0,
-          "shop_id": 0
-      })
+    try {
+      const data={
+        "category_id": categoryId
+    }
+      const response = await api.post(endpoints.GET_CATEGORY_ITEMS,data);
       if (response) {
           if (response.data) {
             return fulfillWithValue(response.data);
@@ -216,6 +123,9 @@ export const getRestaurantsHome = createAsyncThunk(
             return rejectWithValue('Something went wrong!');
           }
         }
+    } catch (error) {
+      console.log(error,">>>>>>>>>>>>>>>>>>ERROR")
+    }
   }
 )
 
@@ -247,11 +157,11 @@ export const getOrders = createAsyncThunk(
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
     const {customerId} = getState().Auth;
-    console.log(customerId,"+++++++++++++++++CUSTOMERID")
       const response = await api.post(endpoints.GET_ORDERS,{
        "customer_id": customerId,
        "order_id":orderId
       })
+      console.log(response,"ORDER RESPONSE")
       if (response) {
           if (response.data) {
             return fulfillWithValue(response.data);
@@ -281,22 +191,6 @@ export const getOrderDetails = createAsyncThunk(
   }
 )
 
-export const getAllCategories = createAsyncThunk(
-  "getAllCategories",
-  async(
-      _,
-      {getState, rejectWithValue, fulfillWithValue}
-  ) =>{
-      const response = await api.post(endpoints.GET_ALL_CATEGORIES)
-      if (response) {
-          if (response.data) {
-            return fulfillWithValue(response.data);
-          } else {
-            return rejectWithValue('Something went wrong!');
-          }
-        }
-  }
-)
 
 export const getAddressList = createAsyncThunk(
   "getAddressList",
@@ -345,6 +239,23 @@ export const setAddressList = createAsyncThunk(
         }
   }
 )
+export const getBanners = createAsyncThunk(
+  "getBanners",
+  async(
+      _,
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+
+      const response = await api.get(endpoints.GET_BANNER);
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+  }
+)
 
 export const deleteAddress = createAsyncThunk(
   "deleteAddress",
@@ -352,10 +263,8 @@ export const deleteAddress = createAsyncThunk(
       {addressId},
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
-    const {customerId} = getState().Auth;
 
     const data={
-      "customer_id": customerId,
       "id": addressId
   }
       const response = await api.post(endpoints.DELETE_ADDRESS_LIST,data)
@@ -534,21 +443,6 @@ export const Dashboard = createSlice({
   },
   extraReducers: builder => {
 
-    builder.addCase(checkAddressExistence.pending, (state) => {
-      state.loading.addressCheck = true;
-    });
-    builder.addCase(checkAddressExistence.fulfilled, (state, action) => {
-      state.loading.addressCheck = false;
-      state.message = null;
-      state.serviceAvailable = action.payload.data.length > 0;
-      if (!action.payload.data.service_available) {
-        state.serviceLocations = action.payload.data.available_locations;
-      }
-    });
-    builder.addCase(checkAddressExistence.rejected, (state) => {
-      state.loading.addressCheck = false;
-    });
-
     builder.addCase(getCategories.pending, (state, action) => {
       state.loading.categories = true;
       state.message = null;
@@ -564,49 +458,19 @@ export const Dashboard = createSlice({
     });
 
 
-    builder.addCase(getSubCategories.pending, (state, action) => {
-      state.loading.subCategories = true;
+    builder.addCase(getCategoryItems.pending, (state, action) => {
       state.message = null;
     });
-    builder.addCase(getSubCategories.fulfilled, (state, action) => {
-      state.loading.subCategories = false;
+    builder.addCase(getCategoryItems.fulfilled, (state, action) => {
       state.message = null;
-      state.subCategories = action.payload.data;
+      state.categoryItems = action.payload.data;
     });
-    builder.addCase(getSubCategories.rejected, (state, action) => {
-      state.loading.subCategories = false;
+    builder.addCase(getCategoryItems.rejected, (state, action) => {
       state.message = 'Please try again!';
     });
 
-    builder.addCase(getBanners.pending, (state, action) => {
-      state.loading.banners = true;
-      state.message = null;
-    });
-    builder.addCase(getBanners.fulfilled, (state, action) => {
-      state.loading.banners = false;
-      state.message = null;
-      state.banners = action.payload.data;
-    });
-    builder.addCase(getBanners.rejected, (state, action) => {
-      state.loading.banners = false;
-      state.message = 'Please try again!';
-    });
 
-    builder.addCase(getRestaurants.pending, (state, action) => {
-      state.loading.restaurants = true;
-      state.message = null;
-      state.restaurants = [];
-    });
-    builder.addCase(getRestaurants.fulfilled, (state, action) => {
-      state.loading.restaurants = false;
-      state.message = null;
-      state.restaurants = action.payload.data[0];
-      state.itemsFilter = action.payload.data[1];
-    });
-    builder.addCase(getRestaurants.rejected, (state, action) => {
-      state.loading.restaurants = false;
-      state.message = 'Please try again!';
-    });
+
 
     builder.addCase(getItemsList.pending, (state, action) => {
       state.loading.itemsList = true;
@@ -654,21 +518,6 @@ export const Dashboard = createSlice({
       state.message = 'Please try again!';
     });
 
-    builder.addCase(getAllCategories.pending, (state, action) => {
-      // state.loading.itemsList = true;
-      state.message = null;
-      // state.restaurants = [];
-    });
-    builder.addCase(getAllCategories.fulfilled, (state, action) => {
-      // state.loading.itemsList = false;
-      state.message = null;
-      state.allCategories=action.payload.data
-    
-    });
-    builder.addCase(getAllCategories.rejected, (state, action) => {
-      state.loading.itemsList = false;
-      state.message = 'Please try again!';
-    });
 
     builder.addCase(getAddressList.pending, (state, action) => {
       state.loading = true;
@@ -710,55 +559,22 @@ export const Dashboard = createSlice({
       state.message = 'Please try again!';
     });
 
-    builder.addCase(checkServiceAvailability.pending, (state) => {
-      state.loading = true;
+    builder.addCase(getBanners.pending, (state, action) => {
+      state.message = null;
     });
-    builder.addCase(checkServiceAvailability.fulfilled, (state, action) => {
-      state.loading = false;
-      state.serviceAvailable = action.payload.available;
+    builder.addCase(getBanners.fulfilled, (state, action) => {
+      console.log(">>>>>>>>>>>>>>>>>>>ACOION",action.payload)
+      state.message = null;
+      state.banners = action.payload.data;
     });
-    builder.addCase(checkServiceAvailability.rejected, (state) => {
-      state.loading = false;
-    });
-
-    builder.addCase(getAvailableAreas.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getAvailableAreas.fulfilled, (state, action) => {
-      state.loading = false;
-      state.availableAreas = action.payload;
-    });
-    builder.addCase(getAvailableAreas.rejected, (state) => {
-      state.loading = false;
+    builder.addCase(getBanners.rejected, (state, action) => {
+      state.message = 'Please try again!';
     });
 
-    builder.addCase(updateUserLocation.fulfilled, (state, action) => {
-      state.userAddress = action.payload;
-    });
-
-    builder.addCase(getServices.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getServices.fulfilled, (state, action) => {
-      state.loading = false;
-      state.availableAreas = action.payload.data;
-    });   
-    builder.addCase(getServices.rejected, (state) => {
-      state.loading = false;
-    });
-
-    builder.addCase(getRestaurantsHome.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getRestaurantsHome.fulfilled, (state, action) => {
-      state.loading = false;
-      state.homeRestaurnats = action.payload.data[0];
-    });   
-    builder.addCase(getRestaurantsHome.rejected, (state) => {
-      state.loading = false;
-    });
   },
 });
+
+
 
 export const {
   updatecartItems,

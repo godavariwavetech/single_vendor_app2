@@ -1,4 +1,4 @@
-package com.foodtrail
+package com.intlokitchen
 
 import android.app.Application
 import com.facebook.react.PackageList

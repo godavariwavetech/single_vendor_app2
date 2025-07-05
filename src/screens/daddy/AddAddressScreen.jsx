@@ -22,16 +22,20 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import {useDispatch} from 'react-redux';
-import {checkAddressExistence, setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
+import {useDispatch, useSelector} from 'react-redux';
+import {setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
+import {getAvailableLocations} from '../../redux/reducers/auth';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import CustomModal from '../../components/CustomModal';
 import {setUserDetails} from '../../redux/reducers/addressSlice';
-import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AddAddressScreen = ({navigation, route}) => {
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
+  const {availableLocations} = useSelector(state => state.Auth);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState('Home');
   const [name, setName] = useState('');
@@ -71,6 +75,8 @@ const AddAddressScreen = ({navigation, route}) => {
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [locationValidation, setLocationValidation] = useState(null);
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
 
   const showCustomModal = useCallback(
     (
@@ -99,6 +105,7 @@ const AddAddressScreen = ({navigation, route}) => {
   }, []);
 
   const getAddressFromCoordinates = async (latitude, longitude) => {
+    setIsFetchingAddress(true);
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
@@ -141,6 +148,8 @@ const AddAddressScreen = ({navigation, route}) => {
         'Error',
         'Failed to get address details. Please try again.',
       );
+    } finally {
+      setIsFetchingAddress(false);
     }
   };
 
@@ -157,9 +166,14 @@ const AddAddressScreen = ({navigation, route}) => {
       });
       setRegion(newRegion);
       getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
+      
+      // Update location validation in real-time
+      const validation = isLocationWithinDeliveryRadius(newRegion.latitude, newRegion.longitude);
+      setLocationValidation(validation);
+      
       lastUpdateTime.current = currentTime;
     }
-  }, []);
+  }, [isLocationWithinDeliveryRadius]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
@@ -231,6 +245,11 @@ const AddAddressScreen = ({navigation, route}) => {
         setRegion(newRegion);
         animateToRegion(newRegion);
         getAddressFromCoordinates(latitude, longitude);
+        
+        // Set location validation for current location
+        const validation = isLocationWithinDeliveryRadius(latitude, longitude);
+        setLocationValidation(validation);
+        
         setIsLoadingLocation(false);
       },
       error => {
@@ -366,17 +385,17 @@ const AddAddressScreen = ({navigation, route}) => {
   const addAddress = useCallback(async () => {
     setIsSaving(true);
     try {
-      const response = await dispatch(
-        checkAddressExistence({
-          latitude:  markerPosition.latitude.toString(),
-          longitude: markerPosition.longitude.toString(),
-        }),
+      // Check if location is within delivery radius
+      const locationValidation = isLocationWithinDeliveryRadius(
+        markerPosition.latitude,
+        markerPosition.longitude
       );
-       if (response?.payload?.data?.length > 0) {
+
+      if (locationValidation.isAvailable) {
         const addressData = {
           addressType: selectedType,
           address: doorNo,
-          location_id:response.payload.data[0].id,
+          location_id: locationValidation.nearestLocation.id,
           customer_latitude: markerPosition.latitude.toString(),
           customer_longitude: markerPosition.longitude.toString(),
           customer_name: name,
@@ -387,6 +406,7 @@ const AddAddressScreen = ({navigation, route}) => {
           state,
           full_address: address,
         };
+        
         if (route.params?.address) {
           dispatch(
             setAddressList({
@@ -400,9 +420,36 @@ const AddAddressScreen = ({navigation, route}) => {
           );
         }
         navigation.goBack();
-       } else {
-        setAreaAvailable(false)
-       }
+      } else {
+        // Location is not available for delivery
+        const nearestLocationName = locationValidation.nearestLocation?.location_name || 'nearest service area';
+        const distance = locationValidation.distance.toFixed(1);
+        const maxRadius = locationValidation.nearestLocation?.maximum_delivery_service_km || 'unknown';
+        
+        showCustomModal(
+          'Location Not Available',
+          `The selected location is not available for delivery. The nearest service area is ${nearestLocationName} (${distance} km away). Maximum delivery radius is ${maxRadius} km. Please select a location within the service area.`,
+          () => {
+            setAreaAvailable(true);
+          },
+          null,
+          'OK',
+          null,
+        );
+        setAreaAvailable(false);
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
+      showCustomModal(
+        'Error',
+        'Failed to save address. Please try again.',
+        () => {
+          setAreaAvailable(true);
+        },
+        null,
+        'OK',
+        null,
+      );
     } finally {
       setIsSaving(false);
     }
@@ -420,6 +467,7 @@ const AddAddressScreen = ({navigation, route}) => {
     address,
     route.params?.address,
     navigation,
+    isLocationWithinDeliveryRadius,
   ]);
 
   useEffect(() => {
@@ -449,12 +497,26 @@ const AddAddressScreen = ({navigation, route}) => {
         });
         setRegion(newRegion);
         animateToRegion(newRegion);
+        
+        // Set initial location validation
+        const validation = isLocationWithinDeliveryRadius(
+          parseFloat(address.customer_latitude),
+          parseFloat(address.customer_longitude)
+        );
+        setLocationValidation(validation);
       }
     } else {
       // Only get current location if we're adding a new address
       requestLocationPermission();
     }
   }, [route.params]);
+
+  // Fetch available locations when component mounts
+  useEffect(() => {
+    if (!availableLocations || availableLocations.length === 0) {
+      dispatch(getAvailableLocations());
+    }
+  }, [dispatch, availableLocations]);
 
   const handleSearch = useCallback(text => {
     setSearchQuery(text);
@@ -493,6 +555,7 @@ const AddAddressScreen = ({navigation, route}) => {
 
   const handlePlaceSelect = useCallback(
     async placeId => {
+      setIsFetchingAddress(true);
       try {
         const response = await fetch(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
@@ -512,6 +575,11 @@ const AddAddressScreen = ({navigation, route}) => {
           setRegion(newRegion);
           animateToRegion(newRegion);
           getAddressFromCoordinates(location.lat, location.lng);
+          
+          // Set location validation for selected place
+          const validation = isLocationWithinDeliveryRadius(location.lat, location.lng);
+          setLocationValidation(validation);
+          
           setShowResults(false);
           setSearchQuery('');
           setSearchResults([]);
@@ -522,10 +590,66 @@ const AddAddressScreen = ({navigation, route}) => {
           'Error',
           'Failed to get place details. Please try again.',
         );
+      } finally {
+        setIsFetchingAddress(false);
       }
     },
     [animateToRegion],
   );
+
+  // Function to calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  }, []);
+
+  // Function to check if location is within delivery radius
+  const isLocationWithinDeliveryRadius = useCallback((selectedLat, selectedLon) => {
+    if (!availableLocations || availableLocations.length === 0) {
+      return { isAvailable: false, nearestLocation: null };
+    }
+
+    let nearestLocation = null;
+    let minDistance = Infinity;
+
+    for (const location of availableLocations) {
+      const distance = calculateDistance(
+        selectedLat,
+        selectedLon,
+        parseFloat(location.location_latitude),
+        parseFloat(location.location_longitude)
+      );
+
+      if (distance <= parseFloat(location.maximum_delivery_service_km)) {
+        // Location is within delivery radius
+        return { 
+          isAvailable: true, 
+          nearestLocation: location,
+          distance: distance
+        };
+      }
+
+      // Keep track of nearest location for error message
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestLocation = location;
+      }
+    }
+
+    return { 
+      isAvailable: false, 
+      nearestLocation: nearestLocation,
+      distance: minDistance
+    };
+  }, [availableLocations, calculateDistance]);
 
   // useEffect(()=>{
   //   if(!userDetails) return
@@ -538,7 +662,7 @@ const AddAddressScreen = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.title}>
           {route.params?.address ? 'Edit Address' : 'Add Address'}
@@ -564,7 +688,7 @@ const AddAddressScreen = ({navigation, route}) => {
               </Text>
               {/* <View style={styles.markerArrow} /> */}
             </View>
-            <MaterialIcons name="location-on" size={40} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={40} color={colors.maintheme} />
           </View>
         </View>
         <TouchableOpacity
@@ -575,10 +699,10 @@ const AddAddressScreen = ({navigation, route}) => {
           onPress={getCurrentLocation}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
-            <ActivityIndicator color={commonStyles.btn2Color} size="small" />
+            <ActivityIndicator color={colors.maintheme} size="small" />
           ) : (
             <>
-              <MaterialIcons name="my-location" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="my-location" size={24} color={colors.maintheme} />
               <Text style={styles.currentLocationText}>
                 use current location
               </Text>
@@ -622,7 +746,7 @@ const AddAddressScreen = ({navigation, route}) => {
                   key={result.place_id}
                   style={styles.searchResultItem}
                   onPress={() => handlePlaceSelect(result.place_id)}>
-                  <MaterialIcons name="location-on" size={20} color={commonStyles.btn2Color} />
+                  <MaterialIcons name="location-on" size={20} color={colors.maintheme} />
                   <View style={styles.searchResultText}>
                     <Text style={styles.searchResultMain}>
                       {result.structured_formatting?.main_text ||
@@ -640,23 +764,44 @@ const AddAddressScreen = ({navigation, route}) => {
       </View>
 
       {!isKeyboardVisible && (
-        <View style={styles.bottomContainer}>
+        <View style={[styles.bottomContainer,{paddingBottom:insets.bottom+10}]}>
           <View style={styles.locationInfo}>
             <View style={styles.locationIcon}>
-              <MaterialIcons name="location-on" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="location-on" size={24} color={colors.maintheme} />
             </View>
             <View style={styles.locationDetails}>
               <Text style={styles.locationTitle}>{city || 'Location'}</Text>
               <Text style={styles.locationSubtitle}>
                 {address || 'Loading address...'}
               </Text>
+              {locationValidation && (
+                <View style={styles.validationContainer}>
+                  <MaterialIcons 
+                    name={locationValidation.isAvailable ? "check-circle" : "error"} 
+                    size={16} 
+                    color={locationValidation.isAvailable ? "#4CAF50" : "#F44336"} 
+                  />
+                  <Text style={[
+                    styles.validationText,
+                    {color: locationValidation.isAvailable ? "#4CAF50" : "#F44336"}
+                  ]}>
+                    {locationValidation.isAvailable 
+                      ? `Service available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation.location_name})`
+                      : `Service not available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation?.location_name || 'nearest area'})`
+                    }
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
           <TouchableOpacity
-            style={styles.addButton}
+            style={[
+              styles.addButton,
+              (isSaving || (locationValidation && !locationValidation.isAvailable) || !address) && styles.addButtonDisabled
+            ]}
             onPress={() => setModalVisible(true)}
-            disabled={isSaving}
+            disabled={isSaving || (locationValidation && !locationValidation.isAvailable) || !address}
           >
             {isSaving ? (
               <ActivityIndicator color="#fff" />
@@ -905,7 +1050,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: colors.maintheme,
     height: responsiveHeight(15),
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -919,7 +1064,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.white,
   },
   mapContainer: {
     flex: 1,
@@ -941,7 +1086,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   markerTextContainer: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -975,7 +1120,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: commonStyles.btn2Color,
+    borderTopColor: colors.maintheme,
   },
   searchContainer: {
     position: 'absolute',
@@ -1038,6 +1183,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     zIndex: 1,
+    
   },
   locationInfo: {
     flexDirection: 'row',
@@ -1071,7 +1217,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -1087,7 +1233,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addButton: {
-    backgroundColor:commonStyles.btn2Color,
+    backgroundColor:colors.maintheme,
     borderRadius: 8,
     paddingVertical: responsiveHeight(1.5),
     alignItems: 'center',
@@ -1149,7 +1295,7 @@ const styles = StyleSheet.create({
     marginHorizontal: responsiveWidth(1),
   },
   selectedTypeButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
   },
   typeButtonText: {
     color: '#666',
@@ -1159,11 +1305,13 @@ const styles = StyleSheet.create({
   selectedTypeButtonText: {
     color: '#fff',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '400',
+  label: { 
+    fontSize: 14, 
+    fontWeight: '400', 
     marginBottom: 5,
-    color: '#525252',
+    color: "#525252",
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   inputContainer: {
     flexDirection: 'row',
@@ -1186,7 +1334,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   saveButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -1221,17 +1369,21 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  label: { 
-    fontSize: 14, 
-    fontWeight: '400', 
-    marginBottom: 5,
-    color: "#525252",
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
   requiredAsterisk: {
     color: 'red',
     marginLeft: 2
+  },
+  validationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  validationText: {
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  addButtonDisabled: {
+    backgroundColor: '#ccc',
   },
 });
 

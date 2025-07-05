@@ -8,6 +8,7 @@ import { useDispatch } from 'react-redux';
 import { submitAppReview } from '../../redux/reducers/reviews';
 import CustomModal from '../../components/CustomModal';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const FeedbackScreen = ({ navigation }) => {
   const [rating, setRating] = useState(0);
@@ -27,10 +28,10 @@ const FeedbackScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={"transparent"} barStyle={'dark-content'} />
-      <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}>
+      <LinearGradient colors={[colors.maintheme,colors.maintheme]} style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+            <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Feedback</Text>
         </View>
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     marginRight: responsiveWidth(5),
   },
   headerTitle: {
-    color: '#000',
+    color: colors.white,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(3),
   },
   submitButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 8,
     padding: responsiveHeight(2),
     alignItems: 'center',

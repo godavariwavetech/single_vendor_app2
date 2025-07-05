@@ -17,6 +17,7 @@ const initialState = {
   shouldNavigate: false,
   reaturantDetails: null,
   orderOfferAmount: 0,
+  availableLocations:[]
 };
 
 export const verifyMobile = createAsyncThunk(
@@ -42,12 +43,12 @@ export const verifyMobile = createAsyncThunk(
 export const addCustomer = createAsyncThunk(
   'addCustomer',
   async (
-    {mobileNumber, otp},
+    {mobileNumber},
     {getState, rejectWithValue, fulfillWithValue},
   ) => {
     const data = {
       customer_mobile_number: mobileNumber,
-      customer_otp: otp,
+      player_id: "",
     };
     const response = await api.post(endpoints.VERIFY_CUSTOMER_OTP, data);
     if (response) {
@@ -131,6 +132,20 @@ export const deleteAccount = createAsyncThunk(
     const response = await api.post(endpoints.DELETE_ACCOUNT, {
         "customer_id":customerId
     });
+    if (response) {
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  },
+);
+
+export const getAvailableLocations = createAsyncThunk(
+  'getAvailableLocations',
+  async (_, {getState, rejectWithValue, fulfillWithValue}) => {
+    const response = await api.get(endpoints.GET_AVAILABLE_LOCATIONS);
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);
@@ -261,6 +276,18 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(addCustomer.rejected, (state, action) => {
       state.loading.categories = false;
+      state.message = 'Please try again!';
+    });
+
+
+    builder.addCase(getAvailableLocations.pending, (state, action) => {
+      state.message = null;
+    });
+    builder.addCase(getAvailableLocations.fulfilled, (state, action) => {
+      state.message = null;
+      state.availableLocations = action.payload.data;
+    });
+    builder.addCase(getAvailableLocations.rejected, (state, action) => {
       state.message = 'Please try again!';
     });
   },

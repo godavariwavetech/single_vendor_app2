@@ -10,15 +10,10 @@ export const fetchCoupons = createAsyncThunk(
     _,
     {getState, rejectWithValue, fulfillWithValue}
   ) => {
-    const response = await api.post(endpoints.GET_COUPONS,{
-      "location_id": "1",
-      "coupon_category_id": "1"
-  })
+    const response = await api.get(endpoints.GET_COUPONS)
   console.log(response.data,"RESPONSE")
   
     if (response) {
-
-
         if (response.data) {
           return fulfillWithValue(response.data);
         } else {

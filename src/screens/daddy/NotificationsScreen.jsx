@@ -6,6 +6,7 @@ import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimen
 import { getNotifications } from '../../redux/reducers/reviews';
 import { useFocusEffect } from '@react-navigation/native';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const NotificationsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -57,7 +58,7 @@ const NotificationsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+          <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
       </View>
@@ -65,7 +66,7 @@ const NotificationsScreen = ({ navigation }) => {
       <View style={styles.contentContainer}>
         {loading ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={colors.maintheme} />
           </View>
         ) : (
           <FlatList
@@ -91,8 +92,8 @@ const NotificationsScreen = ({ navigation }) => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                colors={[commonStyles.btn2Color]}
-                tintColor={commonStyles.btn2Color}
+                colors={[colors.maintheme]}
+                tintColor={colors.maintheme}
               />
             }
           />
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: colors.maintheme,
     height: responsiveHeight(12),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 18, 
     fontWeight: '700', 
-    color: '#000',
+    color:colors.white,
     marginLeft: responsiveWidth(2),
   },
   listContent: {
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   notificationIcon: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     width: 28,
     height: 28,
     borderRadius: 14,

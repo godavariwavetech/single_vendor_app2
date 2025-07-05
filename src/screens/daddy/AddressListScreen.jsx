@@ -18,18 +18,20 @@ import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';  
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useDispatch, useSelector } from 'react-redux';
-import { checkAddressExistence, deleteAddress, getAddressList } from '../../redux/reducers/daddy';
+import { deleteAddress, getAddressList } from '../../redux/reducers/daddy';
+import { getAvailableLocations } from '../../redux/reducers/auth';
 import { useFocusEffect } from '@react-navigation/native';
 import CustomModal from '../../components/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { setSelectedAddress as setSelectedAddressAction, setUserDetails } from '../../redux/reducers/addressSlice';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import { haversineDistance } from './distanceCalculator';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const AddressListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { addressList } = useSelector(state => state.Dashboard);
+  const { availableLocations } = useSelector(state => state.Auth);
   // const {userAddress} = useSelector(state => state.address);
   const {userDetails} = useSelector(state=>state.address)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -43,44 +45,93 @@ const AddressListScreen = ({ navigation, route }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isCheckingAddress, setIsCheckingAddress] = useState(false);
+  const [addressValidationDetails, setAddressValidationDetails] = useState(null);
 
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
+  // Function to calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  }, []);
 
-  console.log(addressList,"+++++++++++++++++++VVV")
+  // Function to check if location is within delivery radius
+  const isLocationWithinDeliveryRadius = useCallback((selectedLat, selectedLon) => {
+    if (!availableLocations || availableLocations.length === 0) {
+      return { isAvailable: false, nearestLocation: null };
+    }
+
+    let nearestLocation = null;
+    let minDistance = Infinity;
+
+    for (const location of availableLocations) {
+      const distance = calculateDistance(
+        selectedLat,
+        selectedLon,
+        parseFloat(location.location_latitude),
+        parseFloat(location.location_longitude)
+      );
+
+      if (distance <= parseFloat(location.maximum_delivery_service_km)) {
+        // Location is within delivery radius
+        return { 
+          isAvailable: true, 
+          nearestLocation: location,
+          distance: distance
+        };
+      }
+
+      // Keep track of nearest location for error message
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestLocation = location;
+      }
+    }
+
+    return { 
+      isAvailable: false, 
+      nearestLocation: nearestLocation,
+      distance: minDistance
+    };
+  }, [availableLocations, calculateDistance]);
 
   const handleSelectAddress = async (address) => {
     try {
       setIsCheckingAddress(true);
 
-      const value = haversineDistance(
-        address?.customer_latitude,
-        address?.customer_longitude,
-        reaturantDetails.shop_latitude,
-        reaturantDetails.shop_longitude,
+      // Check if location is within delivery radius using availableLocations
+      const locationValidation = isLocationWithinDeliveryRadius(
+        parseFloat(address?.customer_latitude),
+        parseFloat(address?.customer_longitude)
       );
-      
-      const response = await dispatch(checkAddressExistence({
-        latitude: parseFloat(address?.customer_latitude),
-        longitude: parseFloat(address?.customer_longitude)
-      }));
 
-      // Check if response is valid
-      if (response.payload?.status === 300) {
-        dispatch(setSelectedAddress(address))
-        // Handle case where address is not available
-        setShowAddressModal(true);
-        return;
-      }
-
-      if (response.payload?.data?.length > 0 &&Number(value)<= Number(reaturantDetails.maximum_del_km)) {
+      if (locationValidation.isAvailable) {
         dispatch(setSelectedAddressAction(address));
         if (isFromCart) {
           navigation.navigate('Checkout');
         }
       } else {
+        // Location is not available for delivery
+        const nearestLocationName = locationValidation.nearestLocation?.location_name || 'nearest service area';
+        const distance = locationValidation.distance.toFixed(1);
+        const maxRadius = locationValidation.nearestLocation?.maximum_delivery_service_km || 'unknown';
+        
+        // You can customize the modal message here if needed
         setShowAddressModal(true);
+        setAddressValidationDetails({
+          nearestLocationName,
+          distance,
+          maxRadius
+        });
       }
     } catch (error) {
       console.log("Error checking address:", error);
@@ -93,6 +144,13 @@ const AddressListScreen = ({ navigation, route }) => {
   useFocusEffect(useCallback(() => {
     loadAddresses();
   }, [isDeleted]));
+
+  // Fetch available locations when component mounts
+  useEffect(() => {
+    if (!availableLocations || availableLocations.length === 0) {
+      dispatch(getAvailableLocations());
+    }
+  }, [dispatch, availableLocations]);
 
   const loadAddresses = async () => {
     if (!hasLoaded) {
@@ -127,7 +185,7 @@ const AddressListScreen = ({ navigation, route }) => {
   };
 
   const handleAddAddress = (address) => {
-    if (!customerId) {
+    if (false) {
       setShowLoginModal(true);
     } else {
       dispatch(setUserDetails(address))
@@ -145,9 +203,9 @@ const AddressListScreen = ({ navigation, route }) => {
       <View style={styles.addressHeader}>
         <Text style={styles.addressType}>{item.address_type}</Text>
         <View style={styles.actionButtons}>
-          <TouchableOpacity onPress={() => navigation.navigate('AddAddress', { address: item })}>
+          {/* <TouchableOpacity onPress={() => navigation.navigate('AddAddress', { address: item })}>
             <Feather name="edit-2" size={20} color="#525252" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={() => handleDeletePress(item)}>
             <Ionicons name="trash-outline" size={20} color="#525252" />
           </TouchableOpacity>
@@ -187,24 +245,24 @@ const AddressListScreen = ({ navigation, route }) => {
       <View style={{flex: 1}}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+            <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.title}>Address List</Text>
         </View>
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={colors.maintheme} />
             <Text style={styles.loadingText}>Loading addresses...</Text>
           </View>
         ) : (
           <FlatList
-            data={isFromCart ? addressList.filter(address => address.location_id === locationId) : addressList}
+            data={addressList}
             renderItem={renderAddress}
             keyExtractor={item => item?.id?.toString()}
             contentContainerStyle={[
               styles.listContainer,
-              addressList.length === 0 && styles.emptyListContainer
+              addressList?.length === 0 && styles.emptyListContainer
             ]}
             key={toggleValue}
             refreshControl={
@@ -267,15 +325,22 @@ const AddressListScreen = ({ navigation, route }) => {
       <CustomModal
         visible={showAddressModal}
         title="Address Not Available"
-        message="The selected address is not available for delivery. Please select another address."
-        onConfirm={() => setShowAddressModal(false)}
+        message={
+          addressValidationDetails 
+            ? `The selected address is not available for delivery. The nearest service area is ${addressValidationDetails.nearestLocationName} (${addressValidationDetails.distance} km away). Maximum delivery radius is ${addressValidationDetails.maxRadius} km. Please select another address.`
+            : "The selected address is not available for delivery. Please select another address."
+        }
+        onConfirm={() => {
+          setShowAddressModal(false);
+          setAddressValidationDetails(null);
+        }}
         confirmText="OK"
         cancelText=""
         // showCancel={false}
       />
       {isCheckingAddress && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={colors.maintheme} />
         </View>
       )}
     </View>
@@ -303,7 +368,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: responsiveHeight(2),
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -325,7 +390,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(3),
   },
   addAddressButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     paddingVertical: responsiveHeight(1.5),
     paddingHorizontal: responsiveWidth(10),
     borderRadius: 8,
@@ -336,7 +401,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: colors.maintheme,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -350,7 +415,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#000',
+    color: colors.white,
     textAlign: "left" 
   },
   addressCard: { 
@@ -398,7 +463,7 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     bottom: 20, 
     right: 20, 
-    backgroundColor: commonStyles.btn2Color, 
+    backgroundColor: colors.maintheme, 
     borderRadius: 50, 
     padding: 10, 
     elevation: 5 
@@ -448,7 +513,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: '#065E2C',
+    backgroundColor: colors.maintheme,
   },
   cancelButtonText: {
     color: '#666',

@@ -311,6 +311,7 @@ import {
 import React, {useEffect, useState} from 'react';
 import AuthBackground from './tabassets/AuthBackground';
 import {
+  responsiveFontSize,
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
@@ -322,6 +323,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import CustomModal from '../../components/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { applogo2 } from '../../assets';
 // import CustomModal from '../components/CustomModal';
 
 export default function Register({navigation,route}) {
@@ -358,6 +361,8 @@ export default function Register({navigation,route}) {
       try {
         const response = await dispatch(verifyCustomerMobile({customer_mobile_number: phoneNumber}));
         
+        console.log(response,"+++++++++++++++++<>>>>>>>>>>>>>>>response")
+
         if(response.payload && !response.error){
           navigation.navigate(route.params?.isFromCart ? "OTPVerification1" : "OTPVerification",{
             phoneNumber: phoneNumber,
@@ -394,52 +399,39 @@ export default function Register({navigation,route}) {
           </View>
         )}
         <StatusBar translucent hidden />
-        <ImageBackground
-          source={require('../daddy/svg/bgDesign.png')}
-          // resizeMode="cover"
-          style={{
-            width: responsiveWidth(100),
-            height: responsiveHeight(30),
-            backgroundColor: commonStyles.mainColor,
-            justifyContent: "flex-end"
-          }}>
-          <Text style={{fontSize:28,fontWeight:"700",bottom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>
-            Sign In
-          </Text>
-
-            {/* Food Trial Image on top */}
-  <Image
-    source={require('../daddy/svg/foodTrialLogo2.png')} // <- your new image
-    style={{
-      width: 130,
-      height: 130,
-      // marginBottom:responsiveHeight(8),marginRight:responsiveWidth(10)
-      position: 'absolute',
-      bottom: responsiveHeight(5),
-      right: responsiveWidth(5),
-    }}
-    resizeMode="contain"
-  />
-        </ImageBackground>
+        <View style={{height:responsiveHeight(20),backgroundColor:colors.maintheme}}></View>
         <View
           style={{
             flex: 1,
-            backgroundColor: '#fffbe5',
+            backgroundColor: '#fff',
             transform: [{translateY: -responsiveHeight(4.5)}],
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingHorizontal: responsiveWidth(5),
             paddingVertical: responsiveHeight(5),
           }}>
+        <Image source={applogo2} style={{width:responsiveWidth(50),height:responsiveHeight(10),alignSelf:"center"}} resizeMode='contain' />
+          <View style={{marginTop:responsiveHeight(3)}}>
+          <Text
+            style={{
+              color: '#000',
+              textAlign: 'left',
+              fontSize: responsiveFontSize(3),
+              fontWeight: '700',
+              marginLeft:responsiveWidth(5)
+            }}>
+           Sign In
+          </Text>
           <Text
             style={{
               color: '#3D3D3D',
               textAlign: 'center',
-              fontSize: 20,
+              fontSize: responsiveFontSize(2.2),
               fontWeight: '500',
             }}>
             Please enter your phone number to continue
           </Text>
+              </View>
           <View style={{marginTop: responsiveHeight(5)}}>
             <Text style={styles.label}>Phone Number</Text>
             <TextInput
@@ -456,14 +448,6 @@ export default function Register({navigation,route}) {
           <TouchableOpacity onPress={handleRequestOTP} style={styles.loginButton}>
             <Text style={styles.loginText}>Request OTP</Text>
           </TouchableOpacity>
-
-        {/* {route.params?.isFromCart ? null :  <TouchableOpacity 
-            style={styles.skipButton}
-            onPress={() => dispatch(actionLogin())}
-          >
-            <Text style={styles.skipText}>Skip for Now</Text>
-            <MaterialIcons name="arrow-forward" size={20} color="#065E2C" />
-          </TouchableOpacity>} */}
         </View>
       </View>
     </Pressable>
@@ -473,7 +457,7 @@ export default function Register({navigation,route}) {
 const styles = StyleSheet.create({
   main: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.maintheme,
   },
   loaderContainer: {
     position: 'absolute',
@@ -543,7 +527,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   loginButton: {
-    backgroundColor: commonStyles.btnColor,
+    backgroundColor: colors.maintheme,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

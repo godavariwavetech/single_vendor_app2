@@ -129,6 +129,10 @@ export const colors = {
   transparentWhite60: 'rgba(255,255,255,0.6)',
   transparentWhite30: 'rgba(255,255,255,0.3)',
   transparentGray: 'rgba(128, 128, 128, 0.2)',
+
+  maintheme:'#E33745',
+  appgreen:'#00B906'
+  
 };
 
 const lightTheme = {

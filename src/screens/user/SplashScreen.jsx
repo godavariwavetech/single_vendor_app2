@@ -1,90 +1,93 @@
-import {SafeAreaView, StyleSheet,  View,Image ,StatusBar} from 'react-native'
-import React,{useEffect} from 'react'
-import {  useDispatch, useSelector } from 'react-redux'
-import { setInitial } from '../../redux/reducers/auth'
+import {SafeAreaView, StyleSheet, View, Image, StatusBar} from 'react-native';
+import React, {useEffect} from 'react';
+import {useDispatch, useSelector} from 'react-redux';
+import {setInitial} from '../../redux/reducers/auth';
 // import SplashScreenImg from './svgs/SplashScreenImg'
-import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
-import commonStyles from '../../commonstyles/CommonStyles'
-import { translate } from '../../config/i18n'
-import { SystemBars } from 'react-native-edge-to-edge';
+import {
+  responsiveHeight,
+  responsiveWidth,
+} from 'react-native-responsive-dimensions';
+import commonStyles from '../../commonstyles/CommonStyles';
+import {translate} from '../../config/i18n';
+import {SystemBars} from 'react-native-edge-to-edge';
+import {applogo, splashbg} from '../../assets';
+import { colors } from '../../config/theme';
 
 const SplashScreen = ({navigation}) => {
-    const {token} = useSelector((state) => state.Auth);
-    const {rehydrated} = useSelector(state =>state.Auth._persist);
-    const dispatch = useDispatch()
-    useEffect(() => {
-      dispatch(setInitial())
-  if(rehydrated){
-    setTimeout(() => {
-      if (!token) {
-        navigation.replace('OnboardingScreen');
-      }
-    }, 500);
-  }
-  }, [token,rehydrated]); 
-
+  const {token} = useSelector(state => state.Auth);
+  const {rehydrated} = useSelector(state => state.Auth._persist);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(setInitial());
+    if (rehydrated) {
+      setTimeout(() => {
+        if (!token) {
+          navigation.replace('Register');
+        }
+      }, 500);
+    }
+  }, [token, rehydrated]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <SystemBars style='dark' hidden={false} /> */}
-         {/* <StatusBar backgroundColor={'transparent'} translucent barStyle={'dark-content'}  /> */}
-        {/* <View style={styles.imgWrapper}> */}
-            <Image source={require('../daddy/tabassets/SplashFoodTrial.png')} style={[{flex:1,width:responsiveWidth(100),height:responsiveHeight(100)}]} />
-            {/* <SplashScreenImg /> */}
-        {/* </View> */}
-          {/* <Image source={require('../daddy/svg/foodTrialLogo2.png')} style={styles.logo} />           */}
-          <View style={styles.logoWrapper}>
-  <Image source={require('../daddy/svg/foodTrialLogo2.png')} style={styles.logo} />
-</View>
-        <View>
-        </View>
+      <Image
+        source={splashbg}
+        style={[
+          {flex: 1, width: responsiveWidth(100), height: responsiveHeight(100)},
+        ]}
+      />
+      <View style={styles.logoWrapper}>
+        <Image
+          source={applogo}
+          style={styles.logo}
+          resizeMode='contain'
+        />
+      </View>
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default SplashScreen
+export default SplashScreen;
 
 const styles = StyleSheet.create({
-    container:{
-        flex:1,
-        backgroundColor:'#fff',
-        position:'relative'
-
-    },
-    imgContainer:{
-        flex:1,
-        alignItems:'center',
-        justifyContent:'center'
-    },
-    imgWrapper:{
-      position:'relative'
-    },
-    logo:{
-      position:"absolute",
-      top:'50%',
-      left:'50%',
-      // transform:translate('-50%','-50%')
-      transform: [
-        { translateX: -50 }, // Replace 50 with half the image width
-        { translateY: -50 }  // Replace 50 with half the image height
-      ],
-      width: 200,
-      height: 200,
-      //marginLeft: -50, // negative half of width
-      //marginTop: -50, // negative half of height
-    },
-    logoWrapper: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    logo: {
-      width: 250,
-      height: 250,
-    }
-    
-})
+  container: {
+    flex: 1,
+    backgroundColor:colors.white,
+    position: 'relative',
+  },
+  imgContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imgWrapper: {
+    position: 'relative',
+  },
+  logo: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    // transform:translate('-50%','-50%')
+    transform: [
+      {translateX: -50}, // Replace 50 with half the image width
+      {translateY: -50}, // Replace 50 with half the image height
+    ],
+    width: 200,
+    height: 200,
+    //marginLeft: -50, // negative half of width
+    //marginTop: -50, // negative half of height
+  },
+  logoWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 250,
+    height: 250,
+  },
+});

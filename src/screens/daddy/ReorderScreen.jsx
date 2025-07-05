@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, StatusBar, Image, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, ScrollView, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
@@ -11,8 +11,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getOrderDetails, getOrders, addToCart, removeFromCart, setCartRestaurant } from '../../redux/reducers/daddy';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { globalSearch } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const ReorderScreen = ({navigation}) => {
   const [expandedRestaurants, setExpandedRestaurants] = useState({});
@@ -26,8 +26,6 @@ const ReorderScreen = ({navigation}) => {
   // New state for search query
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false); 
-  const timeoutRef = useRef();
-  const { globalSearchResults } = useSelector(state => state.address);
   const [isLoading, setIsLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -110,19 +108,14 @@ const ReorderScreen = ({navigation}) => {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    clearTimeout(timeoutRef.current);
-    
-    if (query.trim()) {
-      timeoutRef.current = setTimeout(() => {
-        dispatch(globalSearch({ searchText: query }));
-      }, 500);
-    }
   };
 
   
   const filteredOrders = orders?.filter(order => 
-    globalSearchResults?.some(result => result.shop_name === order.shop_name) ||
-    order.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
+    order.order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.location_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.payment_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.delivery_address.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const onRefresh = async () => {
@@ -218,15 +211,21 @@ const ReorderScreen = ({navigation}) => {
                 {STATUS_MAP[item.order_status]}
         </Text>
         </View>
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7}}>
-          <Image source={{uri: item.shop_image}} style={{width: 72, height: 72, borderRadius: 8}} />
-          <View style={styles.restaurantInfo}>
-            <Text style={styles.restaurantName}>{item.shop_name}</Text>
+        <View style={{flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 7}}>
+          <View style={{width: 72, height: 72, borderRadius: 8, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center'}}>
+            <MaterialIcons name="restaurant" size={30} color="#666" />
+          </View>
+          <View style={[styles.restaurantInfo, {flex: 1}]}>
+            <Text style={styles.restaurantName}>Order #{item.order_id}</Text>
             <Text style={[styles.details,{fontSize:10}]}>{item?.order_id} / {item?.id}</Text>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2}}>
               <Text style={styles.details}>₹ {item.grand_total}</Text>
             </View>
             <Text style={styles.details}>{item.location_name}</Text>
+            <Text style={styles.details}>{item.item_count} item{Number(item.item_count) > 1 ? 's' : ''}</Text>
+            <Text style={styles.details}>Payment: {item.payment_type}</Text>
+            <Text style={styles.details}>Time: {item.order_time}</Text>
+            <Text style={styles.details} numberOfLines={1}>Address: {item.delivery_address}</Text>
           </View>
         </View>
 
@@ -259,16 +258,16 @@ const ReorderScreen = ({navigation}) => {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <StatusBar backgroundColor={"transparent"} barStyle={'dark-content'} />
-      <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}>
+      <LinearGradient colors={[colors.maintheme,colors.maintheme]} style={styles.gradientContainer}>
         <View style={styles.headerContainer}>
-          <ReorderInactive color='#000' />
+          <ReorderInactive color={colors.white} />
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
         <View style={styles.searchContainer}>
           <View style={styles.inputWrapper}>
             <TextInput
               placeholderTextColor={'#666666'}
-              placeholder="Search for your favorites"
+              placeholder="Search by order ID, location, payment type, or address"
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={handleSearch}
@@ -287,7 +286,7 @@ const ReorderScreen = ({navigation}) => {
       </LinearGradient>
       {initialLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={colors.maintheme} />
         </View>
       ) : filteredOrders?.length > 0 ? (
         <FlatList
@@ -357,7 +356,7 @@ const styles = StyleSheet.create({
     marginLeft: responsiveWidth(5)
   },
   headerTitle: {
-    color: "#000",
+    color: colors.white,
     fontSize: 20,
     fontWeight: "700"
   },
@@ -427,8 +426,7 @@ const styles = StyleSheet.create({
     textAlign:"left" 
   },
   restaurantInfo: { 
-    marginVertical: 10 ,
-    gap:3
+    gap: 2
   },
   restaurantName: { 
     fontSize: 16, 
@@ -437,8 +435,9 @@ const styles = StyleSheet.create({
   },
   details: { 
     fontSize: 12, 
-    color: '#050505',
-    fontWeight: '500'
+    color: '#666',
+    fontWeight: '400',
+    lineHeight: 16
   },
   moreItems: { 
     color: '#C3A710', 
@@ -512,7 +511,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   viewDetailsButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -605,7 +604,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor:commonStyles.btn2Color,
+    backgroundColor:colors.maintheme,
   },
   cancelButtonText: {
     color: '#666',

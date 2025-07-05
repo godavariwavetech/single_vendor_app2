@@ -32,6 +32,7 @@ import {actionLogout, deleteAccount} from '../../redux/reducers/auth';
 import {clearCart, getOrders} from '../../redux/reducers/daddy';
 import VersionCheck from 'react-native-version-check';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -139,7 +140,10 @@ const ProfileScreen = () => {
   };
 
   const renderOrder = ({item}) => (
-    <View style={styles.orderCard}>
+    <TouchableOpacity 
+      style={styles.orderCard}
+      onPress={() => navigation.navigate('OrderDetails', {orderDetails: item })}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -167,35 +171,13 @@ const ProfileScreen = () => {
         {item?.order_date} at {item?.order_time}
       </Text>
 
-      <View style={styles.restaurantInfo}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            marginVertical: responsiveHeight(1),
-          }}>
-          <Image
-            source={{uri: item?.shop_image}}
-            style={{
-              width: responsiveWidth(15),
-              height: responsiveWidth(15),
-              borderRadius: 10,
-            }}
-          />
-          <View style={{width: responsiveWidth(50)}}>
-            <Text style={styles.restaurantName} numberOfLines={1}>
-              {item?.shop_name}
-            </Text>
-            <Text style={styles.menuItem} numberOfLines={1}>
-              {item?.item_count} item{Number(item?.item_count) > 1 ? 's' : ''} •{' '}
-              {item?.slot_timings}
-            </Text>
-          </View>
-          <Text style={styles.price}>₹{item?.grand_total}</Text>
-        </View>
+      <View style={styles.orderFooter}>
+        <Text style={styles.itemCount}>
+          {item?.item_count} item{Number(item?.item_count) > 1 ? 's' : ''}
+        </Text>
+        <Text style={styles.price}>₹{item?.grand_total}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const handleDeleteAccount = async () => {
@@ -226,7 +208,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="information-outline"
           size={24}
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
         />
       ),
       onPress: () => navigation.navigate('AboutUs'),
@@ -234,13 +216,13 @@ const ProfileScreen = () => {
     {
       id: '2',
       title: 'Address List',
-      icon: <Ionicons name="clipboard-outline" size={24} color={commonStyles.btn2Color} />,
+      icon: <Ionicons name="clipboard-outline" size={24} color={colors.maintheme} />,
       onPress: () => navigation.navigate('AddressList'),
     },
     {
       id: '3',
       title: 'Support',
-      icon: <Feather name="user" size={24} color={commonStyles.btn2Color} />,
+      icon: <Feather name="user" size={24} color={colors.maintheme} />,
       onPress: () => navigation.navigate('Support'),
     },
     {
@@ -250,7 +232,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="card-bulleted-outline"
           size={24}
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
         />
       ),
       onPress: () => navigation.navigate('Feedback'),
@@ -262,7 +244,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="shield-account"
           size={24}
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
         />
       ),
       onPress: () => navigation.navigate('PrivacyPolicy'),
@@ -274,7 +256,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="file-document"
           size={24}
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
         />
       ),
       onPress: () => navigation.navigate('TermsConditions'),
@@ -286,7 +268,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="credit-card-refund-outline"
           size={24}
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
         />
       ),
       onPress: () => navigation.navigate('RefundPolicy'),
@@ -294,21 +276,21 @@ const ProfileScreen = () => {
     {
       id: '8',
       title: 'Check for Updates',
-      icon: <MaterialCommunityIcons name="update" size={24} color={commonStyles.btn2Color} />,
+      icon: <MaterialCommunityIcons name="update" size={24} color={colors.maintheme} />,
       onPress: handleCheckForUpdate,
     },
     customerId
       ? {
           id: '9',
           title: 'Logout',
-          icon: <Feather name="log-out" size={24} color={commonStyles.btn2Color} />,
+          icon: <Feather name="log-out" size={24} color={colors.maintheme} />,
           onPress: () => setLogoutModalVisible(true),
         }
       : {
           id: '9',
           title: 'Login',
           icon: (
-            <MaterialCommunityIcons name="login" size={24} color={commonStyles.btn2Color} />
+            <MaterialCommunityIcons name="login" size={24} color={colors.maintheme} />
           ),
           onPress: () => navigation.navigate('Register1', {isFromCart: true}),
         },
@@ -320,12 +302,14 @@ const ProfileScreen = () => {
         },
   ];
 
+  console.log(orders,"+++++++++++++++++ordersordersordersorders")
+
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={'transparent'} barStyle={'dark-content'} translucent />
       <LinearGradient
-        colors={['#FD0', '#F7F2F2']}
+        colors={[colors.maintheme, colors.maintheme]}
         style={styles.gradientContainer}>
         <View
           style={{
@@ -369,7 +353,7 @@ const ProfileScreen = () => {
         </View>
         {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={colors.maintheme} />
           </View>
         ) : orders.length > 0 ? (
           <View >
@@ -413,7 +397,7 @@ const ProfileScreen = () => {
         message={
           showUpdateModal
             ? 'A new version is available. Please update now!'
-            : "You're using the latest version of Food Trail"
+            : "You're using the latest version of Intlo Kitchen"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
@@ -434,7 +418,7 @@ const ProfileScreen = () => {
       <CustomModal
         visible={showUpdateModal}
         title="Update Available"
-        message="A new version of Food Trail is available. Please update to continue using all features."
+        message="A new version of Intlo Kitchen is available. Please update to continue using all features."
         confirmText="Update Now"
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}
@@ -467,15 +451,15 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: Platform.OS === 'ios' ? 85 : 60, // Add padding for tab bar
   },
-  header: {padding: 20, backgroundColor: commonStyles.yellowColor, alignItems: 'center'},
-  profileName: {fontSize: 24, fontWeight: 'bold', color: '#000'},
+  header: {padding: 20, backgroundColor: colors.maintheme, alignItems: 'center'},
+  profileName: {fontSize: 24, fontWeight: 'bold', color: colors.white},
   ordersHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
   },
   ordersTitle: {fontSize: 18, fontWeight: 'bold'},
-  viewAll: {color: commonStyles.btn2Color, fontWeight: 'bold'},
+  viewAll: {color: colors.maintheme, fontWeight: 'bold'},
   orderCard: {
     backgroundColor: '#fff',
     marginHorizontal: 10,
@@ -486,7 +470,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(95) - 20
   },
   orderId: {fontSize: 14, fontWeight: '500', color: '#3D3D3D', width: responsiveWidth(40)},
-  orderStatus: {color: commonStyles.btn2Color, fontWeight: '600', fontSize: 14, width: responsiveWidth(40), textAlign: 'right'},
+  orderStatus: {color: colors.maintheme, fontWeight: '600', fontSize: 14, width: responsiveWidth(40), textAlign: 'right'},
   orderDetails: {
     fontSize: 12,
     color: '#3D3D3D',
@@ -500,12 +484,19 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginBottom: responsiveHeight(0.3),
   },
-  restaurantInfo: {marginVertical: 0},
-  restaurantName: {fontSize: 16, fontWeight: 'bold'},
-  menuItem: {fontSize: 14, color: '#555'},
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemCount: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '600',
+  },
   price: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: 'bold',
     alignSelf: 'flex-start',
   },
@@ -610,7 +601,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -626,7 +617,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     padding: 15,
     borderRadius: 8,
     width: '100%',

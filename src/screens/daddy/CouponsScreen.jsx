@@ -15,6 +15,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { applyCoupon, fetchCoupons, removeCoupon } from '../../redux/reducers/coupons';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
 
 const CouponsScreen = ({ navigation, route }) => {
   const [selectedCoupon, setSelectedCoupon] = useState(null);
@@ -63,7 +64,7 @@ const CouponsScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={'light-content'} backgroundColor={commonStyles.btn2Color} />
+      <StatusBar barStyle={'light-content'} backgroundColor={colors.maintheme} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -96,7 +97,7 @@ const CouponsScreen = ({ navigation, route }) => {
             >
               <View style={styles.couponLeft}>
                 <View style={styles.couponIconContainer}>
-                  <MaterialIcons name="local-offer" size={24} color={commonStyles.btn2Color} />
+                  <MaterialIcons name="local-offer" size={24} color={colors.maintheme} />
                 </View>
                 <View style={styles.couponDetails}>
                   <Text style={styles.couponName}>{coupon.coupon_name}</Text>
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedCouponCard: {
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     backgroundColor: '#FFF8CF',
   },
   couponLeft: {
@@ -275,12 +276,12 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 24,
     fontWeight: '700',
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   offText: {
     fontSize: 14,
     fontWeight: '600',
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   bottomContainer: {
     position: 'absolute',
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
   },
   applyButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     textAlign:"center"
   },
   closeButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 5,
     padding: 10,
     alignItems: 'center',

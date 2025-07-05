@@ -16,6 +16,7 @@ import {
 import React, {useEffect, useRef, useState} from 'react';
 import AuthBackground from './tabassets/AuthBackground';
 import {
+  responsiveFontSize,
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
@@ -27,6 +28,8 @@ import { actionLogin, addCustomer, verifyCustomerMobile, verifyCustomerOTP } fro
 import Geolocation from '@react-native-community/geolocation';
 import { checkAddressExistence} from '../../redux/reducers/daddy';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { colors } from '../../config/theme';
+import { applogo2 } from '../../assets';
 
 export default function OTPVerification({navigation,route}) {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -117,7 +120,7 @@ export default function OTPVerification({navigation,route}) {
       setLoader(true);
       
       if(route.params?.phoneNumber == "7997753587"){
-        dispatch(addCustomer({mobileNumber:route.params?.phoneNumber,otp:enteredOtp}))
+        dispatch(addCustomer({mobileNumber:route.params?.phoneNumber}))
         if(enteredOtp=="1234"){
           route.params?.isFromCart ? navigation.pop(2) : dispatch(actionLogin())
         return
@@ -174,7 +177,7 @@ export default function OTPVerification({navigation,route}) {
       if(route.params?.otp==enteredOtp){
         // First verify OTP, then check location
         
-        dispatch(addCustomer({mobileNumber:route.params?.phoneNumber,otp:enteredOtp}))
+        dispatch(addCustomer({mobileNumber:route.params?.phoneNumber}))
         route.params?.isFromCart ? navigation.replace("CartScreen") : dispatch(actionLogin())
 
         return
@@ -261,51 +264,42 @@ export default function OTPVerification({navigation,route}) {
     <Pressable onPress={()=>Keyboard.dismiss()} style={{flex:1}}>
       <View style={styles.main}>
         <StatusBar translucent hidden />
-        <ImageBackground
-          source={require('../daddy/svg/bgDesign.png')}
-          resizeMode="stretch"
-          style={{
-            width: responsiveWidth(100),
-            height: responsiveHeight(30),
-            backgroundColor: commonStyles.mainColor,
-            justifyContent:"flex-end"
-          }}>
-          <Text style={{fontSize:28,fontWeight:"700",botttom:0,marginBottom:responsiveHeight(8),marginLeft:responsiveWidth(10)}}>Verification</Text>
-
-                      {/* Food Trial Image on top */}
-            <Image
-              source={require('../daddy/svg/foodTrialLogo2.png')} // <- your new image
-              style={{
-                width: 130,
-                height: 130,
-                // marginBottom:responsiveHeight(8),marginRight:responsiveWidth(10)
-                position: 'absolute',
-                bottom: responsiveHeight(5),
-                right: responsiveWidth(5),
-              }}
-              resizeMode="contain"
-            />
-        </ImageBackground>
+        <View style={{height:responsiveHeight(20),backgroundColor:colors.maintheme}}></View>
         <View
           style={{
             flex: 1,
-            backgroundColor: '#fffbe5',
+            backgroundColor: '#fff',
             transform: [{translateY: -responsiveHeight(4.5)}],
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingHorizontal: responsiveWidth(5),
             paddingVertical: responsiveHeight(4),
           }}>
+              <Image source={applogo2} style={{width:responsiveWidth(50),height:responsiveHeight(10),alignSelf:"center"}} resizeMode='contain' />
+              
+              <View style={{marginTop:responsiveHeight(3),marginLeft:responsiveWidth(5)}}>
+
+          <Text
+            style={{
+              color: '#000',
+              textAlign: 'left',
+              fontSize: responsiveFontSize(3),
+              fontWeight: '700',
+            }}>
+           Verification
+          </Text>
           <Text
             style={{
               color: '#3D3D3D',
-              textAlign: 'center',
+              textAlign: 'left',
               fontSize: 18,
               fontWeight: '500',
             }}>
             Enter the verification code we just sent on the mobile number 
             {maskPhoneNumber(` ${route.params?.phoneNumber}`)}
           </Text>
+          </View>
+
           <View style={styles.otpContainer}>
             {otp.map((digit, index) => (
               <TextInput
@@ -339,14 +333,6 @@ export default function OTPVerification({navigation,route}) {
             )}
           </TouchableOpacity>
 
-          {/* <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center",marginTop:15}}>
-            <Text style={styles.signupText}>
-              Don't have an account?
-            </Text>
-            <TouchableOpacity style={{alignSelf:"flex-start"}} onPress={()=>navigation.goBack()}> 
-              <Text style={styles.signupLink}> Sign Up</Text>
-            </TouchableOpacity>
-          </View> */}
         </View>
       </View>
     </Pressable>
@@ -418,7 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   loginButton: {
-    backgroundColor: commonStyles.btnColor,
+    backgroundColor:colors.maintheme,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

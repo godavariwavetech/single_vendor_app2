@@ -10,6 +10,7 @@ import {
   StatusBar,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -31,11 +32,12 @@ import {
 import Entypo from 'react-native-vector-icons/Entypo';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {getChargesList} from '../../redux/reducers/addressSlice';
-import {haversineDistance} from './distanceCalculator';
 import { removeCoupon } from '../../redux/reducers/coupons';
 import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RazorpayCheckout from 'react-native-razorpay';
+import { colors } from '../../config/theme';
 
 const CheckoutScreen = ({navigation, route}) => {
   const {cartItems, totalPrice} = useSelector(state => state.Dashboard);
@@ -49,6 +51,7 @@ const CheckoutScreen = ({navigation, route}) => {
     orderOfferAmount,
     locationId,
     locationName,
+    availableLocations
   } = useSelector(state => state.Auth);
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
@@ -158,13 +161,13 @@ const CheckoutScreen = ({navigation, route}) => {
               <TouchableOpacity
                 onPress={() => decreaseItem(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="minus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="minus" size={16} color={colors.maintheme} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>{item.quantity}</Text>
               <TouchableOpacity
                 onPress={() => addItem(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="plus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="plus" size={16} color={colors.maintheme} />
               </TouchableOpacity>
             </View>
             <Text style={styles.itemTotalPrice}>₹ {eachPrice}</Text>
@@ -188,20 +191,33 @@ const CheckoutScreen = ({navigation, route}) => {
     minOrderPrice,
     gstRate = 18,
   ) {
-    let deliveryCharge = reaturantDetails?.minimum_del_charge;
-
-    if (distance >= Number(reaturantDetails?.minimum_km||3)) {
-      deliveryCharge = deliveryCharge + (Number(distance) - Number(reaturantDetails?.minimum_km)) * (reaturantDetails?.per_km_chargers||10);
-    }
-
-    if (cartPrice < minOrderPrice) {
-      deliveryCharge += 10;
-    }
-    // let gstAmount =
-    //   (Number(deliveryCharge) * Number(chargesList ? chargesList[0].gst_percentage : 18)) / 100;
+    // Use delivery_fixed_charges from chargesList instead of distance-based calculation
+    let deliveryCharge = 0;
     let gstAmount = 0;
-    let totalDeliveryCharge = deliveryCharge + gstAmount;
+    
+    if (chargesList && chargesList.length > 0) {
+      // Use the fixed delivery charge from chargesList
+      deliveryCharge = parseFloat(chargesList[0].delivery_fixed_charges) || 0;
+      
+      // Calculate GST based on gst_percentage from chargesList
+      const gstPercentage = parseFloat(chargesList[0].gst_percentage) || 18;
+      gstAmount = (deliveryCharge * gstPercentage) / 100;
+    } else {
+      // Fallback to old calculation if chargesList is not available
+      deliveryCharge = reaturantDetails?.minimum_del_charge || 0;
 
+      if (distance >= Number(reaturantDetails?.minimum_km || 3)) {
+        deliveryCharge = deliveryCharge + (Number(distance) - Number(reaturantDetails?.minimum_km)) * (reaturantDetails?.per_km_chargers || 10);
+      }
+
+      if (cartPrice < minOrderPrice) {
+        deliveryCharge += 10;
+      }
+      
+      gstAmount = (deliveryCharge * gstRate) / 100;
+    }
+
+    let totalDeliveryCharge = deliveryCharge + gstAmount;
 
     setDelivery({
       baseCharge: deliveryCharge,
@@ -216,33 +232,36 @@ const CheckoutScreen = ({navigation, route}) => {
     };
   }
 
+  console.log(selectedPaymentMethod,"+++++++++++++++>>>>>>>>selectedPaymentMethod")
+
 
   const handlePlaceOrder = async () => {
     try {
       setIsProcessingPayment(true);
+      
+      // Ensure chargesList is available
+      if (!chargesList || chargesList.length === 0) {
+        console.error('Charges list not available');
+        return;
+      }
+      
       let payload = {
-        order_status:0,
-        actual_total_amount: itemsTotalPrice,
         customer_id: customerId,
         customer_name: selectedAddress?.customer_name,
         customer_mobile_number: selectedAddress?.customer_mobile_number,
-        category_id: cartItems[0]?.category_id,
-        sub_category_id: cartItems[0]?.sub_category_id,
-        admin_percentage: 10,
-        item_count: cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0),
-        total_amount: totalSellingPrice,
-        total_saving_amount: totalSavings,
-        coupon_amount: couponDiscount,
-        delivery_charges:delivery.totalCharge,
-        grand_total: grandTotal,
-        location_id: locationId,
-        location_name: locationName,
+        item_count: cartItems.length,
+        total_amount: totalSellingPrice.toString(),
+        total_saving_amount: totalSavings.toString(),
+        coupon_amount: couponDiscount.toString(),
+        delivery_charges: delivery.baseCharge.toString(),
+        grand_total: grandTotal.toString(),
+        location_id:availableLocations[0]?.id,
+        location_name: availableLocations[0]?.location_name,
         payment_type: selectedPaymentMethod,
-        payment_id: selectedPaymentMethod,
-        razorpay_order_id: null, 
-        order_instructions: 'test are',
-        coupon_type: appliedCoupon?.coupon_type||"0",
-        coupon_id: appliedCoupon?.id||"0",
+        order_status: "0",
+        order_instructions: "",
+        coupon_type: appliedCoupon?.coupon_type || "Flat",
+        coupon_id: appliedCoupon?.id || "CPN100",
         delivery_address: selectedAddress
           ? selectedAddress.full_address
           : 'No address selected',
@@ -252,45 +271,74 @@ const CheckoutScreen = ({navigation, route}) => {
         order_longitude: selectedAddress
           ? selectedAddress.customer_longitude
           : '0',
-        slot_timings: 'Fast Delivery',
-        order_distance: distance,
-        ext_del_charge: '0',
-        shop_id: cartItems[0]?.shop_id,
-        user_player_id: null,
-        order_type: 0,
-        delivery_charges_gst: delivery.gstAmount,
-        handling_charges: chargesList[0].handling_charges,
-        packing_charges: 0,
-        packing_charges_gst:0,
-        donation_charges: chargesList[0].donation_charges,
+        order_distance: "0", // Set to "0" since we're not using distance-based calculation
+        ext_del_charge: "0",
+        actual_total_amount: (totalSellingPrice + totalSavings).toString(),
+        order_type: "Online",
+        delivery_charges_gst: delivery.gstAmount.toFixed(2),
+        handling_charges: chargesList[0]?.handling_charges?.toString() || "0",
+        packing_charges: "10", // Default packing charges
+        packing_charges_gst: "1.80", // Default packing charges GST
+        donation_charges: chargesList[0]?.donation_charges?.toString() || "0",
+        delivery_instruction: "",
         sub_order_array: cartItems.map(item => ({
           item_name: item.item_name,
           item_image: item.item_image,
-          item_id: item.id,
-          category_id: item.category_id,
-          sub_category_id: item.sub_category_id,
+          item_id: item.id?.toString(),
+          category_id: item.category_id?.toString(),
           category_name: item.category_name,
-          sub_category_name: item.sub_category_name,
-          actualitem_price: item.actual_price,
-          item_price: item.selling_price,
-          sub_item_count: item.quantity,
-          item_total_amount: item.selling_price * item.quantity,
-          filter_name: item.filter_one,
-          item_description: item.item_description,
-          saving_price: item.discount_amount,
-          shop_id: item.shop_id,
-          filter_one: item.filter_one,
+          actualitem_price: item.actual_price?.toString(),
+          item_price: item.selling_price?.toString(),
+          sub_item_count: item.quantity?.toString(),
+          item_total_amount: (item.selling_price * item.quantity).toString(),
+          item_description: item.item_description || "",
+          saving_price: item.discount_amount?.toString() || "0"
         })),
       };
 
-
-      console.log(payload,"+++++++++++++++++++++++>>>>>>>>>>>>>>payload")
-
-
-       const responseCod = await dispatch(placeOrder({orderDetails: payload}));
-       console.log("+++++++++++++++++>>>>>>>>>>>>>>>>>>>>>>>>PPPPPPOPOO",responseCod)
+      if(selectedPaymentMethod == "COD"){
+        const responseCod = await dispatch(placeOrder({orderDetails: payload}));
         navigation.replace('OrderSuccess', {response: responseCod.payload});
         return;
+      }else{
+        payload.order_status = "7";
+        const responseCod = await dispatch(placeOrder({orderDetails: payload}));
+
+        const options = {
+          description: `Payment for Order`,
+          image: 'https://your-logo-url.com/logo.png',
+          currency: 'INR',
+          key: responseCod.payload.key_id,
+          // amount: Math.round( totalSellingPrice * 100),
+          name: 'Intlo Kitchen',
+          order_id: responseCod.payload.orderId,
+          prefill: {
+            email: "",
+            contact: selectedAddress?.customer_mobile_number,
+            name: selectedAddress?.customer_name,
+          },
+          theme: { color: colors.maintheme },
+        };
+  
+        RazorpayCheckout.open(options)
+        .then(async(data) => {
+          const paymentId = data.razorpay_payment_id;
+          payload.order_status = "0";
+          payload.payment_id = paymentId;
+          payload.order_id = responseCod.payload.orderId;
+           const responsePayment = await dispatch(placeOrder({orderDetails: payload}));
+           navigation.replace('OrderSuccess', {response: responsePayment.payload});
+        return;
+        })
+        .catch((error) => {
+          console.log('Payment Error:', error);
+          Alert.alert("Payment Failed", "Payment was not completed. Please try again.");
+        })
+
+      }
+
+
+
     } catch (error) {
       console.error('Payment error:', error);
     } finally {
@@ -316,21 +364,23 @@ const CheckoutScreen = ({navigation, route}) => {
 
   useEffect(() => {
     if (!selectedAddress && !reaturantDetails) return;
-    const value = haversineDistance(
-      selectedAddress.customer_latitude,
-      selectedAddress.customer_longitude,
-      reaturantDetails.shop_latitude,
-      reaturantDetails.shop_longitude,
-    );
-    setDistance(value);
+    
+    // Remove distance calculation since we're using fixed charges
+    // const value = 10
+    // setDistance(value);
+    
     const charges = calculateDeliveryCharge(
-      distance,
+      0, // distance is no longer used
       itemsTotalPrice,
       orderOfferAmount,
     );
 
+    // Calculate additional charges from chargesList
+    const handlingCharges = chargesList?.[0]?.handling_charges || 0;
+    const donationCharges = chargesList?.[0]?.donation_charges || 0;
+
     setGrandTotal(
-      totalSellingPrice - couponDiscount + Number(charges.totalCharge),
+      totalSellingPrice - couponDiscount + Number(charges.totalCharge) + Number(handlingCharges) + Number(donationCharges),
     );
   }, [
     selectedAddress,
@@ -339,6 +389,7 @@ const CheckoutScreen = ({navigation, route}) => {
     cartItems,
     totalSellingPrice,
     couponDiscount,
+    chargesList, // Add chargesList as dependency
   ]);
 
   return (
@@ -364,7 +415,7 @@ const CheckoutScreen = ({navigation, route}) => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <AntDesign name="arrowleft" size={24} color="#000" />
+            <AntDesign name="arrowleft" size={24} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Cart</Text>
         </View>
@@ -380,7 +431,7 @@ const CheckoutScreen = ({navigation, route}) => {
       <View style={styles.savingsBanner}>
         <MaterialCommunityIcons
           name="brightness-percent"
-          color={commonStyles.btn2Color}
+          color={colors.maintheme}
           size={15}
         />
         {totalSavings && (
@@ -474,7 +525,7 @@ const CheckoutScreen = ({navigation, route}) => {
 
         {/* Apply Coupons */}
         <TouchableOpacity onPress={navigateToCoupons} style={styles.couponCard}>
-          <MaterialIcons name="local-offer" size={24} color={commonStyles.btn2Color} />
+          <MaterialIcons name="local-offer" size={24} color={colors.maintheme} />
           <Text style={styles.couponText}>Apply coupons</Text>
           <MaterialIcons name="chevron-right" size={24} color="#666" />
         </TouchableOpacity>
@@ -547,14 +598,42 @@ const CheckoutScreen = ({navigation, route}) => {
                 <View key={index} style={styles.dot} />
               ))}
           </View>
+          
+          {/* Delivery Charges Breakdown */}
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>Delivery Charge</Text>
             <Text style={styles.billValue}>
-              ₹{' '}
-              {delivery.totalCharge}
+              ₹ {delivery.baseCharge.toFixed(2)}
             </Text>
           </View>
-          {/* <Text style={styles.gstNote}>(GST Included)</Text> */}
+          
+          <View style={styles.billRow}>
+            <Text style={styles.billLabel}>Delivery GST ({chargesList?.[0]?.gst_percentage || 18}%)</Text>
+            <Text style={styles.billValue}>
+              ₹ {delivery.gstAmount.toFixed(2)}
+            </Text>
+          </View>
+          
+          {/* Handling Charges */}
+          {chargesList?.[0]?.handling_charges > 0 && (
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>Handling Charges</Text>
+              <Text style={styles.billValue}>
+                ₹ {chargesList[0].handling_charges}
+              </Text>
+            </View>
+          )}
+          
+          {/* Donation Charges */}
+          {chargesList?.[0]?.donation_charges > 0 && (
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>Donation Charges</Text>
+              <Text style={styles.billValue}>
+                ₹ {chargesList[0].donation_charges}
+              </Text>
+            </View>
+          )}
+          
           <View
             style={[
               styles.dottedLineContainer,
@@ -579,7 +658,7 @@ const CheckoutScreen = ({navigation, route}) => {
       </ScrollView>
 
       {/* Bottom Payment Section */}
-      <View style={[styles.paymentSection, {paddingBottom: insets.bottom}]}>
+      <View style={[styles.paymentSection, {paddingBottom: insets.bottom+10}]}>
         <TouchableOpacity
           style={styles.paymentMethod}
           ref={buttonRef}
@@ -655,7 +734,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: colors.maintheme,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -667,7 +746,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(7),
   },
   headerTitle: {
-    color: '#000',
+    color: colors.white,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -675,7 +754,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(7),
   },
   savingsText: {
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -715,14 +794,14 @@ const styles = StyleSheet.create({
   },
   foodPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 6,
   },
   quantityButton: {
@@ -732,7 +811,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: 5,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   itemTotalPrice: {
     color: '#3D3D3D',
@@ -748,7 +827,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(3),
   },
   addMoreText: {
-    color: '#C3A710',
+    color: colors.maintheme,
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'left',
@@ -825,7 +904,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     // shadowColor: '#000',
     // shadowOffset: {
     //   width: 0,
@@ -849,7 +928,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: responsiveWidth(90),
     alignSelf: 'center',
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     // shadowColor: '#000',
     // shadowOffset: {
     //   width: 0,
@@ -886,7 +965,7 @@ const styles = StyleSheet.create({
   },
   couponCode: {
     fontSize: 12,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '500',
     marginLeft: 10,
     marginBottom: 10,
@@ -941,7 +1020,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 8,
     // padding: 15,
     paddingVertical:10,
@@ -986,7 +1065,7 @@ const styles = StyleSheet.create({
   },
   totalPrice: {
     fontSize: 18,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
   },
   dottedLineContainer: {
@@ -1010,7 +1089,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: responsiveHeight(1.5),
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 8,
     gap: 8,
     marginTop: responsiveHeight(2),
@@ -1047,7 +1126,7 @@ const styles = StyleSheet.create({
   removeCouponText: {
     fontSize: 16,
     fontWeight: '600',
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
   },
   paymentMethodsContainer: {
     position: 'absolute',
@@ -1089,7 +1168,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
     borderRadius: 5,
     padding: 10,
     width: '100%',
@@ -1110,14 +1189,14 @@ const styles = StyleSheet.create({
   address: {
     marginHorizontal: responsiveWidth(1),
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
     borderRadius: 8,
   },
   address: {
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: colors.maintheme,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1131,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   sellingPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     fontWeight: '700',
     textAlign:"left"
   },

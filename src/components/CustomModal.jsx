@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import commonStyles from '../commonstyles/CommonStyles';
+import { colors } from '../config/theme';
 
 const CustomModal = ({
   visible,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: commonStyles.btn2Color,
+    color: colors.maintheme,
     marginBottom: responsiveHeight(1),
   },
   modalMessage: {
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     borderColor: '#A3A3A3',
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: colors.maintheme,
   },
   cancelButtonText: {
     color: '#A3A3A3',
