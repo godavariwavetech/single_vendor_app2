@@ -170,6 +170,7 @@ useEffect(() => {
   const getCategoriesAndItems = async () => {
     try {
       setErrorOccured(false)
+      console.log("calling")
       dispatch(getBanners());
       const categoriesResponse = await dispatch(getCategories());
       if (categoriesResponse?.payload?.data?.length > 0) {
@@ -227,7 +228,7 @@ useEffect(() => {
     setSelectedCategory(category.category_name);
     // Clear search when switching categories
     setSearchQuery('');
-    setFilteredItems([]); // This will be updated when new categoryItems load
+    setFilteredItems([]); 
   };
 
   useFocusEffect(

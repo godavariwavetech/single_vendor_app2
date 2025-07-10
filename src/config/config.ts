@@ -1,4 +1,4 @@
-export const baseURL = 'https://apicloudkitchen.godavariinnovations.com/public_app/'; 
+export const baseURL = 'https://intlokitchen.com:2030/public_app/'; 
 
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',

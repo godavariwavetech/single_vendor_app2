@@ -246,6 +246,7 @@ export const getBanners = createAsyncThunk(
       {getState, rejectWithValue, fulfillWithValue}
   ) =>{
 
+    console.log("++++++++++++++++++>>>>>>>>>>>>>responseBanner",endpoints.GET_BANNER)
       const response = await api.get(endpoints.GET_BANNER);
       if (response) {
           if (response.data) {

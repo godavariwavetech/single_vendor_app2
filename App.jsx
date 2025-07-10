@@ -28,7 +28,7 @@ const NetworkStatusBanner = () => {
 
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: isConnected ? -50 : 0, // Slide down when disconnected
+      toValue: isConnected ? -50 : 0,
       duration: 300,
       useNativeDriver: true,
     }).start();
