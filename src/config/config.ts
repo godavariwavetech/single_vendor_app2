@@ -10,7 +10,7 @@ export const endpoints = {
   DADDY_GET_CATEGORIES:'getcategory',
   GET_CATEGORY_ITEMS:'getitems',
   GET_SUB_CATEGORIES:'public_app/getshopsubcategorylist',
-  GET_BANNER:'getbanners',
+  GET_BANNER:'getbanner',
   GET_SHOPS:'public_app/getshoplist',
   GET_ITEMS_LIST:"public_app/getitemslist",
   VERIFY_CUSTOMER_MOBILE:'public_app/customerlogin',

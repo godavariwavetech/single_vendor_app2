@@ -140,8 +140,6 @@ useEffect(() => {
     );
   }, [dispatch, userAddress]);
 
-  console.log(banners,"++++++++++++BANNERS")
-
   const requestLocationPermission = useCallback(async () => {
     try {
       let permission;
@@ -572,7 +570,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: colors.white,
-    paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+    // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
   },
   container: {
     flex: 1,

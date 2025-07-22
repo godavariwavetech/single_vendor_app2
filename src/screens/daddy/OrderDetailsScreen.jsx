@@ -28,10 +28,12 @@ import {cancelOrder, submitReview} from '../../redux/reducers/reviews';
 import {getMessaging} from '@react-native-firebase/messaging';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const OrderDetailsScreen = ({navigation, route}) => {
   // const { orderDetails } = route.params;
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
   const [subOrderData, setSubOrderData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
@@ -349,7 +351,7 @@ const OrderDetailsScreen = ({navigation, route}) => {
 
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container,{paddingBottom:insets.bottom}]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.maintheme} />
 
       {/* Header */}
