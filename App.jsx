@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {Provider} from 'react-redux';
 import {store} from './src/redux/store';
 import AppNavigation from './src/navigation/AppNavigation';
 import SplashScreen from 'react-native-splash-screen'
 import { getFCMToken } from './src/services/NotificationsService';
-import { Linking, Platform, View, Text, StyleSheet, Animated } from 'react-native';
+import { Linking, Platform, View, Text, StyleSheet, Animated, AppState } from 'react-native';
 import { checkNotifications, requestNotifications, RESULTS } from 'react-native-permissions';
 import VersionCheck from 'react-native-version-check'; 
 import CustomModal from './src/components/CustomModal';
@@ -63,6 +63,7 @@ const styles = StyleSheet.create({
 
 const App = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     const checkAndRequestPermissions = async () => {
@@ -120,6 +121,21 @@ const App = () => {
 
   useEffect(() => {
     checkForUpdate();
+  }, []);
+
+      useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        checkForUpdate();
+      }
+      appState.current = nextAppState;
+    });
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   return (
