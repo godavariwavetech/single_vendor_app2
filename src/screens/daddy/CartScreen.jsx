@@ -228,7 +228,7 @@ const CartScreen = ({navigation,route}) => {
             )}
           />
 
-          <View style={[styles.bottomContainer, {paddingBottom: insets.bottom > 0 ? insets.bottom + 60 : 80}]}>
+          <View style={[styles.bottomContainer]}>
             <View style={styles.totalContainer}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
