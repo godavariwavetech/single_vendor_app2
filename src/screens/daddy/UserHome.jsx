@@ -29,7 +29,7 @@ import {
   getCategoryItems
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import { getAvailableLocations, setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
 import NetInfo from '@react-native-community/netinfo';
 import Skeleton from './Skeleton';

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "776105079286",
-    "project_id": "local-daddy",
-    "storage_bucket": "local-daddy.firebasestorage.app"
+    "project_number": "840089379995",
+    "project_id": "intlo-kitchen",
+    "storage_bucket": "intlo-kitchen.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:776105079286:android:30462e30c01b3cc2c297d7",
+        "mobilesdk_app_id": "1:840089379995:android:4624c2d4cb701640e7d23e",
         "android_client_info": {
           "package_name": "com.intlokitchen"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCmPi8xOUznymz9c6NGGswXgmxumswoQy0"
+          "current_key": "AIzaSyADrfZAfZY8P6_7WFQFqh0vwGKtyJllm_w"
         }
       ],
       "services": {

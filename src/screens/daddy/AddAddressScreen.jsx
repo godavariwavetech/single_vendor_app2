@@ -23,14 +23,20 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import {useDispatch, useSelector} from 'react-redux';
-import {setAddressList, updateUserAddress} from '../../redux/reducers/daddy';
+import {setAddressList} from '../../redux/reducers/daddy';
 import {getAvailableLocations} from '../../redux/reducers/auth';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import CustomModal from '../../components/CustomModal';
 import {setUserDetails} from '../../redux/reducers/addressSlice';
 import { colors } from '../../config/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// FIX: Set default coordinates to Tirupati, Andhra Pradesh
+const TIRUPATI_COORDS = {
+    latitude: 13.6288,
+    longitude: 79.4192,
+};
 
 const AddAddressScreen = ({navigation, route}) => {
   const dispatch = useDispatch();
@@ -47,14 +53,14 @@ const AddAddressScreen = ({navigation, route}) => {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [region, setRegion] = useState({
-    latitude: 17.0005,
-    longitude: 81.804,
+    latitude: TIRUPATI_COORDS.latitude,
+    longitude: TIRUPATI_COORDS.longitude,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   });
   const [markerPosition, setMarkerPosition] = useState({
-    latitude: 17.0005,
-    longitude: 81.804,
+    latitude: TIRUPATI_COORDS.latitude,
+    longitude: TIRUPATI_COORDS.longitude,
   });
   const mapRef = useRef(null);
   const lastUpdateTime = useRef(Date.now());
@@ -77,6 +83,8 @@ const AddAddressScreen = ({navigation, route}) => {
   const [isSaving, setIsSaving] = useState(false);
   const [locationValidation, setLocationValidation] = useState(null);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+
+  const [isSearching, setIsSearching] = useState(false);
 
   const showCustomModal = useCallback(
     (
@@ -108,46 +116,23 @@ const AddAddressScreen = ({navigation, route}) => {
     setIsFetchingAddress(true);
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
       );
       const data = await response.json();
-
-      if (data.status === 'OK' && data.results.length > 0) {
-        const addressComponents = data.results[0].address_components;
-        const formattedAddress = data.results[0].formatted_address;
-
-        // Extract address components
-        let cityName = '';
-        let stateName = '';
-        let postalCode = '';
-
-        addressComponents.forEach(component => {
-          if (component.types.includes('locality')) {
-            cityName = component.long_name;
-          }
-          if (component.types.includes('administrative_area_level_1')) {
-            stateName = component.long_name;
-          }
-          if (component.types.includes('postal_code')) {
-            postalCode = component.long_name;
-          }
-        });
-
-        setAddress(formattedAddress);
-        setCity(cityName);
-        setState(stateName);
-
-        // Fill the input fields with the fetched data
-        setDoorNo(formattedAddress); // Set the full formatted address
-        setPincode(postalCode);
-        setLandmark(cityName); // Using city as landmark
+      if (data) {
+        const fullAddress = `${data.locality}, ${data.city}, ${data.principalSubdivision}, ${data.postcode}, ${data.countryName}`;
+        setAddress(fullAddress);
+        setCity(data.city || '');
+        setState(data.principalSubdivision || '');
+        setDoorNo(data.locality || '');
+        setPincode(data.postcode || '');
+        setLandmark(data.localityInfo?.informative?.[0]?.name || data.city);
+      } else {
+        console.warn('Address data not found in BigDataCloud response:', data);
       }
     } catch (error) {
-      console.error('Error getting address:', error);
-      showCustomModal(
-        'Error',
-        'Failed to get address details. Please try again.',
-      );
+      console.error('Error getting address from BigDataCloud:', error);
+      showCustomModal('Error', 'Failed to get address details. Please try again.');
     } finally {
       setIsFetchingAddress(false);
     }
@@ -160,64 +145,32 @@ const AddAddressScreen = ({navigation, route}) => {
   const onRegionChangeComplete = useCallback(newRegion => {
     const currentTime = Date.now();
     if (currentTime - lastUpdateTime.current > 500) {
-      setMarkerPosition({
-        latitude: newRegion.latitude,
-        longitude: newRegion.longitude,
-      });
+      setMarkerPosition({ latitude: newRegion.latitude, longitude: newRegion.longitude });
       setRegion(newRegion);
       getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
-      
-      // Update location validation in real-time
       const validation = isLocationWithinDeliveryRadius(newRegion.latitude, newRegion.longitude);
       setLocationValidation(validation);
-      
       lastUpdateTime.current = currentTime;
     }
   }, [isLocationWithinDeliveryRadius]);
 
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'ios') {
-      getCurrentLocation();
-    } else {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message:
-              'This app needs access to your location to provide delivery services.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          getCurrentLocation();
-        } else {
-          showCustomModal(
-            'Permission Denied',
-            'Location permission is required to use this feature.',
-          );
-        }
-      } catch (err) {
-        console.warn(err);
+    if (Platform.OS === 'ios') return getCurrentLocation();
+    try {
+      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        getCurrentLocation();
+      } else {
+        showCustomModal('Permission Denied', 'Location permission is required.');
       }
+    } catch (err) {
+      console.warn(err);
     }
   }, []);
 
   const getCurrentLocation = useCallback(() => {
-    // If we're editing an existing address, show a confirmation modal
     if (route.params?.address) {
-      showCustomModal(
-        'Update Location',
-        'Do you want to update the location of this address?',
-        () => {
-          fetchCurrentLocation();
-        },
-        null,
-        'Update',
-        'Cancel',
-      );
+      showCustomModal('Update Location', 'Use current location for this address?', () => fetchCurrentLocation(), null, 'Update', 'Cancel');
       return;
     }
     fetchCurrentLocation();
@@ -225,128 +178,39 @@ const AddAddressScreen = ({navigation, route}) => {
 
   const fetchCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
-    Geolocation.setRNConfiguration({
-      enableHighAccuracy: false,
-      timeout: 2000,
-      maximumAge: 1000,
-    });
-
     Geolocation.getCurrentPosition(
       position => {
-        const {latitude, longitude} = position.coords;
-        const newRegion = {
-          latitude,
-          longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        };
-
-        setMarkerPosition({latitude, longitude});
+        const { latitude, longitude } = position.coords;
+        const newRegion = { latitude, longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 };
+        setMarkerPosition({ latitude, longitude });
         setRegion(newRegion);
         animateToRegion(newRegion);
         getAddressFromCoordinates(latitude, longitude);
-        
-        // Set location validation for current location
         const validation = isLocationWithinDeliveryRadius(latitude, longitude);
         setLocationValidation(validation);
-        
         setIsLoadingLocation(false);
       },
       error => {
-        let errorMessage = 'Unable to get your location. ';
-
-        switch (error.code) {
-          case 1:
-            errorMessage +=
-              'Please enable location permissions in your device settings.';
-            break;
-          case 2:
-            errorMessage +=
-              'Location service is not available. Please check your device settings.';
-            break;
-          case 3:
-            errorMessage +=
-              'Request timed out. Please check your internet connection and try again.';
-            break;
-          case 4:
-            errorMessage +=
-              'Please check if Google Play services is installed and up to date.';
-            break;
-          default:
-            errorMessage += 'Please try again.';
-        }
-
         setIsLoadingLocation(false);
-        showCustomModal(
-          'Location Error',
-          errorMessage,
-          () => fetchCurrentLocation(),
-          null,
-          'Try Again',
-          'Cancel',
-        );
+        showCustomModal('Location Error', 'Unable to fetch your current location.');
+        console.log(error);
       },
-      {
-        enableHighAccuracy: false,
-        timeout: 20000,
-        maximumAge: 1000,
-      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
     );
   }, [animateToRegion]);
 
-  const onRegionChange = useCallback(newRegion => {
-    // Update marker position to match the center of the map
-    setMarkerPosition({
-      latitude: newRegion.latitude,
-      longitude: newRegion.longitude,
-    });
-    setRegion(newRegion);
-  }, []);
-
-  // const onMapPress = useCallback((e) => {
-  //   console.log("+++++++++++++>>>MAPPRESS",e)
-  //   const { latitude, longitude } = e.nativeEvent.coordinate;
-  //   const newRegion = {
-  //     latitude,
-  //     longitude,
-  //     latitudeDelta: region.latitudeDelta,
-  //     longitudeDelta: region.longitudeDelta,
-  //   };
-
-  //   setMarkerPosition({ latitude, longitude });
-  //   setRegion(newRegion);
-  //   animateToRegion(newRegion);
-  // }, [region.latitudeDelta, region.longitudeDelta, animateToRegion]);
-
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setKeyboardVisible(true); // or some other action
-      },
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardVisible(false); // or some other action
-      },
-    );
-
+    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
-      keyboardDidHideListener.remove();
-      keyboardDidShowListener.remove();
+      keyboardDidHide.remove();
+      keyboardDidShow.remove();
     };
   }, []);
 
-  const [inputErrors, setInputErrors] = useState({
-    name: false,
-    contact: false,
-    doorNo: false,
-    pincode: false,
-    landmark: false,
-  });
+  const [inputErrors, setInputErrors] = useState({});
   const validateInputs = useCallback(() => {
-    let errors = {
+    const errors = {
       name: !name,
       contact: !/^[6-9]\d{9}$/.test(contact),
       doorNo: !doorNo,
@@ -354,8 +218,8 @@ const AddAddressScreen = ({navigation, route}) => {
       landmark: !landmark,
     };
     setInputErrors(errors);
-    if (errors.name || errors.contact || errors.doorNo || errors.pincode || errors.landmark) {
-      showCustomModal('Validation Error', 'All fields are required and must be valid.');
+    if (Object.values(errors).some(Boolean)) {
+      showCustomModal('Validation Error', 'Please fill all required fields correctly.');
       return false;
     }
     return true;
@@ -365,153 +229,71 @@ const AddAddressScreen = ({navigation, route}) => {
     if (validateInputs()) {
       setModalVisible(false);
       addAddress();
-      dispatch(
-        setUserDetails({
-          name: name,
-          contact: contact,
-          pincode: pincode,
-          landmark: landmark,
-          city: city,
-          state: state,
-        }),
-      );
+      dispatch(setUserDetails({ name, contact, pincode, landmark, city, state }));
     }
   }, [validateInputs]);
 
-  const toggleModal = useCallback(() => {
-    setModalVisible(prev => !prev);
-  }, []);
+  const toggleModal = useCallback(() => setModalVisible(prev => !prev), []);
 
   const addAddress = useCallback(async () => {
     setIsSaving(true);
     try {
-      // Check if location is within delivery radius
-      const locationValidation = isLocationWithinDeliveryRadius(
-        markerPosition.latitude,
-        markerPosition.longitude
-      );
-
-      if (locationValidation.isAvailable) {
+      const validation = isLocationWithinDeliveryRadius(markerPosition.latitude, markerPosition.longitude);
+      if (validation.isAvailable) {
         const addressData = {
-          addressType: selectedType,
-          address: doorNo,
-          location_id: locationValidation.nearestLocation.id,
-          customer_latitude: markerPosition.latitude.toString(),
-          customer_longitude: markerPosition.longitude.toString(),
-          customer_name: name,
-          customer_mobile_number: contact,
-          pincode,
-          landmark,
-          city,
-          state,
-          full_address: address,
+          addressType: selectedType, address: doorNo, location_id: validation.nearestLocation.id,
+          customer_latitude: markerPosition.latitude.toString(), customer_longitude: markerPosition.longitude.toString(),
+          customer_name: name, customer_mobile_number: contact, pincode, landmark, city, state, full_address: address,
         };
-        
-        if (route.params?.address) {
-          dispatch(
-            setAddressList({
-              ...addressData,
-              id: route.params.address.id,
-            }),
-          );
-        } else {
-          await dispatch(
-            setAddressList(addressData),
-          );
-        }
+        const action = route.params?.address ? setAddressList({ ...addressData, id: route.params.address.id }) : setAddressList(addressData);
+        await dispatch(action);
         navigation.goBack();
       } else {
-        // Location is not available for delivery
-        const nearestLocationName = locationValidation.nearestLocation?.location_name || 'nearest service area';
-        const distance = locationValidation.distance.toFixed(1);
-        const maxRadius = locationValidation.nearestLocation?.maximum_delivery_service_km || 'unknown';
-        
-        showCustomModal(
-          'Location Not Available',
-          `The selected location is not available for delivery. The nearest service area is ${nearestLocationName} (${distance} km away). Maximum delivery radius is ${maxRadius} km. Please select a location within the service area.`,
-          () => {
-            setAreaAvailable(true);
-          },
-          null,
-          'OK',
-          null,
-        );
+        const { nearestLocation, distance } = validation;
+        const message = `The selected location is not available for delivery. The nearest service area is ${nearestLocation?.location_name || 'away'} (${distance.toFixed(1)} km away).`;
+        showCustomModal('Location Not Available', message);
         setAreaAvailable(false);
       }
     } catch (error) {
       console.error('Error saving address:', error);
-      showCustomModal(
-        'Error',
-        'Failed to save address. Please try again.',
-        () => {
-          setAreaAvailable(true);
-        },
-        null,
-        'OK',
-        null,
-      );
+      showCustomModal('Error', 'Failed to save address. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  }, [
-    dispatch,
-    selectedType,
-    doorNo,
-    markerPosition,
-    name,
-    contact,
-    pincode,
-    landmark,
-    city,
-    state,
-    address,
-    route.params?.address,
-    navigation,
-    isLocationWithinDeliveryRadius,
-  ]);
+  }, [dispatch, selectedType, doorNo, markerPosition, name, contact, pincode, landmark, city, state, address, route.params?.address, navigation, isLocationWithinDeliveryRadius]);
 
+  // FIX: This useEffect now handles both editing an address AND fetching the initial default address
   useEffect(() => {
+    // If we are editing an existing address, use its coordinates
     if (route.params?.address) {
-      const address = route.params.address;
-      setName(address.customer_name || '');
-      setContact(address.customer_mobile_number || '');
-      setDoorNo(address.full_address || '');
-      setPincode(address.pincode || '');
-      setLandmark(address.landmark || '');
-      setSelectedType(address.address_type || 'Home');
-      setAddress(address.full_address || '');
-      setCity(address.city || '');
-      setState(address.state || '');
-
-      // Set map position to the address location
-      if (address.customer_latitude && address.customer_longitude) {
-        const newRegion = {
-          latitude: parseFloat(address.customer_latitude),
-          longitude: parseFloat(address.customer_longitude),
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        };
-        setMarkerPosition({
-          latitude: parseFloat(address.customer_latitude),
-          longitude: parseFloat(address.customer_longitude),
-        });
+      const addr = route.params.address;
+      setName(addr.customer_name || '');
+      setContact(addr.customer_mobile_number || '');
+      setDoorNo(addr.address || ''); 
+      setPincode(addr.pincode || '');
+      setLandmark(addr.landmark || '');
+      setSelectedType(addr.address_type || 'Home');
+      setAddress(addr.full_address || '');
+      setCity(addr.city || '');
+      setState(addr.state || '');
+      if (addr.customer_latitude && addr.customer_longitude) {
+        const lat = parseFloat(addr.customer_latitude);
+        const lng = parseFloat(addr.customer_longitude);
+        const newRegion = { latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005 };
+        setMarkerPosition({ latitude: lat, longitude: lng });
         setRegion(newRegion);
         animateToRegion(newRegion);
-        
-        // Set initial location validation
-        const validation = isLocationWithinDeliveryRadius(
-          parseFloat(address.customer_latitude),
-          parseFloat(address.customer_longitude)
-        );
-        setLocationValidation(validation);
+        // Also fetch address and validate for the existing location
+        getAddressFromCoordinates(lat, lng);
+        setLocationValidation(isLocationWithinDeliveryRadius(lat, lng));
       }
     } else {
-      // Only get current location if we're adding a new address
-      requestLocationPermission();
+      // This is a new address, fetch details for the default Tirupati location immediately
+      getAddressFromCoordinates(TIRUPATI_COORDS.latitude, TIRUPATI_COORDS.longitude);
+      setLocationValidation(isLocationWithinDeliveryRadius(TIRUPATI_COORDS.latitude, TIRUPATI_COORDS.longitude));
     }
-  }, [route.params]);
+  }, [route.params]); // This hook now depends only on route.params
 
-  // Fetch available locations when component mounts
   useEffect(() => {
     if (!availableLocations || availableLocations.length === 0) {
       dispatch(getAvailableLocations());
@@ -521,152 +303,74 @@ const AddAddressScreen = ({navigation, route}) => {
   const handleSearch = useCallback(text => {
     setSearchQuery(text);
     setShowResults(true);
-
-    // Clear previous timeout
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    if (text.trim().length < 3) {
+        setSearchResults([]);
+        return;
     }
 
-    // Set new timeout to avoid too many API calls
+    setIsSearching(true);
     searchTimeout.current = setTimeout(async () => {
-      if (text.trim().length > 2) {
-        try {
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-              text,
-            )}&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
-          );
-          const data = await response.json();
-
-          if (data.status === 'OK') {
-            setSearchResults(data.predictions);
-          } else {
-            setSearchResults([]);
-          }
-        } catch (error) {
-          console.error('Error searching places:', error);
-          setSearchResults([]);
-        }
-      } else {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&countrycodes=in&limit=7`,
+          { headers: { 'User-Agent': 'com.your.app.name' } }
+        );
+        const data = await response.json();
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Error searching places:', error);
         setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
     }, 500);
   }, []);
 
-  const handlePlaceSelect = useCallback(
-    async placeId => {
-      setIsFetchingAddress(true);
-      try {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=AIzaSyD7VY9uECYSahSptZZefCl-NUm45Injb5o`,
-        );
-        const data = await response.json();
-
-        if (data.status === 'OK') {
-          const {location} = data.result.geometry;
-          const newRegion = {
-            latitude: location.lat,
-            longitude: location.lng,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
-          };
-
-          setMarkerPosition({latitude: location.lat, longitude: location.lng});
-          setRegion(newRegion);
-          animateToRegion(newRegion);
-          getAddressFromCoordinates(location.lat, location.lng);
-          
-          // Set location validation for selected place
-          const validation = isLocationWithinDeliveryRadius(location.lat, location.lng);
-          setLocationValidation(validation);
-          
-          setShowResults(false);
-          setSearchQuery('');
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error('Error getting place details:', error);
-        showCustomModal(
-          'Error',
-          'Failed to get place details. Please try again.',
-        );
-      } finally {
-        setIsFetchingAddress(false);
-      }
-    },
-    [animateToRegion],
-  );
-
-  // Function to calculate distance between two coordinates using Haversine formula
+  const handlePlaceSelect = useCallback(result => {
+    const latitude = parseFloat(result.lat);
+    const longitude = parseFloat(result.lon);
+    const newRegion = { latitude, longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 };
+    setMarkerPosition({ latitude, longitude });
+    setRegion(newRegion);
+    animateToRegion(newRegion);
+    getAddressFromCoordinates(latitude, longitude);
+    setLocationValidation(isLocationWithinDeliveryRadius(latitude, longitude));
+    setShowResults(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    Keyboard.dismiss();
+  }, [animateToRegion, isLocationWithinDeliveryRadius]);
+  
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius of the Earth in kilometers
+    const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distance in kilometers
-    return distance;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }, []);
 
-  // Function to check if location is within delivery radius
   const isLocationWithinDeliveryRadius = useCallback((selectedLat, selectedLon) => {
-    if (!availableLocations || availableLocations.length === 0) {
-      return { isAvailable: false, nearestLocation: null };
-    }
-
-    let nearestLocation = null;
-    let minDistance = Infinity;
-
+    if (!availableLocations?.length) return { isAvailable: false, nearestLocation: null, distance: Infinity };
+    let nearestLocation = null, minDistance = Infinity, isAvailable = false, bestAvailableLocation = null;
     for (const location of availableLocations) {
-      const distance = calculateDistance(
-        selectedLat,
-        selectedLon,
-        parseFloat(location.location_latitude),
-        parseFloat(location.location_longitude)
-      );
-
-      if (distance <= parseFloat(location.maximum_delivery_service_km)) {
-        // Location is within delivery radius
-        return { 
-          isAvailable: true, 
-          nearestLocation: location,
-          distance: distance
-        };
-      }
-
-      // Keep track of nearest location for error message
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestLocation = location;
-      }
+      const distance = calculateDistance(selectedLat, selectedLon, parseFloat(location.location_latitude), parseFloat(location.location_longitude));
+      if (distance < minDistance) { minDistance = distance; nearestLocation = location; }
+      if (distance <= parseFloat(location.maximum_delivery_service_km)) { isAvailable = true; bestAvailableLocation = location; break; }
     }
-
-    return { 
-      isAvailable: false, 
-      nearestLocation: nearestLocation,
-      distance: minDistance
-    };
+    if (isAvailable) return { isAvailable: true, nearestLocation: bestAvailableLocation, distance: calculateDistance(selectedLat, selectedLon, parseFloat(bestAvailableLocation.location_latitude), parseFloat(bestAvailableLocation.location_longitude)) };
+    return { isAvailable: false, nearestLocation, distance: minDistance };
   }, [availableLocations, calculateDistance]);
-
-  // useEffect(()=>{
-  //   if(!userDetails) return
-  //   setName(userDetails.name)
-  //   setContact(userDetails.contact)
-  // },[userDetails])
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.title}>
-          {route.params?.address ? 'Edit Address' : 'Add Address'}
-        </Text>
+        <Text style={styles.title}>{route.params?.address ? 'Edit Address' : 'Add Address'}</Text>
       </View>
 
       <View style={styles.mapContainer}>
@@ -677,714 +381,180 @@ const AddAddressScreen = ({navigation, route}) => {
           region={region}
           onRegionChangeComplete={onRegionChangeComplete}
           showsMyLocationButton={false}
-          initialRegion={region}
           moveOnMarkerPress={false}
         />
         <View style={styles.markerOverlay}>
           <View style={styles.markerContainer}>
-            <View style={styles.markerTextContainer}>
-              <Text style={styles.markerText}>
-                Order will be delivered here
-              </Text>
-              {/* <View style={styles.markerArrow} /> */}
-            </View>
+            <View style={styles.markerTextContainer}><Text style={styles.markerText}>Order will be delivered here</Text></View>
             <MaterialIcons name="location-on" size={40} color={colors.maintheme} />
           </View>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.currentLocationButton,
-            isLoadingLocation && styles.currentLocationButtonLoading,
-          ]}
-          onPress={getCurrentLocation}
-          disabled={isLoadingLocation}>
-          {isLoadingLocation ? (
-            <ActivityIndicator color={colors.maintheme} size="small" />
-          ) : (
-            <>
-              <MaterialIcons name="my-location" size={24} color={colors.maintheme} />
-              <Text style={styles.currentLocationText}>
-                use current location
-              </Text>
-            </>
-          )}
+        <TouchableOpacity style={[styles.currentLocationButton, isLoadingLocation && styles.currentLocationButtonLoading]} onPress={requestLocationPermission} disabled={isLoadingLocation}>
+          {isLoadingLocation ? <ActivityIndicator color={colors.maintheme} size="small" /> : (<><MaterialIcons name="my-location" size={24} color={colors.maintheme} /><Text style={styles.currentLocationText}>use current location</Text></>)}
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <AntDesign
-            name="search1"
-            size={20}
-            color="#666"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            placeholder="Search for Area/Location"
-            style={styles.searchInput}
-            placeholderTextColor="#666"
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-                setShowResults(false);
-              }}>
-              <AntDesign name="close" size={20} color="#7A7A7A" />
-            </TouchableOpacity>
-          )}
+          <AntDesign name="search1" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput placeholder="Search for Area/Location" style={styles.searchInput} value={searchQuery} onChangeText={handleSearch} />
+          {searchQuery.length > 0 && (<TouchableOpacity style={styles.clearButton} onPress={() => { setSearchQuery(''); setSearchResults([]); setShowResults(false); }}><AntDesign name="close" size={20} color="#7A7A7A" /></TouchableOpacity>)}
         </View>
-        {showResults && searchResults.length > 0 && (
+        {showResults && searchQuery.length > 2 && (
           <View style={styles.searchResultsContainer}>
-            <ScrollView>
-              {searchResults.map(result => (
-                <TouchableOpacity
-                  key={result.place_id}
-                  style={styles.searchResultItem}
-                  onPress={() => handlePlaceSelect(result.place_id)}>
-                  <MaterialIcons name="location-on" size={20} color={colors.maintheme} />
-                  <View style={styles.searchResultText}>
-                    <Text style={styles.searchResultMain}>
-                      {result.structured_formatting?.main_text ||
-                        result.description}
-                    </Text>
-                    <Text style={styles.searchResultSecondary}>
-                      {result.structured_formatting?.secondary_text || ''}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {isSearching ? (
+              <ActivityIndicator style={{marginTop: 20}} color={colors.maintheme} size="large" />
+            ) : searchResults.length === 0 ? (
+                <Text style={styles.noResultsText}>No results found</Text>
+            ) : (
+                <FlatList
+                    data={searchResults}
+                    keyExtractor={(item) => item.place_id.toString()}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                        <TouchableOpacity style={styles.searchResultItem} onPress={() => handlePlaceSelect(item)}>
+                        <MaterialIcons name="location-on" size={20} color={colors.maintheme} />
+                        <View style={styles.searchResultText}>
+                            <Text style={styles.searchResultMain} numberOfLines={1}>{item.display_name.split(',')[0]}</Text>
+                            <Text style={styles.searchResultSecondary} numberOfLines={2}>{item.display_name.split(',').slice(1).join(',').trim()}</Text>
+                        </View>
+                        </TouchableOpacity>
+                    )}
+                />
+            )}
           </View>
         )}
       </View>
 
       {!isKeyboardVisible && (
-        <View style={[styles.bottomContainer,{paddingBottom:insets.bottom+10}]}>
+        <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 10 }]}>
           <View style={styles.locationInfo}>
-            <View style={styles.locationIcon}>
-              <MaterialIcons name="location-on" size={24} color={colors.maintheme} />
-            </View>
+            <View style={styles.locationIcon}><MaterialIcons name="location-on" size={24} color={colors.maintheme} /></View>
             <View style={styles.locationDetails}>
-              <Text style={styles.locationTitle}>{city || 'Location'}</Text>
-              <Text style={styles.locationSubtitle}>
-                {address || 'Loading address...'}
-              </Text>
+              <Text style={styles.locationTitle} numberOfLines={1}>{city || 'Location'}</Text>
+              <Text style={styles.locationSubtitle} numberOfLines={2}>{isFetchingAddress ? 'Fetching address...' : address || 'Move the map to select location'}</Text>
               {locationValidation && (
                 <View style={styles.validationContainer}>
-                  <MaterialIcons 
-                    name={locationValidation.isAvailable ? "check-circle" : "error"} 
-                    size={16} 
-                    color={locationValidation.isAvailable ? "#4CAF50" : "#F44336"} 
-                  />
-                  <Text style={[
-                    styles.validationText,
-                    {color: locationValidation.isAvailable ? "#4CAF50" : "#F44336"}
-                  ]}>
-                    {locationValidation.isAvailable 
-                      ? `Service available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation.location_name})`
-                      : `Service not available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation?.location_name || 'nearest area'})`
-                    }
+                  <MaterialIcons name={locationValidation.isAvailable ? "check-circle" : "error"} size={16} color={locationValidation.isAvailable ? "#4CAF50" : "#F44336"} />
+                  <Text style={[styles.validationText, { color: locationValidation.isAvailable ? "#4CAF50" : "#F44336" }]}>
+                    {locationValidation.isAvailable ? `Service available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation.location_name})` : `Service not available (${locationValidation.distance.toFixed(1)} km from ${locationValidation.nearestLocation?.location_name || 'nearest area'})`}
                   </Text>
                 </View>
               )}
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              (isSaving || (locationValidation && !locationValidation.isAvailable) || !address) && styles.addButtonDisabled
-            ]}
-            onPress={() => setModalVisible(true)}
-            disabled={isSaving || (locationValidation && !locationValidation.isAvailable) || !address}
-          >
-            {isSaving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.addButtonText}>Add More Details</Text>
-            )}
+          <TouchableOpacity style={[styles.addButton, (isSaving || (locationValidation && !locationValidation.isAvailable) || !address) && styles.addButtonDisabled]} onPress={() => setModalVisible(true)} disabled={isSaving || (locationValidation && !locationValidation.isAvailable) || !address}>
+            {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.addButtonText}>Add More Details</Text>}
           </TouchableOpacity>
         </View>
       )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <Pressable
-          activeOpacity={1}
-          style={styles.modalContainer}
-          onPress={() => {
-            setModalVisible(false);
-          }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'position'}
-            style={styles.keyboardView}>
-            <TouchableOpacity
-              activeOpacity={1}
-              style={styles.modalContentContainer}
-              onPress={e => {
-                e.stopPropagation();
-                toggleModal();
-              }}>
-              <ScrollView
-                contentContainerStyle={{
-                  flexGrow: 1,
-                  justifyContent: 'flex-end'}}>
-                <Pressable style={styles.modalContent}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',padding:16
-                    }}>
-                    <View style={{width: '70%'}}>
-                      <Text style={styles.modalTitle}>
-                        {city || 'Location'}
-                      </Text>
-                      <Text style={styles.modalSubtitle}>
-                        {address || 'Loading address...'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={toggleModal}
-                      style={{padding: 10, borderRadius: 5}}>
-                      <AntDesign name="close" size={20} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.typeButtons}>
-                    <FlatList
-                      data={['Home', 'Office', 'Work', 'Other']}
-                      keyExtractor={item => item}
-                      showsHorizontalScrollIndicator={false}
-                      horizontal contentContainerStyle={{paddingHorizontal:12}}
-                      renderItem={({item}) => {
-                        return (
-                          <TouchableOpacity
-                            key={item}
-                            style={[
-                              styles.typeButton,
-                              selectedType === item &&
-                                styles.selectedTypeButton,
-                            ]}
-                            onPress={() => setSelectedType(item)}>
-                            <Text
-                              style={[
-                                styles.typeButtonText,
-                                selectedType === item &&
-                                  styles.selectedTypeButtonText,
-                              ]}>
-                              {item}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      }}
-                    />
-                  </View>
-
-                  <View style={{paddingHorizontal:16,paddingBottom:16}}>
-
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.label}>Name</Text>
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </View>
-                  <View style={[styles.inputContainer,inputErrors.name && {borderColor: 'red'}]}>
-                    <TextInput
-                      placeholder="Name"
-                      style={[styles.input, ]}
-                      value={name}
-                      onChangeText={setName}
-                      keyboardType="default"
-                      placeholderTextColor="#666"
-                      maxLength={50}
-                    />
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setName('')}>
-                      <AntDesign name="close" size={20} color="#7A7A7A" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.label}>Contact number</Text>
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </View>
-                  <View style={[styles.inputContainer,inputErrors.contact && {borderColor: 'red'}]}>
-                    <TextInput
-                      placeholder="Contact Number"
-                      style={[styles.input]}
-                      value={contact}
-                      onChangeText={setContact}
-                      keyboardType="phone-pad"
-                      placeholderTextColor="#666"
-                      maxLength={10}
-                    />
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setContact('')}>
-                      <AntDesign name="close" size={20} color="#7A7A7A" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.label}>Door no/Flat no/Building</Text>
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </View>
-                  <View style={[styles.inputContainer,inputErrors.doorNo && {borderColor: 'red'}]}>
-                    <TextInput
-                      placeholder="Enter address"
-                      placeholderTextColor={'#666'}
-                      style={styles.input}
-                      value={doorNo}
-                      onChangeText={setDoorNo}
-                      keyboardType="default"
-                      maxLength={100}
-                    />
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setDoorNo('')}>
-                      <AntDesign name="close" size={20} color="#7A7A7A" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.label}>Pincode</Text>
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </View>
-                  {/* <Text style={styles.label}>Pincode</Text> */}
-                  <View style={[styles.inputContainer,inputErrors.pincode && {borderColor: 'red'}]}>
-                    <TextInput
-                      placeholder="Enter pincode"
-                      placeholderTextColor={'#666'}
-                      style={styles.input}
-                      value={pincode}
-                      onChangeText={setPincode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setPincode('')}>
-                      <AntDesign name="close" size={20} color="#7A7A7A" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.label}>Nearby Landmark</Text>
-                    <Text style={styles.requiredAsterisk}>*</Text>
-                  </View>
-                  
-                  {/* <Text style={styles.label}>Nearby Landmark</Text> */}
-                  <View style={[styles.inputContainer,inputErrors.landmark && {borderColor: 'red'}]}>
-                    <TextInput
-                      placeholder="Enter landmark"
-                      placeholderTextColor={'#666'}
-                      style={styles.input}
-                      value={landmark}
-                      onChangeText={setLandmark}
-                      keyboardType="default"
-                      maxLength={100}
-                    />
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setLandmark('')}>
-                      <AntDesign name="close" size={20} color="#7A7A7A" />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={handleSave}>
-                    <Text style={styles.saveButtonText}>Save Address</Text>
-                  </TouchableOpacity>
-                  </View>
-
+      
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={{flex: 1}}
+        >
+            <Pressable style={styles.modalContainer} onPress={() => setModalVisible(false)}>
+                <Pressable style={styles.modalContentContainer}>
+                    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                        <View style={styles.modalContent}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 16 }}>
+                                <View style={{ width: '80%' }}><Text style={styles.modalTitle} numberOfLines={1}>{city || 'Location'}</Text><Text style={styles.modalSubtitle} numberOfLines={2}>{address || 'Loading address...'}</Text></View>
+                                <TouchableOpacity onPress={toggleModal} style={{ padding: 10 }}><AntDesign name="close" size={20} color="#666" /></TouchableOpacity>
+                            </View>
+                            <View style={styles.typeButtons}>
+                                <FlatList
+                                    data={['Home', 'Office', 'Work', 'Other']}
+                                    keyExtractor={item => item}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingHorizontal: 12 }}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity style={[styles.typeButton, selectedType === item && styles.selectedTypeButton]} onPress={() => setSelectedType(item)}>
+                                        <Text style={[styles.typeButtonText, selectedType === item && styles.selectedTypeButtonText]}>{item}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            </View>
+                            <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                                <View><Text style={styles.label}>Name <Text style={styles.requiredAsterisk}>*</Text></Text></View>
+                                <View style={[styles.inputContainer, inputErrors.name && { borderColor: 'red' }]}><TextInput placeholder="Name" style={styles.input} value={name} onChangeText={setName} /></View>
+                                <View><Text style={styles.label}>Contact number <Text style={styles.requiredAsterisk}>*</Text></Text></View>
+                                <View style={[styles.inputContainer, inputErrors.contact && { borderColor: 'red' }]}><TextInput placeholder="Contact Number" style={styles.input} value={contact} onChangeText={setContact} keyboardType="phone-pad" maxLength={10} /></View>
+                                <View><Text style={styles.label}>Door no/Flat no/Building <Text style={styles.requiredAsterisk}>*</Text></Text></View>
+                                <View style={[styles.inputContainer, inputErrors.doorNo && { borderColor: 'red' }]}><TextInput placeholder="Enter address" style={styles.input} value={doorNo} onChangeText={setDoorNo} /></View>
+                                <View><Text style={styles.label}>Pincode <Text style={styles.requiredAsterisk}>*</Text></Text></View>
+                                <View style={[styles.inputContainer, inputErrors.pincode && { borderColor: 'red' }]}><TextInput placeholder="Enter pincode" style={styles.input} value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} /></View>
+                                <View><Text style={styles.label}>Nearby Landmark <Text style={styles.requiredAsterisk}>*</Text></Text></View>
+                                <View style={[styles.inputContainer, inputErrors.landmark && { borderColor: 'red' }]}><TextInput placeholder="Enter landmark" style={styles.input} value={landmark} onChangeText={setLandmark} /></View>
+                                <TouchableOpacity style={styles.saveButton} onPress={handleSave}><Text style={styles.saveButtonText}>Save Address</Text></TouchableOpacity>
+                            </View>
+                        </View>
+                    </ScrollView>
                 </Pressable>
-              </ScrollView>
-            </TouchableOpacity>
-          </KeyboardAvoidingView>
-        </Pressable>
+            </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <CustomModal
-        visible={customModal.visible}
-        title={customModal.title}
-        message={customModal.message}
-        onConfirm={() => {
-          if (customModal.onConfirm) {
-            customModal.onConfirm();
-          }
-          hideCustomModal();
-        }}
-        onCancel={() => {
-          if (customModal.onCancel) {
-            customModal.onCancel();
-          }
-          hideCustomModal();
-        }}
-        confirmText={customModal.confirmText}
-        cancelText={customModal.cancelText}
-      />
-
-        <CustomModal
-        visible={!areaAvailable}
-        title={"Location is not available"}
-        message={"The selected location is not available for delivery. Please select a different location."}
-        onConfirm={() => {
-          setAreaAvailable(true)
-        }}
-        onCancel={() => {
-         setAreaAvailable(true)
-        }}
-        confirmText={"Okay"}
-        cancelText=''
-      />
+      <CustomModal visible={customModal.visible} title={customModal.title} message={customModal.message} onConfirm={() => { if (customModal.onConfirm) customModal.onConfirm(); hideCustomModal(); }} onCancel={() => { if (customModal.onCancel) customModal.onCancel(); hideCustomModal(); }} confirmText={customModal.confirmText} cancelText={customModal.cancelText} />
+      <CustomModal visible={!areaAvailable} title={"Location is not available"} message={"The selected location is not available for delivery."} onConfirm={() => setAreaAvailable(true)} confirmText={"Okay"} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    backgroundColor: colors.maintheme,
-    height: responsiveHeight(15),
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5),
-    gap: responsiveWidth(3),
-  },
-  backButton: {
-    width: responsiveWidth(7),
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  mapContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  map: {
-    flex: 1,
-  },
-  markerOverlay: {
-    position: 'absolute',
-    top: '45%',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -40,
-  },
-  markerContainer: {
-    alignItems: 'center',
-  },
-  markerTextContainer: {
-    backgroundColor: colors.maintheme,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  markerText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  markerArrow: {
-    position: 'absolute',
-    bottom: -8,
-    left: '50%',
-    marginLeft: -8,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 8,
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: colors.maintheme,
-  },
-  searchContainer: {
-    position: 'absolute',
-    top: responsiveHeight(17),
-    left: 0,
-    right: 0,
-    zIndex: 2,
-    paddingHorizontal: responsiveWidth(5),
-  },
-  searchInputContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: responsiveWidth(3),
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  searchIcon: {
-    marginRight: responsiveWidth(2),
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: responsiveHeight(2),
-    fontSize: 14,
-    color: '#000',
-  },
-  searchResultsContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginTop: 8,
-    maxHeight: 200,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    zIndex: 3,
-  },
-  bottomContainer: {
-    backgroundColor: '#fff',
-    padding: responsiveWidth(5),
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    zIndex: 1,
-    
-  },
-  locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: responsiveHeight(2),
-  },
-  locationIcon: {
-    marginRight: responsiveWidth(3),
-    marginTop: 2,
-  },
-  locationDetails: {
-    flex: 1,
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
-  },
-  locationSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  currentLocationButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.maintheme,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    width: 'auto',
-  },
-  currentLocationButtonLoading: {
-    opacity: 0.7,
-  },
-  currentLocationText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  addButton: {
-    backgroundColor:colors.maintheme,
-    borderRadius: 8,
-    paddingVertical: responsiveHeight(1.5),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  keyboardView: {
-    width: '100%',
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContentContainer: {
-    width: '100%',
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    width: '100%',
-    minHeight: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    // padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 20,
-  },
-  typeButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  typeButton: {
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#666',
-    backgroundColor: '#fff',
-    width: responsiveWidth(30),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: responsiveWidth(1),
-  },
-  selectedTypeButton: {
-    backgroundColor: colors.maintheme,
-  },
-  typeButtonText: {
-    color: '#666',
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  selectedTypeButtonText: {
-    color: '#fff',
-  },
-  label: { 
-    fontSize: 14, 
-    fontWeight: '400', 
-    marginBottom: 5,
-    color: "#525252",
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#666',
-    borderRadius: 8,
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    marginBottom: 15,
-  },
-  input: {
-    color: '#000',
-    fontWeight: '600',
-    flex: 1,
-    paddingVertical: 8,
-  },
-  clearButton: {
-    padding: 10,
-    borderRadius: 5,
-  },
-  saveButton: {
-    backgroundColor: colors.maintheme,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',fontSize:16,
-    fontWeight: '600',
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  searchResultText: {
-    marginLeft: 10,
-    flex: 1,
-  },
-  searchResultMain: {
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '500',
-  },
-  searchResultSecondary: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  requiredAsterisk: {
-    color: 'red',
-    marginLeft: 2
-  },
-  validationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  validationText: {
-    fontSize: 12,
-    marginLeft: 5,
-  },
-  addButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
+    container: { flex: 1, backgroundColor: '#fff' },
+    header: { backgroundColor: colors.maintheme, height: responsiveHeight(15), flexDirection: 'row', alignItems: 'flex-end', paddingBottom: responsiveHeight(3), paddingLeft: responsiveWidth(5), gap: responsiveWidth(3) },
+    backButton: { width: responsiveWidth(7) },
+    title: { fontSize: 16, fontWeight: '600', color: colors.white },
+    mapContainer: { flex: 1, position: 'relative' },
+    map: { flex: 1 },
+    markerOverlay: { position: 'absolute', top: '50%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', marginTop: -60 },
+    markerContainer: { alignItems: 'center' },
+    markerTextContainer: { backgroundColor: colors.maintheme, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 4, elevation: 5 },
+    markerText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    searchContainer: { position: 'absolute', top: responsiveHeight(17), left: 0, right: 0, zIndex: 2, paddingHorizontal: responsiveWidth(5) },
+    searchInputContainer: { backgroundColor: '#fff', borderRadius: 10, flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(3), elevation: 4 },
+    searchIcon: { marginRight: responsiveWidth(2) },
+    searchInput: { flex: 1, paddingVertical: Platform.OS === 'ios' ? responsiveHeight(2) : responsiveHeight(1.5), fontSize: 14, color: '#000' },
+    searchResultsContainer: { backgroundColor: '#fff', borderRadius: 8, marginTop: 8, maxHeight: responsiveHeight(30), elevation: 4, zIndex: 3 },
+    bottomContainer: { backgroundColor: '#fff', padding: responsiveWidth(5), borderTopLeftRadius: 16, borderTopRightRadius: 16, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 4, zIndex: 1 },
+    locationInfo: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: responsiveHeight(2) },
+    locationIcon: { marginRight: responsiveWidth(3), marginTop: 2 },
+    locationDetails: { flex: 1 },
+    locationTitle: { fontSize: 16, fontWeight: '600', color: '#000', marginBottom: 4 },
+    locationSubtitle: { fontSize: 14, color: '#666', lineHeight: 20 },
+    currentLocationButton: { position: 'absolute', bottom: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, elevation: 4 },
+    currentLocationButtonLoading: { opacity: 0.7 },
+    currentLocationText: { color: '#333', fontSize: 14, fontWeight: '600', marginLeft: 8 },
+    addButton: { backgroundColor: colors.maintheme, borderRadius: 8, paddingVertical: responsiveHeight(1.8), alignItems: 'center', justifyContent: 'center' },
+    addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    modalContainer: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+    modalContentContainer: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '90%' },
+    modalContent: { },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+    modalSubtitle: { fontSize: 13, color: '#666', marginTop: 4 },
+    typeButtons: { marginBottom: 20 },
+    typeButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: '#ddd', marginHorizontal: 4 },
+    selectedTypeButton: { backgroundColor: colors.maintheme, borderColor: colors.maintheme },
+    typeButtonText: { color: '#333', fontWeight: '500', fontSize: 14 },
+    selectedTypeButtonText: { color: '#fff' },
+    label: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: "#525252" },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, backgroundColor: '#f9f9f9' },
+    input: { color: '#000', fontWeight: '500', flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 8 },
+    clearButton: { paddingLeft: 10 },
+    saveButton: { backgroundColor: colors.maintheme, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+    saveButtonText: { color: '#fff', fontSize:16, fontWeight: '600' },
+    searchResultItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+    searchResultText: { marginLeft: 12, flex: 1 },
+    searchResultMain: { fontSize: 14, color: '#333', fontWeight: '500' },
+    searchResultSecondary: { fontSize: 12, color: '#777', marginTop: 2 },
+    requiredAsterisk: { color: 'red', marginLeft: 2 },
+    validationContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+    validationText: { fontSize: 12, marginLeft: 5, fontWeight: '500' },
+    addButtonDisabled: { backgroundColor: '#ccc' },
+    noResultsText: { textAlign: 'center', padding: 20, color: '#666' },
 });
 
 export default AddAddressScreen;

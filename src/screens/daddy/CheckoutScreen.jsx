@@ -36,7 +36,7 @@ import { removeCoupon } from '../../redux/reducers/coupons';
 import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import RazorpayCheckout from 'react-native-razorpay';
+// import RazorpayCheckout from 'react-native-razorpay';
 import { colors } from '../../config/theme';
 
 const CheckoutScreen = ({navigation, route}) => {
@@ -58,7 +58,7 @@ const CheckoutScreen = ({navigation, route}) => {
 
   const [paymentMenuVisible, setPaymentMenuVisible] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState('Pay Online');
+    useState('COD');
   const [modalVisible, setModalVisible] = useState(false);
   const [totalSellingPrice, setTotalSellingPrice] = useState(0);
   const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
@@ -73,7 +73,7 @@ const CheckoutScreen = ({navigation, route}) => {
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  const paymentMethods = ['Pay Online', 'COD'];
+  const paymentMethods = ['COD'];
 
   const buttonRef = useRef(null);
 
@@ -319,21 +319,23 @@ const CheckoutScreen = ({navigation, route}) => {
           },
           theme: { color: colors.maintheme },
         };
-  
-        RazorpayCheckout.open(options)
-        .then(async(data) => {
-          const paymentId = data.razorpay_payment_id;
-          payload.order_status = "0";
-          payload.payment_id = paymentId;
-          payload.order_id = responseCod.payload.orderId;
            const responsePayment = await dispatch(placeOrder({orderDetails: payload}));
-           navigation.replace('OrderSuccess', {response: responsePayment.payload});
-        return;
-        })
-        .catch((error) => {
-          console.log('Payment Error:', error);
-          Alert.alert("Payment Failed", "Payment was not completed. Please try again.");
-        })
+
+  
+        // RazorpayCheckout.open(options)
+        // .then(async(data) => {
+        //   const paymentId = data.razorpay_payment_id;
+        //   payload.order_status = "0";
+        //   payload.payment_id = paymentId;
+        //   payload.order_id = responseCod.payload.orderId;
+        //    const responsePayment = await dispatch(placeOrder({orderDetails: payload}));
+        //    navigation.replace('OrderSuccess', {response: responsePayment.payload});
+        // return;
+        // })
+        // .catch((error) => {
+        //   console.log('Payment Error:', error);
+        //   Alert.alert("Payment Failed", "Payment was not completed. Please try again.");
+        // })
 
       }
 
@@ -1130,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   paymentMethodsContainer: {
     position: 'absolute',
-    top: -responsiveHeight(10), // Adjust based on your layout
+    top: -responsiveHeight(5), // Adjust based on your layout
     left: 10,
     // right: 0,
     backgroundColor: '#fff',
