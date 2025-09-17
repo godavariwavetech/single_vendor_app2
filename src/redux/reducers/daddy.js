@@ -1,6 +1,7 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
+import { getToken } from '../../services/NotificationsService';
 
 const initialState = {
   message: null,
@@ -373,6 +374,41 @@ export const updateUserLocation = createAsyncThunk(
     }
   }
 );
+
+
+export const postPlayer = createAsyncThunk(
+  "postPlayer",
+  async(
+      _,
+      {getState, rejectWithValue, fulfillWithValue}
+  ) =>{
+    console.log(">>>>>>>>>>>>>CALALALALAALL");
+    const {customerId,availableLocations} = await getState().Auth;
+    if(!availableLocations || !customerId) return
+    const token = await getToken()
+    const payload = {
+      player_id: token,
+      user_id: customerId,
+      user_type: 0,
+      location_id: availableLocations[0]?.id,
+    }
+    console.log("+++++++LoactionID PLayerID",payload)
+    try {
+      const response = await api.post(endpoints.POST_PLAYER_ID,payload)
+      console.log(response,"++++++PLAYERRESPONSE")
+      if (response) {
+          if (response.data) {
+            return fulfillWithValue(response.data);
+          } else {
+            return rejectWithValue('Something went wrong!');
+          }
+        }
+    } catch (error) {
+      console.log(error,">>>>>>>>>>>>>>>>ERROR");
+    }
+
+  }
+)
 
 export const Dashboard = createSlice({
   name: 'Dashboard',

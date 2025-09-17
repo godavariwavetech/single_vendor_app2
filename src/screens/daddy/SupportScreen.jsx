@@ -37,7 +37,7 @@ const SupportScreen = ({ navigation }) => {
   };
 
   const handleWhatsApp = () => {
-    Linking.openURL(`https://wa.me/${contactInfo?.contact_number}`);
+    Linking.openURL(`https://wa.me/+91${contactInfo?.contact_number}`);
   };
 
   return (

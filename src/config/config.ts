@@ -42,5 +42,6 @@ export const endpoints = {
   GET_SEARCH_CATEGORIES:"public_app/getsearchcategoriesshoplist",
 
   GET_AVAILABLE_LOCATIONS:'getavailablelocations',
-  GET_APPLICATION_DATA:'getapplicationdata'
+  GET_APPLICATION_DATA:'getapplicationdata',
+  POST_PLAYER_ID:'postplayer_id'
 };

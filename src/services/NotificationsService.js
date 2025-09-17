@@ -78,6 +78,15 @@ const handleNotificationNavigation = (data, navigation) => {
 //   }
 // }; 
 
+export const getToken = async () => {
+  try {
+    return await messaging().getToken();
+  } catch (error) {
+    console.error('Error getting FCM token:', error);
+    return null;
+  }
+}; 
+
 export const getFCMToken = async () => {
   const token = await messaging().getToken();
   console.log(token)

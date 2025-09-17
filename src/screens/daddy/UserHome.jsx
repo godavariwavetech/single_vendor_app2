@@ -26,7 +26,8 @@ import {
   setActiveCategoryIndex,
   addToCart,
   removeFromCart,
-  getCategoryItems
+  getCategoryItems,
+  postPlayer
 } from '../../redux/reducers/daddy';
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
@@ -67,6 +68,7 @@ export default function UserHome({navigation}) {
   const [selectedCategory, setSelectedCategory] = useState();
 
 useEffect(() => {
+  dispatch(postPlayer())
   networkStatusRef.current = isNetworkConnected;
   dispatch(getAvailableLocations())
 }, [isNetworkConnected]);
