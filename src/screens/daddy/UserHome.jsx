@@ -71,7 +71,7 @@ useEffect(() => {
   dispatch(postPlayer())
   networkStatusRef.current = isNetworkConnected;
   dispatch(getAvailableLocations())
-}, [isNetworkConnected]);
+}, [isNetworkConnected,availableLocations[0]?.location_name]);
   // Calculate isLoading from Redux loading states
   const isLoading = (
     loading.addressCheck || 
@@ -369,7 +369,7 @@ useEffect(() => {
                         : 'Select Location'} */}
                         {availableLocations[0]?.location_name||""}
                     </Text>
-                    <Text style={{color:"rgba(255, 255, 255, 0.85)",fontSize:12,fontWeight:"600"}}>123, Main Bazaar, Tirupati, Andhra Pradesh 517501</Text>
+                    {/* <Text style={{color:"rgba(255, 255, 255, 0.85)",fontSize:12,fontWeight:"600"}}>123, Main Bazaar, Tirupati, Andhra Pradesh 517501</Text> */}
                     {/* <Text style={styles.locationAddress} numberOfLines={1}>
                       {selectedAddress?.full_address ||
                         'Tap to choose delivery location'}
@@ -485,6 +485,11 @@ useEffect(() => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={item => item.id}
+                getItemLayout={(data, index) => ({
+                    length: responsiveWidth(95), 
+                    offset: responsiveWidth(95) * index, 
+                    index,
+                })}
                 renderItem={({item}) => (
                   <View style={styles.bannerContainer}>
                     <Image
