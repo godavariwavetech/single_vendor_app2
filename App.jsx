@@ -110,7 +110,7 @@ const App = () => {
   const handleUpdate = async () => {
     try {
       console.log("Open playstore")
-      Linking.openURL("https://play.google.com/store/apps/details?id=com.intlokitchen") // Open Play Store / App Store
+      Linking.openURL("https://play.google.com/store/apps/details?id=com.singlevendor") // Open Play Store / App Store
     } catch (error) {
       console.log("Play Store link error:", error);
     } finally {
