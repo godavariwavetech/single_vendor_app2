@@ -78,9 +78,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.intlokitchen"
+    namespace "com.singlevendor"
     defaultConfig {
-        applicationId "com.intlokitchen"
+        applicationId "com.singlevendor"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 6
